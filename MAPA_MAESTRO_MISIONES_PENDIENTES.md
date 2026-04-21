@@ -68,7 +68,7 @@ Este documento consolida todas las características y misiones que hemos "guarda
 *Nadie debería poder acceder a rutas restringidas adivinando la URL.*
 
 ### Implementación técnica:
-- **`middleware.ts`** en la raíz del proyecto — intercepta TODAS las peticiones antes de renderizar.
+- **`proxy.ts`** en la raíz del proyecto — intercepta TODAS las peticiones antes de renderizar.
 - Verifica sesión de Supabase en el edge.
 - Redirige según rol y plan.
 
@@ -87,10 +87,10 @@ Este documento consolida todas las características y misiones que hemos "guarda
 
 ### Tareas:
 - [x] LockScreen Developer Panel (ya implementado)
-- [x] Crear `middleware.ts` para proteger rutas de admin y POS
+- [x] Crear `proxy.ts` para proteger rutas de admin y POS
 - [x] Crear componente `<UpgradePage />` para Plan Básico en ecommerce
 - [x] Proteger `/carrito` y `/checkout` con redirect a login
-- [x] Validar acceso a `/admin/pedidos` por plan en middleware
+- [x] Validar acceso a `/admin/pedidos` por plan en proxy
 
 ---
 
