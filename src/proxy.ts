@@ -76,19 +76,30 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    const role = session.user.user_metadata?.role || 'customer'
+    // Consultar el rol real en la tabla de perfiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single()
+
+    const role = profile?.role || 'customer'
     
-    if (isAdminRoute && role !== 'admin') {
+    // Roles con acceso total
+    const isSuperUser = role === 'admin' || role === 'developer' || role === 'manager'
+
+    if (isAdminRoute && !isSuperUser) {
+      console.warn(`[Proxy] Acceso denegado a ADMIN: ${session.user.email} es [${role}]`)
       return NextResponse.redirect(new URL('/', request.url))
     }
     
-    if (isPosRoute && role !== 'admin' && role !== 'cajero') {
+    if (isPosRoute && !isSuperUser && role !== 'cajero') {
+      console.warn(`[Proxy] Acceso denegado a POS: ${session.user.email} es [${role}]`)
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
   // 3. Verificación de Plan (SaaS)
-  // Obtenemos el plan de store_settings. Cachear esto sería ideal.
   const { data: storeSettings } = await supabase
     .from('store_settings')
     .select('tier')
@@ -96,15 +107,11 @@ export async function proxy(request: NextRequest) {
 
   const tier = storeSettings?.tier || 'basico'
 
-  // Si el plan es básico y entra a la raíz (ecommerce), redirigir a /upgrade
-  // Exceptuando rutas estáticas, api, auth, etc.
   const isPublicEcommerce = request.nextUrl.pathname === '/' || 
                              request.nextUrl.pathname.startsWith('/productos') ||
                              request.nextUrl.pathname.startsWith('/categoria')
 
   if (tier === 'basico' && isPublicEcommerce) {
-    // Solo si no es admin/cajero logueado (que quizás quieren ver algo?)
-    // Pero la regla dice: "Si el plan es básico, ve la pantalla de upgrade"
     return NextResponse.redirect(new URL('/upgrade', request.url))
   }
 
@@ -118,14 +125,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     * - api (API routes)
-     */
     '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
   ],
 }
