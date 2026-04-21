@@ -3,7 +3,7 @@
 Este documento consolida todas las características y misiones que hemos "guardado para después" o que están en estado de prototipo/mock. Es la hoja de ruta definitiva para llevar a PatagoniaPOS de un MVP estable a una plataforma comercial completa.
 
 ## 🏁 ESTADO DEL PROYECTO (Abril 2026)
-- **Fase Actual**: Control de Acceso por Rutas + Middleware 🔜 **EN PROCESO**
+- **Fase Actual**: Control de Acceso por Rutas + Middleware ✅ **COMPLETADO**
 - **Última Auditoría**: 21 de Abril 2026.
 
 ---
@@ -87,10 +87,10 @@ Este documento consolida todas las características y misiones que hemos "guarda
 
 ### Tareas:
 - [x] LockScreen Developer Panel (ya implementado)
-- [ ] Crear `middleware.ts` para proteger rutas de admin y POS
-- [ ] Crear componente `<UpgradePage />` para Plan Básico en ecommerce
-- [ ] Proteger `/carrito` y `/checkout` con redirect a login
-- [ ] Validar acceso a `/admin/pedidos` por plan en middleware
+- [x] Crear `middleware.ts` para proteger rutas de admin y POS
+- [x] Crear componente `<UpgradePage />` para Plan Básico en ecommerce
+- [x] Proteger `/carrito` y `/checkout` con redirect a login
+- [x] Validar acceso a `/admin/pedidos` por plan en middleware
 
 ---
 
@@ -136,4 +136,4 @@ admin.patagoniapos.cl
 ---
 
 ## 🚀 Siguiente Paso Inmediato
-Implementar `middleware.ts` + componente `<UpgradePage />` para proteger las rutas de admin/POS y mostrar la pantalla de upgrade en Plan Básico.
+Realizar testeo manual de la Capa 1 y 2 de Seguridad desde el Panel Developer (cambiar plan a Básico y verificar que el home redirige a /upgrade).
