@@ -73,7 +73,7 @@ export interface User {
   rut?: string
   phone?: string
   avatar?: string
-  role: 'customer' | 'admin' | 'manager' | 'cashier' | 'developer'
+  role: 'customer' | 'admin' | 'manager' | 'cashier' | 'cajero' | 'developer'
   addresses: Address[]
   loyaltyPoints: number
   identityVerified: boolean

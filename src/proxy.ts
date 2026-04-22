@@ -91,6 +91,14 @@ export async function proxy(request: NextRequest) {
       console.warn(`[Proxy] Rol insuficiente [${role}] para POS. Redirecting to /`)
       return NextResponse.redirect(new URL('/?error=unauthorized_pos', request.url))
     }
+
+    // Rutas exclusivas para developer/admin — el manager no puede acceder
+    const developerOnlyRoutes = ['/admin/personal', '/admin/configuracion', '/admin/developer', '/admin/reportes']
+    const isDeveloperOnly = developerOnlyRoutes.some(r => request.nextUrl.pathname.startsWith(r))
+    if (isDeveloperOnly && role === 'manager') {
+      console.warn(`[Proxy] Ruta restringida para manager: ${request.nextUrl.pathname}`)
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
   }
 
   // C. Verificación de Plan SaaS (Solo para el ecommerce público)
