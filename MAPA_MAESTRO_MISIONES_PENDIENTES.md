@@ -3,8 +3,8 @@
 Este documento consolida todas las características y misiones que hemos "guardado para después" o que están en estado de prototipo/mock. Es la hoja de ruta definitiva para llevar a PatagoniaPOS de un MVP estable a una plataforma comercial completa.
 
 ## 🏁 ESTADO DEL PROYECTO (Abril 2026)
-- **Fase Actual**: Control de Acceso por Rutas + Middleware ✅ **COMPLETADO**
-- **Última Auditoría**: 21 de Abril 2026.
+- **Fase Actual**: Autenticación Real + RBAC Admin + Permisos por Plan ✅ **COMPLETADO**
+- **Última Auditoría**: 22 de Abril 2026.
 
 ---
 
@@ -20,18 +20,30 @@ Este documento consolida todas las características y misiones que hemos "guarda
 
 ---
 
-## 🔐 ARQUITECTURA DE CONTROL DE ACCESO (DECISIONES CLAVE)
+## 🔐 ARQUITECTURA DE ROLES (DECISIONES CLAVE)
 
-### Capa 1 — Autenticación (¿Quién eres?)
-| Estado | Acceso |
-|--------|--------|
-| Sin sesión | Solo páginas públicas (ver productos, inicio, contacto) |
-| Sin sesión + intenta comprar | → Redirect `/login?redirect=/checkout` con mensaje |
-| Cliente logueado | Comprar, perfil, mis pedidos |
-| Cajero | POS, sus turnos |
-| Admin | Todo panel admin + POS |
+### Roles disponibles en tabla `profiles` (Supabase):
+| Rol DB | Descripción | Acceso Admin | Acceso POS |
+|--------|-------------|--------------|------------|
+| `developer` | Acceso total | ✅ Todo | ✅ |
+| `admin` | Administrador de tienda | ✅ Todo | ✅ |
+| `manager` | Encargado de turno | ✅ Dashboard + Inventario + CRM | ✅ |
+| `cajero` | Cajero / colaborador | ❌ | ✅ |
+| `customer` | Cliente final | ❌ | ❌ |
 
-### Capa 2 — Plan SaaS (¿Qué tiene contratado?)
+### Matriz de permisos Admin (Plan Básico):
+| Sección | developer | admin | manager | cajero |
+|---------|-----------|-------|---------|--------|
+| Dashboard | ✅ | ✅ | ✅ | ❌ |
+| Inventario (Productos) | ✅ | ✅ | ✅ | ❌ |
+| Clientes (CRM) | ✅ | ✅ | ✅ | ❌ |
+| Personal | ✅ | ✅ | ❌ | ❌ |
+| Configuración | ✅ | ✅ | ❌ | ❌ |
+| Developer Mode (2FA) | ✅ | ❌ | ❌ | ❌ |
+| Pedidos Online | 🔒 Plan Plus | 🔒 | 🔒 | ❌ |
+| Ir al POS | ✅ | ✅ | ✅ | ✅ |
+
+### Capa 2 — Plan SaaS (¿Qué tiene contratado?):
 | Ruta | Básico | Plus | Élite |
 |------|--------|------|-------|
 | `/pos` | ✅ | ✅ | ✅ |
@@ -40,57 +52,61 @@ Este documento consolida todas las características y misiones que hemos "guarda
 | `/` ecommerce público | ❌ → Página Upgrade | ✅ | ✅ |
 | API externa | ❌ | ❌ | ✅ |
 
-### Comportamiento Plan Básico en URL raíz:
-> Si alguien entra a `tienda1.cl` y el plan es Básico, en vez del ecommerce ve una pantalla que dice:
-> **"¿Quieres tu tienda online? Activa el Plan Plus"** + botón **"Ir al POS"**
+---
+
+## 📋 Resumen de Misiones
+
+| Misión | Estado Actual | Prioridad |
+| :--- | :--- | :--- |
+| **Autenticación Real (Supabase Auth)** | ✅ COMPLETADO | 🟢 LISTO |
+| **RBAC Admin Sidebar por Rol + Plan** | ✅ COMPLETADO | 🟢 LISTO |
+| **proxy.ts (Middleware de Rutas)** | ✅ COMPLETADO | 🟢 LISTO |
+| **SaaS & Master Key (2FA)** | ✅ COMPLETADO | 🟢 LISTO |
+| **Tiers + Branding Corregido** | ✅ COMPLETADO | 🟢 LISTO |
+| **Testeo Manual de Seguridad** | 🟡 EN PROGRESO | 🔴 MÁXIMA |
+| **SII Integration (DTE)** | Mock / API Placeholder | 🔴 CRÍTICA |
+| **Logística (Retiros/Envíos)** | Checkout Actualizado | 🟠 ALTA |
+| **Gestión de Pedidos (Admin)** | Dashboard Creado | 🟠 ALTA |
+| **App Móvil / Tablet (PWA)** | Configuración Base | 🟡 MEDIA |
+| **🌐 Panel Central Multi-Tenant** | 💡 VISIÓN FUTURA | 🔵 LONG-TERM |
 
 ---
 
-## 📋 Resumen de Misiones Críticas
+## 10. 🔐 Misión: Autenticación Real + RBAC ✅ COMPLETADA (22 Abril 2026)
 
-> 🚨 **PRIORIDAD MÁXIMA AL DESPERTAR:** El CEO (Rdorigo Nuñez) debe ingresar y testear manualmente la Capa 1 y Capa 2 de Seguridad construidas esta sesión (Developer Panel -> Cambio de Plan -> Verificación de URLs prohibidas). 
+### Problemas resueltos:
+- El `login()` era un mock hardcodeado → ahora usa `supabase.auth.signInWithPassword()` real.
+- La sesión se guardaba en `localStorage` → el proxy del servidor no podía leerla.
+- El cliente de Supabase en el browser no creaba cookies → reemplazado por `createBrowserClient` de `@supabase/ssr`.
+- Los roles `developer` y `manager` no estaban en la lista blanca del proxy.
+- Al cambiar de cuenta sin logout, Zustand hidrataba los datos de la sesión anterior.
 
-| Misión | Estado Actual | Prioridad | Riesgo |
-| :--- | :--- | :--- | :--- |
-| **0. Testeo Manual de Seguridad (Capa 1 y 2)**| 🛑 PENDIENTE REVISIÓN | 🔴 MÁXIMA | - |
-| **SaaS & Master Key (2FA)** | ✅ COMPLETADO | 🟢 LISTO | - |
-| **Tiers + Branding Corregido** | ✅ COMPLETADO | 🟢 LISTO | - |
-| **Control de Acceso (Middleware)** | ✅ COMPLETADO | 🟢 LISTO | Medio |
-| **SII Integration (DTE)** | Mock / API Placeholder | 🔴 CRÍTICA | Medio |
-| **Logística (Retiros/Envíos)** | Checkout Actualizado | 🟠 ALTA | Bajo |
-| **Gestión de Pedidos (Admin)** | Dashboard Creado | 🟠 ALTA | Bajo |
-| **App Móvil / Tablet (PWA)** | Configuración Base | 🟡 MEDIA | Bajo |
-| **🌐 Panel Central Multi-Tenant** | 💡 VISIÓN FUTURA | 🔵 LONG-TERM | Alto |
-
----
-
-## 10. 🔐 Misión: Control de Acceso por Rutas (Nueva — En Desarrollo)
-*Nadie debería poder acceder a rutas restringidas adivinando la URL.*
-
-### Implementación técnica:
-- **`proxy.ts`** en la raíz del proyecto — intercepta TODAS las peticiones antes de renderizar.
-- Verifica sesión de Supabase en el edge.
-- Redirige según rol y plan.
-
-### Rutas y sus guardas:
+### Archivos modificados:
 ```
-/pos              → requiere sesión + rol (admin | cajero)
-/admin/*          → requiere sesión + rol admin
-/admin/developer  → ya protegido por 2FA + Master Key
-/admin/pedidos    → requiere plan Plus o Elite
-/carrito          → requiere sesión (redirect /login si no)
+src/lib/supabase.ts              → createBrowserClient para manejo automático de cookies
+src/stores/authStore.ts          → login() usa Supabase real + limpia sesión anterior
+src/stores/authStore.ts          → logout() cierra sesión Supabase + borra localStorage
+src/proxy.ts                     → getUser() en lugar de getSession() + roles + restricciones manager
+src/components/auth/SessionSync.tsx  → (NUEVO) sincroniza cookies en cada cambio de auth state
+src/components/admin/AdminSidebar.tsx → RBAC: sidebar filtra por rol y plan
+src/app/(auth)/login/page.tsx    → sincroniza perfil real de DB al hacer login con Google/OAuth
+src/types/index.ts               → rol 'cajero' añadido al tipo User
+```
+
+### Comportamiento actual del proxy (`src/proxy.ts`):
+```
+/pos              → requiere sesión + rol (admin | developer | manager | cajero)
+/admin/*          → requiere sesión + rol (admin | developer | manager)
+/admin/personal   → solo developer | admin (el manager es redirigido a /admin)
+/admin/configuracion → solo developer | admin
+/admin/developer  → solo developer | admin (+ 2FA Master Key)
+/admin/pedidos    → bloqueado si plan = básico → redirect /admin?error=upgrade_required
+/carrito          → requiere sesión
 /checkout         → requiere sesión
 /perfil           → requiere sesión
-/mis-turnos       → requiere sesión + rol cajero o admin
-/                 → si plan Básico → página de upgrade (no ecommerce)
+/mis-turnos       → requiere sesión
+/                 → si plan Básico → redirect /upgrade
 ```
-
-### Tareas:
-- [x] LockScreen Developer Panel (ya implementado)
-- [x] Crear `proxy.ts` para proteger rutas de admin y POS
-- [x] Crear componente `<UpgradePage />` para Plan Básico en ecommerce
-- [x] Proteger `/carrito` y `/checkout` con redirect a login
-- [x] Validar acceso a `/admin/pedidos` por plan en proxy
 
 ---
 
@@ -135,5 +151,5 @@ admin.patagoniapos.cl
 
 ---
 
-## 🚀 Siguiente Paso Inmediato
-Realizar testeo manual de la Capa 1 y 2 de Seguridad desde el Panel Developer (cambiar plan a Básico y verificar que el home redirige a /upgrade).
+## 🚀 Siguiente Paso Recomendado
+Completar el testeo manual de la matriz de roles y permisos, luego avanzar con la integración real del SII (Facturación DTE) que es la misión más crítica para producción.
