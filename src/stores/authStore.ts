@@ -62,8 +62,12 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
 
       login: async (email: string, password: string) => {
-        set({ isLoading: true })
+        // Limpiar estado anterior primero (evita contaminar sesiones entre cuentas)
+        set({ user: null, isAuthenticated: false, isLoading: true })
         try {
+          // Primero cerramos cualquier sesión previa de Supabase
+          await supabase.auth.signOut()
+
           // Login real contra Supabase (crea cookies de sesión para el Proxy)
           const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -122,7 +126,11 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         await supabase.auth.signOut()
-        set({ user: null, isAuthenticated: false })
+        set({ user: null, isAuthenticated: false, isLoading: false })
+        // Limpiar el storage persistido para que no queden datos de la sesión anterior
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('patagoniapos-auth')
+        }
       },
 
       setAuthSession: (user: User) => {
