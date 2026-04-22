@@ -37,33 +37,51 @@ export default function LoginPage() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // 1. Obtener datos básicos de metadata
         const metadata = session.user.user_metadata || {}
-        const hasProfile = metadata.first_name || metadata.full_name
         
-        // Sincronizar el usuario de Supabase con el store local (Zustand)
-        const appUser = {
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: metadata.first_name || metadata.full_name || 'Usuario',
-          lastName: metadata.last_name || '',
-          phone: metadata.phone || '',
-          role: metadata.role || 'customer',
-          loyaltyPoints: 0,
-          wishlist: [],
-          purchaseHistory: [],
-          addresses: [],
-          updatedAt: new Date().toISOString()
+        // 2. Consultar el perfil REAL en la base de datos para obtener el rol correcto
+        const fetchRealProfile = async () => {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role, rut, first_name, last_name')
+              .eq('id', session.user.id)
+              .single()
+
+            const appUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              firstName: profile?.first_name || metadata.first_name || metadata.full_name || 'Usuario',
+              lastName: profile?.last_name || metadata.last_name || '',
+              phone: metadata.phone || '',
+              role: profile?.role || metadata.role || 'customer',
+              rut: profile?.rut || metadata.rut || '',
+              loyaltyPoints: 0,
+              wishlist: [],
+              purchaseHistory: [],
+              addresses: [],
+              updatedAt: new Date().toISOString()
+            }
+
+            setAuthSession(appUser as any)
+
+            // Si es la primera vez que se loguea (le falta el RUT), forzar el completado
+            if (!profile?.rut && !metadata.rut) {
+              router.push('/completar-perfil?from=google')
+            } else {
+              toast.success('¡Autenticado exitosamente!')
+              router.push('/')
+            }
+          } catch (error) {
+            console.error('Error fetching profile:', error)
+            // Fallback al menos con el email
+            setAuthSession({ id: session.user.id, email: session.user.email, role: 'customer' } as any)
+            router.push('/')
+          }
         }
 
-        setAuthSession(appUser as any)
-
-        // Si es la primera vez que se loguea (le falta el RUT), forzar el completado
-        if (!hasProfile || !metadata.rut) {
-          router.push('/completar-perfil?from=google')
-        } else {
-          toast.success('¡Autenticado exitosamente!')
-          router.push('/')
-        }
+        fetchRealProfile()
       }
     })
 
@@ -76,7 +94,6 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // El mismo archivo atrapará el token en la URL a la vuelta con el onAuthStateChange
           redirectTo: `${window.location.origin}/login`,
         },
       })

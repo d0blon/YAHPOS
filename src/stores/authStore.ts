@@ -64,14 +64,37 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true })
         try {
-          // TODO: Replace with actual API call
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          
-          if (email === 'cliente@australmarket.cl' && password === 'password') {
-            set({ user: mockUser, isAuthenticated: true, isLoading: false })
-          } else {
-            throw new Error('Credenciales inválidas')
+          // Login real contra Supabase (crea cookies de sesión para el Proxy)
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+          if (error) throw new Error(error.message)
+          if (!data.user) throw new Error('No se pudo obtener el usuario')
+
+          // Obtener el perfil real con el rol correcto
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, rut, first_name, last_name, phone, loyalty_points')
+            .eq('id', data.user.id)
+            .single()
+
+          const appUser: User = {
+            id: data.user.id,
+            email: data.user.email || '',
+            firstName: profile?.first_name || data.user.user_metadata?.first_name || 'Usuario',
+            lastName: profile?.last_name || data.user.user_metadata?.last_name || '',
+            phone: profile?.phone || data.user.user_metadata?.phone || '',
+            role: profile?.role || 'customer',
+            rut: profile?.rut || '',
+            loyaltyPoints: profile?.loyalty_points ?? 0,
+            identityVerified: false,
+            wishlist: [],
+            purchaseHistory: [],
+            addresses: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           }
+
+          set({ user: appUser, isAuthenticated: true, isLoading: false })
         } catch (error) {
           set({ isLoading: false })
           throw error
@@ -97,7 +120,8 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: () => {
+      logout: async () => {
+        await supabase.auth.signOut()
         set({ user: null, isAuthenticated: false })
       },
 

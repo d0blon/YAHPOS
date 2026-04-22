@@ -29,6 +29,7 @@ export const metadata: Metadata = {
 };
 
 import { SaaSProvider } from "@/providers/SaaSProvider";
+import { SessionSync } from "@/components/auth/SessionSync";
 
 export default function RootLayout({
   children,
@@ -39,6 +40,7 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${outfit.variable}`}>
       <body className="min-h-screen flex flex-col antialiased bg-background text-foreground">
         <SaaSProvider>
+          <SessionSync />
           {children}
         </SaaSProvider>
         <Toaster position="bottom-right" richColors />

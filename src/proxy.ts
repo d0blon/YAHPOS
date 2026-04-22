@@ -54,70 +54,65 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // Usamos getUser() que es más robusto para validaciones de servidor
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-  // 1. Proteger rutas que requieren sesión
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+  const isPosRoute = request.nextUrl.pathname.startsWith('/pos')
   const protectedRoutes = ['/perfil', '/carrito', '/checkout', '/mis-turnos']
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
-  if (isProtectedRoute && !session) {
+  // A. Si no hay usuario y la ruta es protegida -> LOGIN
+  if (!user && (isAdminRoute || isPosRoute || isProtectedRoute)) {
+    console.log(`[Proxy] No user found for protected route ${request.nextUrl.pathname}. Redirecting to /login`)
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // 2. Proteger rutas de ADMIN y POS
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
-  const isPosRoute = request.nextUrl.pathname.startsWith('/pos')
-
-  if (isAdminRoute || isPosRoute) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-
-    // Consultar el rol real en la tabla de perfiles
+  // B. Si hay usuario, validamos roles para Admin y POS
+  if (user && (isAdminRoute || isPosRoute)) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     const role = profile?.role || 'customer'
-    
-    // Roles con acceso total
     const isSuperUser = role === 'admin' || role === 'developer' || role === 'manager'
 
     if (isAdminRoute && !isSuperUser) {
-      console.warn(`[Proxy] Acceso denegado a ADMIN: ${session.user.email} es [${role}]`)
-      return NextResponse.redirect(new URL('/', request.url))
+      console.warn(`[Proxy] Rol insuficiente [${role}] para ADMIN. Redirecting to /`)
+      return NextResponse.redirect(new URL('/?error=unauthorized_admin', request.url))
     }
-    
+
     if (isPosRoute && !isSuperUser && role !== 'cajero') {
-      console.warn(`[Proxy] Acceso denegado a POS: ${session.user.email} es [${role}]`)
-      return NextResponse.redirect(new URL('/', request.url))
+      console.warn(`[Proxy] Rol insuficiente [${role}] para POS. Redirecting to /`)
+      return NextResponse.redirect(new URL('/?error=unauthorized_pos', request.url))
     }
   }
 
-  // 3. Verificación de Plan (SaaS)
-  const { data: storeSettings } = await supabase
-    .from('store_settings')
-    .select('tier')
-    .single()
-
-  const tier = storeSettings?.tier || 'basico'
-
+  // C. Verificación de Plan SaaS (Solo para el ecommerce público)
   const isPublicEcommerce = request.nextUrl.pathname === '/' || 
                              request.nextUrl.pathname.startsWith('/productos') ||
                              request.nextUrl.pathname.startsWith('/categoria')
 
-  if (tier === 'basico' && isPublicEcommerce) {
-    return NextResponse.redirect(new URL('/upgrade', request.url))
+  if (isPublicEcommerce) {
+    const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
+    const tier = storeSettings?.tier || 'basico'
+
+    if (tier === 'basico') {
+      return NextResponse.redirect(new URL('/upgrade', request.url))
+    }
   }
 
-  // 4. Proteger /admin/pedidos (Requiere Plus o Elite)
-  if (request.nextUrl.pathname.startsWith('/admin/pedidos') && tier === 'basico') {
-    return NextResponse.redirect(new URL('/admin?error=upgrade_required', request.url))
+  // D. Proteger /admin/pedidos por plan
+  if (request.nextUrl.pathname.startsWith('/admin/pedidos')) {
+    const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
+    if (storeSettings?.tier === 'basico') {
+      return NextResponse.redirect(new URL('/admin?error=upgrade_required', request.url))
+    }
   }
 
   return response
