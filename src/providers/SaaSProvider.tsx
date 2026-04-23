@@ -23,7 +23,7 @@ const SaaSContext = createContext<SaaSContextType | undefined>(undefined)
 export function SaaSProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<SaaSConfig>({
     tier: 'basico',
-    store_name: 'PatagoniaPOS',
+    store_name: 'PatagoniaMarket',
     store_logo: null,
     white_label_enabled: false,
     accent_color: '#003399'

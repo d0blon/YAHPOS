@@ -5,6 +5,7 @@ import { Printer, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPrice, cn } from '@/lib/utils';
 import { PosItem, usePosStore } from '@/stores/posStore';
+import { useSaaS } from '@/providers/SaaSProvider';
 
 interface PosReceiptModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface PosReceiptModalProps {
 
 export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalProps) {
   const { isTrainingMode } = usePosStore();
+  const { config } = useSaaS();
   
   if (!isOpen || !orderData) return null;
 
@@ -57,7 +59,8 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
           )}
 
           <div className="text-center mb-6 relative z-10">
-            <h2 className="font-bold text-xl uppercase mb-1">AustralMarket</h2>
+            <img src="/logos/logo-light.png" alt="Logo" className="h-16 mx-auto mb-2 object-contain mix-blend-multiply" />
+            <h2 className="font-bold text-xl uppercase mb-1">{config.store_name}</h2>
             <p className="text-xs">RUT: 76.123.456-7</p>
             <p className="text-xs">Giro: Supermercado Retail</p>
             <p className="text-xs">Av. Los Carrera 123, Castro, Los Lagos</p>
@@ -136,14 +139,14 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
              )}
              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col items-center gap-1 opacity-40">
                <p className="text-[8px] font-black tracking-[0.3em] uppercase">Powered by</p>
-               <p className="text-[10px] font-black tracking-tighter">AustralPOS © 2026</p>
+               <p className="text-[10px] font-black tracking-tighter">PatagoniaPOS © 2026</p>
             </div>
           </div>
         </div>
 
         {/* Actions */}
         <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-3 print:hidden">
-            <Button variant="outline" className="flex-1" onClick={onClose}>
+            <Button variant="outline" className="flex-1 border-gray-300 text-slate-700 hover:bg-gray-100 font-bold" onClick={onClose}>
               Cerrar
             </Button>
             <Button 

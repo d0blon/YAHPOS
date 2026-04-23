@@ -45,14 +45,14 @@ export function OfflineSyncManager() {
       try {
         // 1. Enviar a Supabase
         const orderBody = {
-          user_id: currentUser?.id || '1',
-          register_id: cashSession?.terminal_id ?? null,
+          userId: currentUser?.id || '1',
+          registerId: cashSession?.terminal_id ?? null,
           total: order.total,
           discount: order.discount,
-          payment_method: order.paymentMethod,
+          paymentMethod: order.paymentMethod,
           status: 'completed',
-          payment_status: 'completed',
-          customer_rut: order.customerRut,
+          paymentStatus: 'completed',
+          customerRut: order.customerRut,
           items: order.items.map(item => ({
             productId: item.product.id,
             quantity: item.quantity,

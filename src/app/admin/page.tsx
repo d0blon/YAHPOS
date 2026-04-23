@@ -29,6 +29,7 @@ interface DashboardData {
   stats: any[]
   recentOrders: any[]
   topProducts: any[]
+  activePersonnel?: any[]
 }
 
 export default function AdminDashboard() {
@@ -127,8 +128,9 @@ export default function AdminDashboard() {
                     })}
                   </div>
 
-                  <div className="grid lg:grid-cols-2 gap-6">
-                    <Card>
+                  <div className="grid lg:grid-cols-3 gap-6">
+                    {/* Pedidos Recientes */}
+                    <Card className="lg:col-span-2">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Pedidos Recientes</CardTitle>
                         <Link href="/admin/pedidos">
@@ -171,6 +173,46 @@ export default function AdminDashboard() {
                       </CardContent>
                     </Card>
 
+                    {/* Personal Activo */}
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                          Personal en Turno
+                        </CardTitle>
+                        <Badge variant="outline" className="text-[10px] uppercase font-black tracking-widest">{data?.activePersonnel?.length || 0} Activos</Badge>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {!data?.activePersonnel || data.activePersonnel.length === 0 ? (
+                            <div className="py-8 text-center border-2 border-dashed border-gray-100 rounded-2xl">
+                               <Users className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                               <p className="text-xs text-gray-400">No hay personal en turno</p>
+                            </div>
+                          ) : (
+                            data.activePersonnel.map((person) => (
+                              <div key={person.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 group hover:border-corporate-blue/30 transition-all">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-corporate-blue/10 rounded-full flex items-center justify-center font-bold text-corporate-blue text-xs">
+                                    {person.name.split(' ').map((n: string) => n[0]).join('')}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-sm text-gray-900 dark:text-white leading-none">{person.name}</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-black mt-1 tracking-tighter">{person.role}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]">{person.area}</Badge>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid lg:grid-cols-2 gap-6 mt-6">
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Productos Más Vendidos</CardTitle>

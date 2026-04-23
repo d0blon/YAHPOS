@@ -14,9 +14,8 @@ export function SessionSync() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // Al detectar un inicio de sesión o refresco, refrescamos la ruta
-        // para que el Proxy vea las nuevas cookies.
+      if (event === 'SIGNED_IN') {
+        // Solo refrescamos en el inicio de sesión inicial para setear cookies
         router.refresh()
       }
       

@@ -53,7 +53,7 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/customers?rut=${cleaned}`)
+      const res = await fetch(`/api/customers?rut=${encodeURIComponent(rut)}`)
       const data = await res.json()
       
       if (data) {
@@ -133,31 +133,33 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); resetState(); } }}>
-      <DialogContent className="sm:max-w-[500px] bg-white rounded-3xl overflow-hidden border-none shadow-2xl p-0">
-        <DialogHeader className="p-8 bg-corporate-blue text-white relative overflow-hidden">
+      <DialogContent className="max-w-[550px] bg-white dark:bg-slate-900 rounded-[3rem] overflow-hidden border-none shadow-2xl p-0 text-slate-900 dark:text-white animate-in zoom-in-95 duration-500">
+        <DialogHeader className="p-10 bg-patagonia-600 dark:bg-slate-800 text-white relative overflow-hidden shrink-0">
           <div className="relative z-10">
-            <DialogTitle className="text-2xl font-black flex items-center gap-3">
-              <Users className="w-8 h-8" />
-              Gestión de Clientes
+            <DialogTitle className="text-3xl font-black flex items-center gap-4 italic tracking-tighter uppercase">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              Gestión Clientes
             </DialogTitle>
-            <DialogDescription className="text-blue-100 font-medium">
-              Vincular venta a un cliente para acumular puntos
+            <DialogDescription className="text-blue-100 dark:text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] mt-3">
+              Fidelización y Beneficios Patagonia
             </DialogDescription>
           </div>
-          <Users className="absolute -bottom-4 -right-4 w-40 h-40 text-white/10" />
+          <Users className="absolute -bottom-10 -right-10 w-56 h-56 text-white/10 rotate-12" />
         </DialogHeader>
 
-        <div className="p-8 space-y-6">
+        <div className="p-10 space-y-8 overflow-y-auto custom-scrollbar max-h-[60vh]">
           {!foundCustomer && !isRegistering && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Documento de Identidad (RUT)</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Documento Identidad (RUT)</label>
+                <div className="flex gap-3">
+                  <div className="relative flex-1 group">
+                    <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-patagonia-500 transition-colors" />
                     <Input 
                       placeholder="12.345.678-9" 
-                      className="h-14 pl-12 bg-gray-50 border-none rounded-2xl text-lg font-bold"
+                      className="h-20 pl-16 bg-slate-50 dark:bg-slate-800/50 border-none rounded-[2rem] text-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-patagonia-600/20 transition-all tracking-tight"
                       value={rut}
                       onChange={(e) => setRut(formatRut(e.target.value))}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -166,52 +168,66 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
                   <Button 
                     onClick={handleSearch} 
                     disabled={loading || !rut}
-                    className="h-14 px-6 bg-corporate-blue hover:bg-corporate-dark text-white rounded-2xl font-black transition-all"
+                    className="h-20 w-20 bg-patagonia-600 hover:bg-patagonia-700 text-white rounded-[2rem] shadow-xl shadow-patagonia-600/30 active:scale-95 transition-all p-0"
                   >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+                    {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Search className="w-8 h-8" />}
                   </Button>
                 </div>
               </div>
-              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 italic text-sm text-gray-500 text-center">
-                Ingresa el RUT del cliente para buscar sus beneficios.
+              <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex items-start gap-4">
+                <div className="w-10 h-10 bg-patagonia-600/10 rounded-xl flex items-center justify-center shrink-0">
+                    <Award className="w-5 h-5 text-patagonia-600" />
+                </div>
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-wider">
+                  Identifica al cliente para aplicar descuentos exclusivos y acumular puntos en su cuenta personal.
+                </p>
               </div>
             </div>
           )}
 
           {foundCustomer && !isRegistering && (
-            <div className="space-y-6 animate-in zoom-in-95 duration-200">
-              <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center gap-5">
-                <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                  <CheckCircle2 className="w-8 h-8" />
+            <div className="space-y-8 animate-in zoom-in-95 duration-500">
+              <div className="p-8 bg-emerald-500/10 border-2 border-emerald-500/20 rounded-[2.5rem] flex items-center gap-6 relative overflow-hidden">
+                <div className="w-20 h-20 bg-emerald-500 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-emerald-500/30 relative z-10">
+                  <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-emerald-600 font-black uppercase text-[10px] tracking-widest">Cliente Encontrado</p>
-                  <h4 className="text-xl font-black text-gray-900">{foundCustomer.name}</h4>
-                  <p className="text-sm font-mono text-gray-500">{foundCustomer.rut}</p>
+                <div className="flex-1 relative z-10">
+                  <p className="text-emerald-600 dark:text-emerald-400 font-black uppercase text-[10px] tracking-[0.3em] mb-1">Cliente VIP</p>
+                  <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{foundCustomer.name}</h4>
+                  <p className="text-sm font-black text-slate-400 mt-2 font-mono">{foundCustomer.rut}</p>
                 </div>
+                <div className="absolute right-0 top-0 w-32 h-full bg-emerald-500/5 -skew-x-12 translate-x-8" />
               </div>
 
-              <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex items-center justify-between">
-                <div>
-                  <p className="text-amber-600 font-black uppercase text-[10px] tracking-widest leading-none">Puntos Acumulados</p>
-                  <p className="text-3xl font-black text-amber-600 mt-1">{(foundCustomer.loyalty_points || 0).toLocaleString()} <span className="text-sm">pts</span></p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-8 bg-amber-500/10 border-2 border-amber-500/20 rounded-[2.5rem] relative overflow-hidden group">
+                  <p className="text-amber-600 dark:text-amber-500 font-black uppercase text-[10px] tracking-[0.3em] leading-none mb-3">Puntos Fidelidad</p>
+                  <p className="text-5xl font-black text-amber-600 tracking-tighter">
+                    {(foundCustomer.loyalty_points || 0).toLocaleString()} 
+                    <span className="text-xs uppercase tracking-widest ml-2">PTS</span>
+                  </p>
+                  <Award className="absolute -bottom-4 -right-4 w-20 h-20 text-amber-500/10 group-hover:scale-110 transition-transform" />
                 </div>
-                <Award className="w-12 h-12 text-amber-500/30" />
-              </div>
 
-              {/* Status Section */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className={`p-3 rounded-2xl border text-center ${foundCustomer.is_full_account ? 'bg-blue-50 border-blue-100' : 'bg-gray-50 border-gray-100'}`}>
-                  <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Estado Web</p>
-                  <p className={`text-xs font-bold mt-1 ${foundCustomer.is_full_account ? 'text-blue-600' : 'text-gray-500'}`}>
-                    {foundCustomer.is_full_account ? 'Socio Registrado' : 'Falta Registro Web'}
-                  </p>
-                </div>
-                <div className={`p-3 rounded-2xl border text-center ${foundCustomer.identity_verified ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-                  <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Identidad</p>
-                  <p className={`text-xs font-bold mt-1 ${foundCustomer.identity_verified ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {foundCustomer.identity_verified ? 'Verificado' : 'Pendiente Verif.'}
-                  </p>
+                <div className="space-y-4">
+                    <div className={cn(
+                        "p-4 rounded-2xl border-2 flex items-center justify-between",
+                        foundCustomer.is_full_account ? "bg-blue-500/10 border-blue-500/20" : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800"
+                    )}>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Socio Web</span>
+                        <span className={cn("text-[10px] font-black uppercase", foundCustomer.is_full_account ? "text-blue-600" : "text-slate-400")}>
+                            {foundCustomer.is_full_account ? 'ACTIVO' : 'PENDIENTE'}
+                        </span>
+                    </div>
+                    <div className={cn(
+                        "p-4 rounded-2xl border-2 flex items-center justify-between",
+                        foundCustomer.identity_verified ? "bg-emerald-500/10 border-emerald-500/20" : "bg-rose-500/10 border-rose-500/20"
+                    )}>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Identidad</span>
+                        <span className={cn("text-[10px] font-black uppercase", foundCustomer.identity_verified ? "text-emerald-600" : "text-rose-600")}>
+                            {foundCustomer.identity_verified ? 'VERIFICADA' : 'NO VERIF.'}
+                        </span>
+                    </div>
                 </div>
               </div>
 
@@ -219,50 +235,47 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
                 <Button 
                   onClick={handleVerifyIdentity}
                   disabled={isVerifying}
-                  className="w-full h-12 bg-corporate-blue hover:bg-corporate-dark text-white rounded-xl font-bold flex items-center justify-center gap-2"
+                  className="w-full h-16 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all"
                 >
-                  {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
-                  Verificar con Cédula
+                  {isVerifying ? <Loader2 className="w-5 h-5 animate-spin" /> : <Fingerprint className="w-5 h-5" />}
+                  Validar Identidad Presencial
                 </Button>
-              )}
-              
-              {!foundCustomer.is_full_account && (
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
-                  <p className="text-[10px] text-amber-700 font-bold text-center">
-                    EL CLIENTE DEBE COMPLETAR SU REGISTRO EN AUSTRAL.CL PARA CANJE DE PUNTOS
-                  </p>
-                </div>
               )}
             </div>
           )}
 
           {isRegistering && (
-            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-200">
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl text-blue-700 text-sm font-bold border border-blue-100">
-                <UserPlus className="w-5 h-5" />
-                Nuevo Registro: {rut}
+            <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+              <div className="flex items-center gap-4 p-6 bg-patagonia-600/10 rounded-[2rem] text-patagonia-600 dark:text-patagonia-400 border border-patagonia-600/20">
+                <div className="p-3 bg-patagonia-600 rounded-xl text-white">
+                    <UserPlus className="w-6 h-6" />
+                </div>
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest">Nuevo Registro</p>
+                    <p className="text-xl font-black tracking-tight">{rut}</p>
+                </div>
               </div>
               
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nombre Completo</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Nombre Completo</label>
+                <div className="relative group">
+                  <User className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-patagonia-500 transition-colors" />
                   <Input 
                     placeholder="Ej: Juan Pérez" 
-                    className="h-14 pl-12 bg-gray-50 border-none rounded-2xl font-bold"
+                    className="h-16 pl-16 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-patagonia-600/20"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">E-mail (Opcional)</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Correo Electrónico</label>
+                <div className="relative group">
+                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-patagonia-500 transition-colors" />
                   <Input 
-                    placeholder="ejemplo@email.com" 
-                    className="h-14 pl-12 bg-gray-50 border-none rounded-2xl font-bold"
+                    placeholder="ejemplo@patagonia.cl" 
+                    className="h-16 pl-16 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-patagonia-600/20"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                   />
@@ -272,21 +285,21 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
           )}
         </div>
 
-        <DialogFooter className="p-8 pt-0 flex gap-3">
+        <DialogFooter className="p-10 pt-0 flex flex-col sm:flex-row gap-4 shrink-0">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             onClick={() => { resetState(); isRegistering ? setIsRegistering(false) : onClose(); }}
-            className="flex-1 h-16 rounded-2xl font-black border-2 border-gray-100 text-gray-500"
+            className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
           >
-            {isRegistering ? 'Volver' : 'Cancelar'}
+            {isRegistering ? '← Volver' : 'Cancelar'}
           </Button>
           
           {foundCustomer && (
             <Button 
               onClick={handleSelect}
-              className="flex-1 h-16 rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/20"
+              className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-2xl shadow-emerald-500/40 active:scale-[0.98] transition-all"
             >
-              Vincular Cliente
+              Vincular a Venta
             </Button>
           )}
 
@@ -294,9 +307,9 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
             <Button 
               onClick={handleRegister}
               disabled={loading || !regName}
-              className="flex-1 h-16 rounded-2xl font-black bg-corporate-blue hover:bg-corporate-dark text-white shadow-xl shadow-corporate-blue/20"
+              className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs bg-patagonia-600 hover:bg-patagonia-700 text-white shadow-2xl shadow-patagonia-600/40 active:scale-[0.98] transition-all"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Registrar y Vincular'}
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Registrar y Vincular'}
             </Button>
           )}
         </DialogFooter>

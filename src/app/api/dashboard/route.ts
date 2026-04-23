@@ -29,7 +29,23 @@ export async function GET() {
       throw customerError
     }
 
-    // 4. Obtener items vendidos para Top Products
+    // 4. Obtener Personal Activo (en cajas/terminales)
+    const { data: activePersonnelData, error: personnelError } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, role, current_area')
+      .neq('current_area', 'Inactivo')
+
+    if (personnelError && !personnelError.message.includes('relation "profiles" does not exist')) {
+      console.warn('[Dashboard API] Error al obtener personal activo:', personnelError.message)
+    }
+
+    const activePersonnel = (activePersonnelData || []).map(p => ({
+      name: `${p.first_name} ${p.last_name}`.trim(),
+      role: p.role,
+      area: p.current_area
+    }))
+
+    // 5. Obtener items vendidos para Top Products
     const { data: orderItems, error: itemsError } = await supabase
       .from('order_items')
       .select('product_id, quantity, price')
@@ -77,7 +93,8 @@ export async function GET() {
         { title: 'Clientes', value: String(customerCount || 0), change: '+0%', trend: 'up', icon: 'Users' },
       ],
       recentOrders,
-      topProducts
+      topProducts,
+      activePersonnel
     })
 
   } catch (error: any) {

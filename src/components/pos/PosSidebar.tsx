@@ -55,11 +55,15 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
     >
       {/* Brand / Logo */}
       <div className="p-6 flex items-center gap-3 border-b border-gray-50 bg-corporate-blue/5">
-        <div className="w-10 h-10 bg-corporate-blue rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-corporate-blue/20">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
           {config.store_logo && config.white_label_enabled && config.tier === 'elite' ? (
             <img src={config.store_logo} alt="Logo" className="w-8 h-8 object-contain" />
           ) : (
-            <Store className="text-white w-6 h-6" />
+            <img 
+              src="/logos/logo-light.png" 
+              alt="PatagoniaPOS" 
+              className="w-10 h-10 object-contain mix-blend-multiply" 
+            />
           )}
         </div>
         {!isCollapsed && (

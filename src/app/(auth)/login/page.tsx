@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { useSaaS } from '@/providers/SaaSProvider'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
@@ -14,6 +17,8 @@ import Link from 'next/link'
 export default function LoginPage() {
   const router = useRouter()
   const { login, isLoading, setAuthSession } = useAuthStore()
+  const { theme } = useTheme()
+  const { config } = useSaaS()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -120,13 +125,17 @@ export default function LoginPage() {
               <div className="p-8">
                 {/* Header */}
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-corporate-blue to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-500/20">
-                    <span className="text-white font-black text-2xl">A</span>
+                  <div className="mb-6">
+                    <img 
+                      src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
+                      alt="Logo" 
+                      className={cn(
+                        "h-24 mx-auto object-contain",
+                        theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
+                      )} 
+                    />
                   </div>
-                  <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                    Ingresa a tu cuenta
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                     Tu supermercado online de confianza
                   </p>
                 </div>

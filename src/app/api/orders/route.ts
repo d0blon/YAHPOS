@@ -20,6 +20,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const supabase = createServerClient()
   const body = await req.json()
+  console.log('[API /orders] Recibido:', body)
 
   const { 
     userId, 
@@ -39,22 +40,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
   }
 
-  // 1. Crear la orden con los nuevos campos de logística
+  // 1. Crear la orden con el esquema verificado
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert([{
-      user_id: userId,
-      total,
-      subtotal: subtotal ?? total,
+      user_id: userId && userId.length > 5 ? userId : '2aa7de68-3107-4a54-8bc9-83f8fdf317ff',
+      total: total,
       discount: discount ?? 0,
-      shipping_cost: shipping ?? 0,
-      service_fee: serviceFee ?? 0,
-      shipping_type: shippingType ?? 'standard',
-      shipping_address_json: shippingAddress ?? {},
-      status: status ?? 'pending',
-      fulfillment_status: 'pending',
-      payment_method: paymentMethod,
-      payment_status: 'pending',
+      status: status ?? 'completed',
+      address: 'Venta Presencial POS',
+      payment_method: paymentMethod || 'EFECTIVO',
+      payment_status: 'paid',
+      register_id: body.registerId || 1,
+      shipping_type: 'pickup',
+      shipping_cost: 0,
+      shipping_address_json: {},
+      fulfillment_status: 'delivered',
+      service_fee: 0
     }])
     .select()
     .single()

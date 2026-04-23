@@ -19,9 +19,11 @@ export interface PosSettings {
   blindClosureEnabled: boolean;
   pinRequiredForDelete: boolean;
   supervisorPin: string;
+  loyaltyEnabled: boolean;
   loyalty?: {
-    accumulationRate: number;
-    redemptionRate: number;
+    accumulationRate: number; // e.g. 1% -> 0.01
+    redemptionRate: number;   // e.g. 1 point = $1
+    redemptionMultiple: number; // e.g. only redeem in 100s
   };
 }
 
@@ -62,6 +64,7 @@ export interface PosCart {
   isFullAccount?: boolean;
   identityVerified?: boolean;
   pointsToEarn: number;
+  pointsRedeemed: number;
 }
 
 export interface SuspendedOrder {
@@ -122,15 +125,29 @@ interface PosState extends PosCart {
   cashSession: CashSession | null;
   setCashSession: (session: CashSession | null) => void;
   clearCashSession: () => void;
+  addGenericItem: (name: string, price: number) => void;
+  setPointsRedeemed: (points: number) => void;
+  setItems: (items: PosItem[]) => void;
+  setSuspendedOrders: (orders: SuspendedOrder[]) => void;
+  syncDraftToServer: () => Promise<void>;
+  loadDraftFromServer: (sessionId: string | number) => Promise<void>;
+  isSyncing: boolean;
+  isInitialLoading: boolean;
 }
 
-const calculatePosTotals = (items: PosItem[]): Omit<PosCart, 'items' | 'customerRut' | 'customerName' | 'customerPoints'> => {
+const calculatePosTotals = (items: PosItem[], pointsRedeemed = 0, settings?: PosSettings): Omit<PosCart, 'items' | 'customerRut' | 'customerName' | 'customerPoints'> => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-  const total = subtotal
-  const pointsToEarn = Math.floor(total / 100)
   
-  return { totalItems, subtotal, total, pointsToEarn }
+  // Loyalty Logic
+  const redemptionRate = settings?.loyalty?.redemptionRate || 1
+  const discount = pointsRedeemed * redemptionRate
+  const total = Math.max(0, subtotal - discount)
+  
+  const accumulationRate = settings?.loyalty?.accumulationRate || 0.01
+  const pointsToEarn = Math.floor(subtotal * accumulationRate)
+  
+  return { totalItems, subtotal, total, pointsToEarn, pointsRedeemed }
 }
 
 const idbStorage: StateStorage = {
@@ -147,6 +164,7 @@ export const usePosStore = create<PosState>()(
       subtotal: 0,
       total: 0,
       pointsToEarn: 0,
+      pointsRedeemed: 0,
       inventory: [],
       suspendedOrders: [],
       salesHistory: [],
@@ -170,7 +188,13 @@ export const usePosStore = create<PosState>()(
       settings: {
         blindClosureEnabled: true,
         pinRequiredForDelete: true,
-        supervisorPin: '1234'
+        supervisorPin: '1234',
+        loyaltyEnabled: true,
+        loyalty: {
+          accumulationRate: 0.01,
+          redemptionRate: 1,
+          redemptionMultiple: 100
+        }
       },
       isTrainingMode: false,
       cashSession: null,
@@ -188,25 +212,25 @@ export const usePosStore = create<PosState>()(
           newItems = [...items, { product, quantity }]
         }
         
-        set({ items: newItems, ...calculatePosTotals(newItems) })
+        set({ items: newItems, ...calculatePosTotals(newItems, get().pointsRedeemed, get().settings) })
       },
       
       removeItem: (productId: string) => {
         const { items } = get()
         const newItems = items.filter(item => item.product.id !== productId)
-        set({ items: newItems, ...calculatePosTotals(newItems) })
+        set({ items: newItems, ...calculatePosTotals(newItems, get().pointsRedeemed, get().settings) })
       },
       
       updateQuantity: (productId: string, quantity: number) => {
         if (quantity <= 0) return get().removeItem(productId)
         const { items } = get()
         const newItems = items.map(item => item.product.id === productId ? { ...item, quantity } : item)
-        set({ items: newItems, ...calculatePosTotals(newItems) })
+        set({ items: newItems, ...calculatePosTotals(newItems, get().pointsRedeemed, get().settings) })
       },
       
       clearPos: () => {
         set({ 
-          items: [], totalItems: 0, subtotal: 0, total: 0, pointsToEarn: 0, 
+          items: [], totalItems: 0, subtotal: 0, total: 0, pointsToEarn: 0, pointsRedeemed: 0,
           customerRut: undefined, customerName: undefined, customerPoints: undefined,
           isFullAccount: undefined, identityVerified: undefined
         })
@@ -250,7 +274,7 @@ export const usePosStore = create<PosState>()(
           customerRut: orderToResume.customerRut,
           customerName: orderToResume.customerName,
           suspendedOrders: state.suspendedOrders.filter(o => o.id !== id),
-          ...calculatePosTotals(orderToResume.items)
+          ...calculatePosTotals(orderToResume.items, 0, get().settings)
         }));
       },
       
@@ -341,6 +365,94 @@ export const usePosStore = create<PosState>()(
         set({ cashSession: null });
       },
       
+      addGenericItem: (name, price) => {
+        const product: Product = {
+          id: `GEN-${Date.now()}`,
+          name: name || 'Otros',
+          slug: `otros-${Date.now()}`,
+          description: 'Producto no registrado',
+          price: price,
+          image: '',
+          images: [],
+          category: { id: 'otros', name: 'Otros', slug: 'otros', isActive: true, order: 99 } as any,
+          categoryId: 'otros',
+          stock: 9999,
+          sku: `GEN-${Date.now()}`,
+          barcode: '',
+          unit: 'un',
+          isActive: true,
+          isFeatured: false,
+          lowStockThreshold: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        get().addItem(product);
+      },
+
+      setPointsRedeemed: (points) => {
+        set({ ...calculatePosTotals(get().items, points, get().settings) });
+      },
+      
+      setItems: (items) => {
+        set({ items, ...calculatePosTotals(items, get().pointsRedeemed, get().settings) })
+      },
+
+      setSuspendedOrders: (orders) => {
+        set({ suspendedOrders: orders })
+      },
+
+      isSyncing: false,
+      isInitialLoading: false,
+
+      syncDraftToServer: async () => {
+        const { cashSession, items, suspendedOrders } = get()
+        if (!cashSession) return
+
+        set({ isSyncing: true })
+        try {
+          await fetch('/api/pos/draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: cashSession.id,
+              cartData: items,
+              suspendedOrdersData: suspendedOrders
+            })
+          })
+        } catch (error) {
+          console.error('[POS STORE] Error syncing draft silently:', error)
+        } finally {
+          // El mini-indicador desaparece rápido
+          setTimeout(() => set({ isSyncing: false }), 500)
+        }
+      },
+
+      loadDraftFromServer: async (sessionId) => {
+        set({ isInitialLoading: true })
+        try {
+          const res = await fetch(`/api/pos/draft?sessionId=${sessionId}`)
+          if (res.ok) {
+            const { draft } = await res.json()
+            if (draft) {
+              if (draft.cart_data) {
+                const items = draft.cart_data
+                set({ items, ...calculatePosTotals(items, 0, get().settings) })
+              }
+              if (draft.suspended_orders_data) {
+                set({ suspendedOrders: draft.suspended_orders_data })
+              }
+            }
+          } else if (res.status === 401) {
+            console.warn('[POS STORE] Unauthorized to load draft. User might need to re-login.')
+          }
+        } catch (error) {
+          console.error('[POS STORE] Error loading draft:', error)
+        } finally {
+          // Liberar SIEMPRE la pantalla de carga, pase lo que pase
+          set({ isInitialLoading: false })
+        }
+      },
+
       logEvent: (entry) => {
         const { currentUser } = get();
         const newEntry: AuditEntry = {

@@ -8,21 +8,44 @@ export async function GET(req: Request) {
     if (!rut) return NextResponse.json({ error: 'RUT required' }, { status: 400 })
 
     const supabase = createServerClient()
+    const isUsingServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    console.log(`[API Search] Usando Service Role Key (Bypass RLS): ${isUsingServiceKey}`)
+    
     const cleaned = rut.replace(/[^0-9kK]/g, '').toUpperCase()
+    console.log(`[API Search] Iniciando búsqueda para RUT: ${cleaned}`)
 
-    const { data, error } = await supabase
+    // Intentar buscar por RUT limpio primero
+    let { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('rut', cleaned)
       .limit(1)
 
+    // Si no encuentra nada, intentar buscar con el formato original (puntos/guión) por si acaso
+    if ((!data || data.length === 0) && !error) {
+      console.log(`[API Search] No encontrado por RUT limpio. Reintentando con formato original: ${rut}`)
+      const secondTry = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('rut', rut)
+        .limit(1)
+      
+      data = secondTry.data
+      error = secondTry.error
+    }
+
     if (error) {
+      console.error('[API Search Error]', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    if (!data || data.length === 0) return NextResponse.json(null)
+    if (!data || data.length === 0) {
+      console.log('[API Search] No se encontró ningún cliente en la DB.')
+      return NextResponse.json(null)
+    }
 
     const user = data[0]
+    console.log('[API Search] Cliente encontrado:', user.first_name, user.last_name)
     return NextResponse.json({
       id: user.id,
       name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Sin nombre',

@@ -14,6 +14,7 @@ interface PosSettingsModalProps {
 
 export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
   const { settings, updateSettings, logEvent } = usePosStore()
+  const [newPin, setNewPin] = React.useState(settings.supervisorPin || '')
 
   if (!isOpen) return null
 
@@ -29,105 +30,130 @@ export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 6)
-    updateSettings({ supervisorPin: val })
+    setNewPin(val)
+  }
+
+  const savePin = () => {
+    if (newPin.length < 4) {
+      toast.error('El PIN debe tener al menos 4 dígitos')
+      return
+    }
+    updateSettings({ supervisorPin: newPin })
+    toast.success('PIN de Supervisor actualizado')
   }
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 flex flex-col">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 md:p-8 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl max-h-[95vh] md:max-h-[85vh] rounded-[2rem] shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
         
-        {/* Header */}
-        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-corporate-blue/5">
-          <div className="flex items-center gap-4">
-             <div className="p-3 bg-corporate-blue text-white rounded-2xl">
-                <Shield className="w-6 h-6" />
+        {/* Sticky Header */}
+        <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md rounded-t-[2rem] shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4">
+             <div className="p-2 sm:p-3 bg-patagonia-600 text-white rounded-xl sm:rounded-2xl shadow-md">
+                <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
              </div>
              <div>
-                <h2 className="text-2xl font-black text-gray-900 leading-tight">Ajustes de Administración</h2>
-                <p className="text-gray-500 text-sm font-medium italic">Configuración de seguridad y reglas de negocio</p>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight">Configuración POS</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest hidden sm:block">Seguridad y Reglas de Negocio</p>
              </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-            <X className="w-8 h-8 text-gray-300" />
+          <button onClick={onClose} className="p-2 sm:p-3 bg-slate-200/50 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95 text-slate-500">
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-8 space-y-8 overflow-y-auto">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
           
-          {/* Setting 1: Blind Closure */}
-          <div className="flex items-start gap-6 p-6 rounded-3xl border-2 border-transparent hover:border-gray-100 transition-all hover:bg-gray-50/50 group">
-            <div className={`p-4 rounded-2xl transition-colors ${settings.blindClosureEnabled ? 'bg-corporate-blue text-white' : 'bg-gray-100 text-gray-400'}`}>
-                <EyeOff className="w-8 h-8" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {/* Setting 1: Blind Closure */}
+            <div className="flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 hover:border-patagonia-600/20 transition-all bg-card cursor-pointer" onClick={() => handleToggle('blindClosureEnabled')}>
+              <div className="flex justify-between items-start mb-3 sm:mb-4">
+                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all ${settings.blindClosureEnabled ? 'bg-patagonia-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <EyeOff className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full transition-all relative ${settings.blindClosureEnabled ? 'bg-patagonia-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${settings.blindClosureEnabled ? 'right-1' : 'left-1'}`} />
+                </div>
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">Caja Ciega</h3>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-bold">Cajeros declaran efectivo sin ver totales del sistema.</p>
             </div>
-            <div className="flex-1">
-               <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-black text-gray-900">Activar Caja Ciega</h3>
-                  <button 
-                    onClick={() => handleToggle('blindClosureEnabled')}
-                    className={`w-14 h-8 rounded-full transition-all relative ${settings.blindClosureEnabled ? 'bg-corporate-blue' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${settings.blindClosureEnabled ? 'right-1' : 'left-1'}`} />
-                  </button>
-               </div>
-               <p className="text-sm text-gray-500 leading-relaxed font-medium">El cajero debe declarar el efectivo manualmente sin conocer el total del sistema. Evita fraudes y asegura una cuadratura real.</p>
-               <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-corporate-blue bg-corporate-blue/5 px-3 py-1.5 rounded-lg w-fit">
-                  <Info className="w-3 h-3" /> RECOMENDADO PARA RETAIL
-               </div>
+
+            {/* Setting 2: PIN for Delete */}
+            <div className="flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 hover:border-orange-500/20 transition-all bg-card cursor-pointer" onClick={() => handleToggle('pinRequiredForDelete')}>
+              <div className="flex justify-between items-start mb-3 sm:mb-4">
+                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all ${settings.pinRequiredForDelete ? 'bg-orange-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <Lock className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full transition-all relative ${settings.pinRequiredForDelete ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${settings.pinRequiredForDelete ? 'right-1' : 'left-1'}`} />
+                </div>
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">PIN de Borrado</h3>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-bold">Solicitar PIN de manager para quitar productos.</p>
             </div>
           </div>
 
-          {/* Setting 2: PIN for Delete */}
-          <div className="flex items-start gap-6 p-6 rounded-3xl border-2 border-transparent hover:border-gray-100 transition-all hover:bg-gray-50/50 group">
-            <div className={`p-4 rounded-2xl transition-colors ${settings.pinRequiredForDelete ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                <Lock className="w-8 h-8" />
-            </div>
-            <div className="flex-1">
-               <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-black text-gray-900">PIN para Anulaciones</h3>
-                  <button 
-                    onClick={() => handleToggle('pinRequiredForDelete')}
-                    className={`w-14 h-8 rounded-full transition-all relative ${settings.pinRequiredForDelete ? 'bg-orange-500' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${settings.pinRequiredForDelete ? 'right-1' : 'left-1'}`} />
-                  </button>
-               </div>
-               <p className="text-sm text-gray-500 leading-relaxed font-medium">Exige que un supervisor ingrese su PIN para eliminar cualquier producto del carrito. Controla las pérdidas y errores de digitación.</p>
-            </div>
+          {/* Loyalty Settings */}
+          <div className="p-4 sm:p-6 md:p-8 bg-slate-50 dark:bg-slate-800/30 rounded-2xl sm:rounded-[2.5rem] border border-slate-200 dark:border-slate-800">
+             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="p-2 sm:p-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl sm:rounded-2xl">
+                   <Info className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div>
+                   <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">Programa de Lealtad</h3>
+                   <p className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">Configuración de Puntos</p>
+                </div>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1 sm:space-y-2">
+                   <label className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 sm:ml-2">Acumulación (%)</label>
+                   <Input 
+                     type="number" 
+                     value={(settings.loyalty?.accumulationRate || 0) * 100} 
+                     onChange={(e) => updateSettings({ loyalty: { ...settings.loyalty!, accumulationRate: parseFloat(e.target.value) / 100 } })}
+                     className="h-10 sm:h-12 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-bold text-sm sm:text-base"
+                   />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                   <label className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 sm:ml-2">Valor Punto ($)</label>
+                   <Input 
+                     type="number" 
+                     value={settings.loyalty?.redemptionRate} 
+                     onChange={(e) => updateSettings({ loyalty: { ...settings.loyalty!, redemptionRate: parseFloat(e.target.value) } })}
+                     className="h-10 sm:h-12 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-bold text-sm sm:text-base"
+                   />
+                </div>
+             </div>
           </div>
 
           {/* Setting 3: Supervisor PIN */}
-          <div className="p-8 bg-gray-900 rounded-[2.5rem] text-white">
-             <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-white/10 rounded-2xl">
-                   <Lock className="w-6 h-6 text-orange-400" />
+          <div className="p-4 sm:p-6 md:p-8 bg-slate-900 rounded-2xl sm:rounded-[2.5rem] text-white shadow-xl shadow-slate-900/40">
+             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="p-2 sm:p-3 bg-white/10 rounded-xl sm:rounded-2xl">
+                   <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                 </div>
                 <div>
-                   <h3 className="text-xl font-black">PIN de Supervisor</h3>
-                   <p className="text-xs text-white/50 font-medium">Utilice un código de 4 a 6 dígitos numéricos.</p>
+                   <h3 className="text-lg sm:text-xl font-black">Cambiar PIN Maestro</h3>
+                   <p className="text-[9px] sm:text-xs text-white/50 font-bold uppercase tracking-tight">Clave numérica (4-6 req)</p>
                 </div>
              </div>
-             <div className="flex gap-4">
+             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Input 
                   type="password"
-                  value={settings.supervisorPin}
+                  value={newPin}
                   onChange={handlePinChange}
-                  className="h-16 bg-white/5 border-white/10 text-3xl font-black text-center tracking-[1em] rounded-2xl focus:ring-orange-400 focus:border-orange-400"
+                  className="h-12 sm:h-14 flex-1 bg-white/5 border-white/10 text-xl sm:text-2xl font-black text-center tracking-[0.5em] rounded-xl sm:rounded-2xl focus:ring-orange-400 focus:border-orange-400"
                   placeholder="****"
                 />
-                <Button className="h-16 px-8 bg-orange-500 hover:bg-orange-600 rounded-2xl font-black gap-2 transition-all">
-                   <Save className="w-6 h-6" /> ACTUALIZAR
+                <Button onClick={savePin} className="h-12 sm:h-14 px-6 sm:px-8 bg-orange-500 hover:bg-orange-600 rounded-xl sm:rounded-2xl font-black gap-2 transition-all shadow-lg active:scale-95 w-full sm:w-auto">
+                   <Save className="w-5 h-5 sm:w-6 sm:h-6" /> <span className="hidden sm:inline">ACTUALIZAR</span><span className="sm:hidden">GUARDAR</span>
                 </Button>
              </div>
           </div>
 
-        </div>
-
-        {/* Footer */}
-        <div className="p-8 border-t border-gray-100 bg-gray-50 flex justify-center">
-             <Button variant="ghost" className="font-bold text-gray-400 gap-2" onClick={onClose}>
-                Cerrar Panel Administrativo
-             </Button>
         </div>
       </div>
     </div>

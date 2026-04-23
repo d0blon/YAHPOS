@@ -151,5 +151,67 @@ admin.patagoniapos.cl
 
 ---
 
+## 11. 🎨 Arquitectura de Themes & Paletas SaaS Dinámicas (Implementado 22 Abril 2026)
+
+Se ha establecido la base arquitectónica para que la interfaz se adapte **automáticamente** a la paleta de colores (Modo Claro / Oscuro) de cada inquilino SaaS mediante el motor de Tailwind v4 y variables HSL semánticas en `globals.css`.
+
+### Reglas de Contraste Exactas (PatagoniaPOS / Índigo):
+Esta es la estructura base que se usará para derivar paletas dinámicas:
+
+**Modo Claro:**
+- **Fondo principal (`--background`)**: Tono 50 (Ej: `--color-indigo-50` `#f4e5ff`) o Blanco.
+- **Texto principal (`--foreground`)**: Tono 900 (Ej: `#1e0033`).
+- **Botones primarios (`--primary`)**: Tono 500 (Ej: `#9500ff`) con texto blanco.
+- **Hover/activo (`--ring` / hover)**: Tono 600 (Ej: `#7700cc`).
+- **Bordes y separadores (`--border`)**: Tono 100 (Ej: `#eaccff`).
+- **Íconos/acento (`--accent`)**: Tono 300 (Ej: `#bf66ff`).
+
+**Modo Oscuro:**
+- **Fondo principal (`--background`)**: Tono 950 o 900 (Ej: `#150024`).
+- **Texto principal (`--foreground`)**: Tono 50 (Ej: `#f4e5ff`).
+- **Botones primarios (`--primary`)**: Tono 400 o 500 (Ej: `#aa33ff`) con texto blanco.
+- **Hover/activo (`--ring` / hover)**: Tono 300 (Ej: `#bf66ff`).
+- **Bordes y separadores (`--border`)**: Tono 700 (Ej: `#590099`).
+- **Íconos/acento (`--accent`)**: Tono 200 (Ej: `#d499ff`).
+
+**Implementación Futura (SaaS Color Picker):**
+Cuando el dueño (en un plan superior) elija su color, un script en `src/lib/color-generator.ts` tomará el HEX principal y usará una librería como `color-mix` o `d3-color` para generar la escala 50-950, transformarla en HSL y sobreescribir las variables CSS globales (`--primary`, `--background`, etc.) en el `<html style="...">` dinámicamente en el servidor de Next.js antes de pintar la UI.
+
+---
+
 ## 🚀 Siguiente Paso Recomendado
-Completar el testeo manual de la matriz de roles y permisos, luego avanzar con la integración real del SII (Facturación DTE) que es la misión más crítica para producción.
+Avanzar con la integración real del SII (Facturación DTE) que es la misión más crítica para producción.
+
+---
+
+## ✅ CHECKLIST DE TESTEO PENDIENTE — Roles y Permisos
+*Pendiente de revisión manual. No eliminar hasta completar todas las casillas.*
+
+### 🔐 Capa 1: Autenticación
+- [ ] Login con `rodrigoa.nunez1@gmail.com` (developer) → badge "Desarrollador"
+- [ ] Login con `al3alts@gmail.com` (manager) → badge "Encargado de Turno"
+- [ ] Cerrar sesión → limpia sesión y localStorage correctamente
+- [ ] Sin sesión: ir a `/pos` → redirige a `/login`
+- [ ] Sin sesión: ir a `/admin` → redirige a `/login`
+- [ ] Sin sesión: ir a `/perfil` → redirige a `/login`
+- [ ] Sin sesión: ir a `/carrito` → redirige a `/login`
+
+### 🔑 Capa 2: Roles (con sesión activa)
+**Con cuenta developer (`rodrigoa.nunez1@gmail.com`):**
+- [ ] Ir a `/pos` → entra directo ✅
+- [ ] Ir a `/admin` → entra al dashboard
+- [ ] Sidebar muestra: Dashboard, Inventario, Clientes, Personal, Configuración, Developer Mode
+- [ ] Clic en "Developer Mode" → pide 2FA
+
+**Con cuenta manager (`al3alts@gmail.com`):**
+- [ ] Ir a `/admin` → entra al dashboard
+- [ ] Sidebar muestra SOLO: Dashboard, Inventario, Clientes (CRM), Ir al POS
+- [ ] Sidebar NO muestra: Personal, Configuración, Developer Mode
+- [ ] Sidebar muestra "Pedidos Online" en gris con badge "Plus"
+- [ ] Ir a `/admin/personal` por URL → redirigido a `/admin`
+- [ ] Ir a `/admin/configuracion` por URL → redirigido a `/admin`
+
+### 🏢 Capa 3: Plan SaaS (Plan Básico)
+- [ ] Ir a `localhost:3000/` → redirige a `/upgrade`
+- [ ] Botón "Ir al POS" en página de upgrade → funciona
+- [ ] Ir a `/admin/pedidos` → redirige a `/admin?error=upgrade_required`

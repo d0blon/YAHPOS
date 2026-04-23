@@ -1,9 +1,25 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-corporate-blue: #003399;
-  --color-corporate-dark: #002266;
-  --color-corporate-darker: #000c33;
+  /* Patagonia Exact Scale (Custom Indigo) */
+  --color-patagonia-50: #f4e5ff;
+  --color-patagonia-100: #eaccff;
+  --color-patagonia-200: #d499ff;
+  --color-patagonia-300: #bf66ff;
+  --color-patagonia-400: #aa33ff;
+  --color-patagonia-500: #9500ff;
+  --color-patagonia-600: #7700cc;
+  --color-patagonia-700: #590099;
+  --color-patagonia-800: #3b0066;
+  --color-patagonia-900: #1e0033;
+  --color-patagonia-950: #150024;
+
+  /* Aliases para compatibilidad */
+  --color-corporate-blue: var(--color-patagonia-600); 
+  --color-corporate-dark: var(--color-patagonia-800); 
+  --color-corporate-darker: var(--color-patagonia-950); 
+
   --color-accent-yellow: #FFD100;
   --color-accent-hover: #E6BC00;
   --color-accent-gold: #CC9900;
@@ -14,6 +30,27 @@
   --animate-scale-in: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   --animate-pulse-glow: pulse-glow 3s infinite;
   --animate-float: float 4s ease-in-out infinite;
+  
+  /* Mapeo de Colores Base para Tailwind v4 */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
   @keyframes slide-up {
     from { opacity: 0; transform: translateY(30px); }
@@ -44,53 +81,55 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 220 100% 30%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 49 100% 50%;
-    --accent-foreground: 222 47% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 220 100% 30%;
+    /* MODO CLARO - HEX Sólido para estabilidad total */
+    --background: #fdfcff;
+    --foreground: #1a0033;
+    --card: #ffffff;
+    --card-foreground: #1a0033;
+    --popover: #ffffff;
+    --popover-foreground: #1a0033;
+    --primary: #9500ff;
+    --primary-foreground: #ffffff;
+    --secondary: #f4e5ff;
+    --secondary-foreground: #4c0080;
+    --muted: #f0e6f5;
+    --muted-foreground: #664d80;
+    --accent: #d499ff;
+    --accent-foreground: #1a0033;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e2d6f0;
+    --input: #e2d6f0;
+    --ring: #7700cc;
     --radius: 1rem;
     --font-heading: 'Outfit', sans-serif;
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 220 100% 50%;
-    --primary-foreground: 222 47% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 49 100% 50%;
-    --accent-foreground: 222 47% 11.2%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    /* MODO OSCURO - HEX Sólido Indigo PatagoniaPOS */
+    --background: #0d001a;
+    --foreground: #ffffff;
+    --card: #150024;
+    --card-foreground: #fdfcff;
+    --popover: #150024;
+    --popover-foreground: #ffffff;
+    --primary: #bf66ff;
+    --primary-foreground: #ffffff;
+    --secondary: #1e0033;
+    --secondary-foreground: #eaccff;
+    --muted: #1e0033;
+    --muted-foreground: #d499ff;
+    --accent: #aa33ff;
+    --accent-foreground: #ffffff;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #ffffff;
+    --border: #3b0066;
+    --input: #3b0066;
+    --ring: #bf66ff;
   }
 
   * {
-    border-color: hsl(var(--border));
+    border-color: var(--border);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
   
@@ -102,23 +141,49 @@
 
 @layer utilities {
   .backdrop-blur-glass {
-    @apply backdrop-blur-[12px] bg-white/70 dark:bg-gray-900/70 border-b border-white/20 dark:border-gray-800/50;
+    backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .backdrop-blur-glass {
+    background-color: rgba(17, 24, 39, 0.7);
+    border-color: rgba(31, 41, 55, 0.5);
   }
   
   .glass-card {
-    @apply bg-white/10 dark:bg-gray-800/80 backdrop-blur-md border border-white/40 dark:border-gray-700/50 shadow-xl;
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .glass-card {
+    background-color: rgba(31, 41, 55, 0.8);
+    border-color: rgba(55, 65, 81, 0.5);
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-corporate-blue to-blue-400 dark:from-blue-400 dark:to-accent-yellow;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, var(--color-patagonia-600), var(--color-patagonia-400));
+  }
+
+  .dark .text-gradient {
+    background-image: linear-gradient(to right, var(--color-patagonia-400), var(--color-accent-yellow));
   }
   
   .mesh-bg {
-    @apply bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100 via-white to-orange-50 dark:from-blue-900 dark:via-gray-900 dark:to-gray-800;
+    background-image: radial-gradient(ellipse at top right, var(--color-patagonia-100), #ffffff, #fff7ed);
+  }
+
+  .dark .mesh-bg {
+    background-image: radial-gradient(ellipse at top right, var(--color-patagonia-900), #111827, #1f2937);
   }
   
   .hero-gradient {
-    @apply bg-gradient-to-br from-corporate-dark via-corporate-blue to-[#0044cc];
+    background-image: linear-gradient(to bottom right, var(--color-patagonia-900), var(--color-patagonia-600), var(--color-patagonia-500));
   }
 
   .dot-pattern {
@@ -127,6 +192,47 @@
   }
 
   .glass-button-accent {
-    @apply bg-accent-yellow/90 hover:bg-accent-yellow text-corporate-dark backdrop-blur-md shadow-lg shadow-accent-yellow/20 border border-accent-yellow/50;
+    background-color: rgba(255, 209, 0, 0.9);
+    color: var(--color-corporate-dark);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 15px -3px rgba(255, 209, 0, 0.2);
+    border: 1px solid rgba(255, 209, 0, 0.5);
+  }
+
+  .glass-button-accent:hover {
+    background-color: #FFD100;
+  }
+
+  /* POS Premium Utilities */
+  .pos-sidebar-gradient {
+    background: linear-gradient(180deg, var(--color-patagonia-950) 0%, var(--color-patagonia-900) 100%);
+  }
+
+  .pos-card-glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

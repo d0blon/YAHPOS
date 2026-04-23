@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { User, Phone, FileText, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { formatRut } from '@/lib/utils'
+import { formatRut, cleanRut } from '@/lib/utils'
 import Header from '@/components/layout/Header'
 
 function CompletarPerfilForm() {
@@ -33,7 +33,7 @@ function CompletarPerfilForm() {
           first_name: firstName,
           last_name: lastName,
           phone,
-          rut,
+          rut: cleanRut(rut),
           profile_completed: true,
         }
       })
@@ -47,7 +47,7 @@ function CompletarPerfilForm() {
             first_name: firstName,
             last_name: lastName,
             phone,
-            rut
+            rut: cleanRut(rut)
           })
           .eq('id', authData.user.id)
           

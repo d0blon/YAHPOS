@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 
 import { SaaSProvider } from "@/providers/SaaSProvider";
 import { SessionSync } from "@/components/auth/SessionSync";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 
 export default function RootLayout({
   children,
@@ -37,12 +38,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="min-h-screen flex flex-col antialiased bg-background text-foreground">
-        <SaaSProvider>
-          <SessionSync />
-          {children}
-        </SaaSProvider>
+    <html lang="es" suppressHydrationWarning>
+      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} min-h-screen flex flex-col antialiased bg-background text-foreground`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <SaaSProvider>
+            <SessionSync />
+            {children}
+          </SaaSProvider>
+        </ThemeProvider>
         <Toaster position="bottom-right" richColors />
       </body>
     </html>

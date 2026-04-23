@@ -18,6 +18,9 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { toast } from 'sonner'
 import AdminSidebar from '@/components/admin/AdminSidebar'
+import { useAuthStore } from '@/stores/authStore'
+import { useSaaS } from '@/providers/SaaSProvider'
+import { cn } from '@/lib/utils'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -110,6 +113,15 @@ export default function AdminConfiguracion() {
   const [appearance, setAppearance] = useState({ logoUrl: '', primaryColor: '#1e3a6e', secondaryColor: '#f5c518', darkMode: false })
   const [terminalsList, setTerminalsList] = useState<any[]>([])
   const [newTerminalName, setNewTerminalName] = useState('')
+
+  const { user: authUser } = useAuthStore()
+  const { config: saasConfig } = useSaaS()
+
+  // Control de Acceso: Dueño, Gerente o Desarrollador
+  const role = authUser?.role || ''
+  const hasFullAccess = ['admin', 'owner', 'manager', 'developer'].includes(role)
+  const isBasicPlan = saasConfig.tier === 'basico'
+  const isDev = role === 'developer' || role === 'admin'
 
   useEffect(() => {
     fetch('/api/settings')
@@ -399,7 +411,18 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
 
               {/* Tab: POS */}
               {activeTab === 'pos' && (
-                <div className="space-y-4">
+                <div className={cn("space-y-4 relative", !hasFullAccess && "grayscale opacity-60 pointer-events-none select-none")}>
+                  {!hasFullAccess && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-[2px]">
+                      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl border border-amber-200 flex flex-col items-center text-center gap-3 max-w-xs">
+                        <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                          <Settings className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <h4 className="font-black text-amber-900 dark:text-amber-100 uppercase tracking-tighter">Acceso Restringido</h4>
+                        <p className="text-xs text-amber-800 dark:text-amber-200">Esta sección solo puede ser configurada por el <strong>Dueño</strong> o <strong>Gerente</strong> del negocio.</p>
+                      </div>
+                    </div>
+                  )}
                   <SectionCard title="Configuración del Terminal" description="Parámetros generales del punto de venta físico.">
                     <div className="grid md:grid-cols-2 gap-4">
                       <Field label="Nombre del terminal" hint="Aparece en los recibos">
@@ -440,6 +463,36 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                       <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
                         ℹ️ Estos terminales funcionan de forma <strong>independiente</strong> del software POS — el lector de tarjeta procesa el pago por su cuenta. El POS solo registra que el cobro fue "con tarjeta". Los pagos online (Flow, Webpay) están en la pestaña <strong>"Pagos Online"</strong>.
                       </p>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="Categorías del POS" description="Personaliza las categorías que aparecen en el panel de ventas.">
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <Input placeholder="Nombre de categoría (ej: Panadería)" className="rounded-xl h-11" />
+                        <Button className="bg-patagonia-600 text-white rounded-xl px-6">Agregar</Button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {['Abarrotes', 'Bebidas', 'Carnes', 'Frutas y Verduras', 'Limpieza', 'Lácteos', 'Congelados'].map(c => (
+                          <div key={c} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex justify-between items-center group">
+                            <span className="text-sm font-bold">{c}</span>
+                            <button className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <AlertCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="Sincronización y Seguridad" description="Configura el comportamiento de respaldo automático.">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <Field label="Intervalo de Sincronización (segundos)" hint="Tiempo entre respaldos automáticos">
+                        <Input className="rounded-xl h-11" type="number" defaultValue={5} />
+                      </Field>
+                      <Field label="Persistencia de Sesión" hint="Mantener carrito tras cerrar navegador">
+                        <Toggle checked={true} onCheckedChange={() => {}} label="Habilitado" />
+                      </Field>
                     </div>
                   </SectionCard>
                 </div>
@@ -635,7 +688,21 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
 
               {/* Tab: Loyalty */}
               {activeTab === 'loyalty' && (
-                <div className="space-y-4">
+                <div className={cn("space-y-4 relative", isBasicPlan && "grayscale opacity-60 pointer-events-none select-none")}>
+                  {isBasicPlan && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-[2px]">
+                      <div className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-2xl border-2 border-patagonia-200 flex flex-col items-center text-center gap-4 max-w-sm">
+                        <div className="w-16 h-16 bg-patagonia-100 rounded-2xl flex items-center justify-center rotate-3">
+                          <Award className="w-8 h-8 text-patagonia-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tighter">Plan Elite Requerido</h4>
+                          <p className="text-sm text-gray-500 mt-1">El sistema de fidelización y puntos está disponible exclusivamente para clientes <strong>PatagoniaPOS Elite</strong>.</p>
+                        </div>
+                        <Button className="bg-patagonia-600 text-white w-full rounded-xl h-11 font-bold">Mejorar Plan Ahora</Button>
+                      </div>
+                    </div>
+                  )}
                   <SectionCard title="Configuración de Fidelización" description="Gestiona cómo tus clientes acumulan y usan sus puntos.">
                     <Toggle 
                       checked={loyalty.enabled} 

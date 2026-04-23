@@ -19,14 +19,9 @@ import { Badge } from '@/components/ui/badge'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
+import { useTheme } from 'next-themes'
 
-const useTheme = () => {
-  const [theme, setTheme] = useState('light');
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
-  return { theme, setTheme };
-}
+// Eliminado useTheme local que causaba conflictos
 
 const navLinks = [
   { href: '/', label: 'Inicio' },
@@ -107,35 +102,36 @@ export default function Header() {
             {/* Logo — cambia según plan */}
             <Link href="/" className="flex items-center gap-2 group">
               <div className="relative">
-                <div className="w-10 h-10 bg-corporate-blue rounded-xl flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-corporate-blue/20 overflow-hidden">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300 overflow-hidden",
+                  hasEcommerce && config.store_logo ? "bg-corporate-blue shadow-lg shadow-corporate-blue/20" : ""
+                )}>
                   {hasEcommerce && config.store_logo ? (
                     <img src={config.store_logo} alt={displayName} className="w-8 h-8 object-contain" />
                   ) : (
-                    <span className="text-white font-black text-xl italic uppercase tracking-tighter">{displayInitial}</span>
+                    <img 
+                      src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
+                      alt="PatagoniaPOS" 
+                      className={cn(
+                        "w-full h-full object-contain",
+                        theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
+                      )} 
+                    />
                   )}
                 </div>
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-yellow rounded-full border-2 border-white dark:border-gray-900 animate-pulse" />
               </div>
               <div className="flex flex-col">
-                {hasEcommerce ? (
-                  <>
-                    <span className="text-xl font-black text-gray-900 dark:text-white leading-none tracking-tighter uppercase">
-                      {displayName}
-                    </span>
-                    <span className="text-[10px] font-bold text-corporate-blue uppercase tracking-widest leading-none mt-0.5">
-                      Powered by PatagoniaPOS
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-xl font-black text-gray-900 dark:text-white leading-none tracking-tighter">
-                      Patagonia<span className="text-corporate-blue italic">POS</span>
-                    </span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5">
-                      Smart Commerce
-                    </span>
-                  </>
-                )}
+                <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">
+                  {displayName.includes('Patagonia') ? (
+                    <>Patagonia<span className="text-patagonia-600 italic">POS</span></>
+                  ) : (
+                    displayName
+                  )}
+                </h1>
+                <p className="text-[10px] font-bold text-corporate-blue uppercase tracking-widest leading-none mt-1">
+                  {hasEcommerce ? 'Smart Commerce' : 'Sistema de Ventas'}
+                </p>
               </div>
             </Link>
 

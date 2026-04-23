@@ -84,29 +84,31 @@ export function CashMovementModal({ isOpen, onClose, onSuccess }: CashMovementMo
   const filteredCategories = CATEGORIES.filter(c => c.type === type || c.id === 'OTRO' || c.id === 'ERROR_CAJA')
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-gray-950/80 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-white flex flex-col">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 border border-white/10 flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="p-8 pb-4 flex items-center justify-between">
+        <div className="p-10 pb-6 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Movimiento de Caja</h2>
-            <p className="text-gray-500 font-medium mt-1">Registre entradas o salidas extraordinarias</p>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">Flujo de Caja</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Registro de Entradas y Salidas</p>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-2xl transition-colors">
-            <X className="w-6 h-6 text-gray-400" />
+          <button onClick={onClose} className="p-4 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all active:scale-90 group">
+            <X className="w-6 h-6 text-slate-400 group-hover:rotate-90 transition-transform" />
           </button>
         </div>
 
-        <div className="px-8 pb-8 space-y-6 overflow-y-auto custom-scrollbar">
+        <div className="px-10 pb-10 space-y-8 overflow-y-auto custom-scrollbar flex-1">
           
-          {/* Type Selector */}
-          <div className="flex p-1 bg-gray-100 rounded-2xl">
+          {/* Type Selector (Industrial Style) */}
+          <div className="flex p-2 bg-slate-100 dark:bg-slate-800/50 rounded-[2rem] gap-2">
             <button
               onClick={() => { setType('OUT'); setCategory(null); }}
               className={cn(
-                "flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-black transition-all",
-                type === 'OUT' ? "bg-white text-rose-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
+                "flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] font-black text-xs transition-all uppercase tracking-widest",
+                type === 'OUT' 
+                  ? "bg-white dark:bg-slate-900 text-rose-500 shadow-xl shadow-rose-500/10 scale-[1.02]" 
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
               )}
             >
               <ArrowDownCircle className="w-5 h-5" />
@@ -115,8 +117,10 @@ export function CashMovementModal({ isOpen, onClose, onSuccess }: CashMovementMo
             <button
               onClick={() => { setType('IN'); setCategory(null); }}
               className={cn(
-                "flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-black transition-all",
-                type === 'IN' ? "bg-white text-emerald-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
+                "flex-1 flex items-center justify-center gap-3 py-5 rounded-[1.5rem] font-black text-xs transition-all uppercase tracking-widest",
+                type === 'IN' 
+                  ? "bg-white dark:bg-slate-900 text-emerald-500 shadow-xl shadow-emerald-500/10 scale-[1.02]" 
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
               )}
             >
               <ArrowUpCircle className="w-5 h-5" />
@@ -124,83 +128,87 @@ export function CashMovementModal({ isOpen, onClose, onSuccess }: CashMovementMo
             </button>
           </div>
 
-          {/* Amount Input */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Monto del Movimiento</label>
-            <div className="relative">
-              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-black text-gray-300">$</span>
+          {/* Amount Input (High Visibility) */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Monto del Movimiento</label>
+            <div className="relative group">
+              <span className="absolute left-8 top-1/2 -translate-y-1/2 text-4xl font-black text-slate-300 group-focus-within:text-patagonia-600 transition-colors">$</span>
               <Input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="h-20 pl-14 text-4xl font-black text-corporate-blue bg-gray-50 border-none rounded-3xl"
+                className="h-24 pl-16 text-5xl font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/50 border-none rounded-[2.5rem] focus-visible:ring-4 focus-visible:ring-patagonia-600/20 transition-all tracking-tighter"
               />
             </div>
           </div>
 
-          {/* Categories Grid */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Categoría</label>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Categories Grid (Optimized for Touch) */}
+          <div className="space-y-4">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Categoría de Auditoría</label>
+            <div className="grid grid-cols-2 gap-4">
               {filteredCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
                   className={cn(
-                    "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left group",
+                    "flex items-center gap-4 p-5 rounded-[2rem] border-2 transition-all text-left relative group overflow-hidden",
                     category === cat.id 
-                      ? "border-corporate-blue bg-corporate-blue/5 shadow-md" 
-                      : "border-gray-100 hover:border-gray-200"
+                      ? "border-patagonia-600 bg-patagonia-600/5 shadow-lg shadow-patagonia-600/10" 
+                      : "border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
                   )}
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg",
+                    "w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-xl transition-transform group-hover:scale-110",
                     cat.color
                   )}>
-                    <cat.icon className="w-5 h-5" />
+                    <cat.icon className="w-6 h-6" />
                   </div>
-                  <div>
-                    <p className={cn("font-bold text-sm", category === cat.id ? "text-corporate-blue" : "text-gray-600")}>
+                  <div className="flex-1">
+                    <p className={cn("font-black text-[10px] uppercase tracking-widest", category === cat.id ? "text-patagonia-600 dark:text-patagonia-400" : "text-slate-600 dark:text-slate-400")}>
                       {cat.label}
                     </p>
                   </div>
-                  {category === cat.id && <CheckCircle2 className="w-4 h-4 text-corporate-blue ml-auto" />}
+                  {category === cat.id && (
+                    <div className="absolute top-2 right-4 w-1.5 h-1.5 bg-patagonia-600 rounded-full animate-ping" />
+                  )}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Reason/Description */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Motivo / Descripción</label>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Motivo / Observación</label>
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Ej: Pago a repartidor de Panadería Don Juan"
-              className="h-14 px-6 rounded-2xl bg-gray-50 border-none font-medium"
+              placeholder="Describa el motivo del movimiento..."
+              className="h-16 px-8 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-none font-bold text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus-visible:ring-4 focus-visible:ring-patagonia-600/20"
             />
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-8 pt-4 border-t border-gray-50 flex gap-4">
+        <div className="p-10 pt-6 border-t border-slate-50 dark:border-slate-800 flex gap-4 shrink-0 bg-white dark:bg-slate-900/80 backdrop-blur-md">
           <Button 
             variant="ghost" 
-            className="h-16 flex-1 rounded-2xl font-bold text-gray-400"
+            className="h-20 flex-1 rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
             onClick={onClose}
           >
             Cancelar
           </Button>
           <Button 
             className={cn(
-              "h-16 flex-[2] rounded-2xl font-black text-lg gap-3 shadow-xl transition-all active:scale-95",
-              type === 'OUT' ? "bg-rose-500 hover:bg-rose-600" : "bg-emerald-500 hover:bg-emerald-600"
+              "h-20 flex-[2] rounded-3xl font-black text-sm uppercase tracking-[0.3em] gap-3 shadow-2xl transition-all active:scale-[0.98]",
+              type === 'OUT' 
+                ? "bg-rose-500 hover:bg-rose-600 shadow-rose-900/30 text-white" 
+                : "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-900/30 text-white"
             )}
             onClick={handleSave}
             disabled={isProcessing || !amount || !category || !reason}
           >
-            {isProcessing ? <Loader2 className="animate-spin" /> : <ChevronRight className="w-6 h-6" />}
+            {isProcessing ? <Loader2 className="animate-spin w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
             CONFIRMAR {type === 'IN' ? 'INGRESO' : 'EGRESO'}
           </Button>
         </div>
