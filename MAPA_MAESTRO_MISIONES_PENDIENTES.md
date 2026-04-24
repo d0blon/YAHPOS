@@ -121,3 +121,50 @@ Este documento consolida todas las características y misiones que hemos "guarda
 - [ ] Clic en "Developer Mode" → pide 2FA
 
 *(Este mapa continúa con todas tus misiones de logística, temas y visión futura intactas)*
+
+---
+
+## 💡 IDEAS ESTRATÉGICAS (CONSEJOS DE ESCALABILIDAD)
+
+### ⏱️ Tiempos de Entrega
+- **Configuración Técnica:** 10-15 min (SaaS power).
+- **Capacitación Humana:** 45-60 min (El cuello de botella).
+
+### 📺 El Método del 'Video Tutorial'
+- **Idea:** Grabar cápsulas de 2-3 minutos explicando tareas críticas (Cierre de caja, anulación de boleta).
+- **Beneficio:** Reduce el soporte técnico manual en un 70%. Permite al cliente auto-capacitarse.
+
+### 🏥 Centro de Ayuda Integrado
+- **Misión Futura:** Crear una ruta `/ayuda` dentro del POS con los videos embebidos y preguntas frecuentes locales.
+
+---
+
+## ⚔️ COMPARATIVA DE MERCADO (ARGUMENTOS DE VENTA)
+
+| Característica | PatagoniaPOS (Nosotros) | Bsale / Gigantes | Haulmer / Máquinas |
+| :--- | :--- | :--- | :--- |
+| **Precio Mensual** | **$15.000 - $25.000** | $45.000+ | $19.990 + Comisiones |
+| **Costo por Boleta** | **$0 (Motor Propio)** | Variable / Incluido | Cobran por documento |
+| **Soporte** | **Local (Chiloé / Directo)** | Tickets / Bots | Call Center genérico |
+| **E-commerce** | **Gratis (Base)** | Pago adicional alto | Muy limitado |
+| **Diseño** | **Glassmorphism Premium** | Corporativo antiguo | Básico / Terminal |
+
+---
+
+## 📖 DICCIONARIO TÉCNICO (LA LÓGICA DEL SII)
+
+### 🖋️ Signer (DTE 39)
+Es el "corazón" legal del sistema. Es un motor de firma digital que toma los datos de una venta y los sella con una firma criptográfica que el SII acepta. El **DTE 39** es específicamente la **Boleta Electrónica**. Al tener nuestro propio Signer, no dependemos de terceras empresas para validar tus ventas.
+
+### 📑 CAF (Código de Autorización de Folios)
+Es un archivo XML que el SII le entrega a cada negocio. Imaginalo como una "tira de números" autorizados. Si el CAF dice del 1 al 100, el sistema puede emitir 100 boletas. Cuando se acaban, hay que pedir otro. **Nosotros automatizamos la lectura de este archivo.**
+
+### 🔑 Certificado Digital (.pfx)
+Es el "carnet de identidad" digital del dueño del negocio. Es un archivo que instalamos en nuestro servidor para que el sistema pueda firmar las boletas en tu nombre ante el SII de forma legal.
+
+### 🤝 Handshake (Seed & Token)
+Es el saludo secreto entre PatagoniaPOS y el SII. 
+1. Pedimos una **Semilla (Seed)** al SII.
+2. La firmamos con tu certificado.
+3. El SII nos da un **Token** (una llave temporal).
+4. Con esa llave, podemos enviar todas las boletas del día de forma segura.
