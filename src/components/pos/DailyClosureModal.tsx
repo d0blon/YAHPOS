@@ -102,7 +102,14 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
         {/* State: Summary / Closing */}
         {!isFinished ? (
           <>
-            <div className="p-8 pb-4 text-center border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+            <div className="p-8 pb-4 text-center border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 relative">
+              <button 
+                onClick={onClose} 
+                disabled={isClosing}
+                className="absolute top-6 right-6 p-2 bg-white dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:scale-110 active:scale-95"
+              >
+                <X className="w-5 h-5" />
+              </button>
               <div className="w-16 h-16 bg-patagonia-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Calculator className="w-8 h-8 text-patagonia-600" />
               </div>
@@ -113,8 +120,8 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                 {isDeclaring ? (
                   <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Declaración de Efectivo</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-bold">Ingrese el monto total de efectivo contado físicamente.</p>
+                    <p className="text-sm font-black text-patagonia-600 dark:text-patagonia-400 uppercase tracking-widest mb-4">Declaración de Efectivo</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 font-bold">Ingrese el monto total de efectivo contado físicamente.</p>
                     <div className="relative max-w-xs mx-auto">
                         <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">$</span>
                         <input 

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { usePosStore } from '@/stores/posStore'
 import { toast } from 'sonner'
-import { formatRut, validateRut, cleanRut } from '@/lib/utils'
+import { formatRut, validateRut, cleanRut, cn } from '@/lib/utils'
 
 export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { setCustomer } = usePosStore()

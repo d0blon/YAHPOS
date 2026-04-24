@@ -58,16 +58,34 @@ export function CashMovementModal({ isOpen, onClose, onSuccess }: CashMovementMo
     }
 
     try {
-      // Registrar en el store
+      // 1. Sincronizar con el Servidor
+      const response = await fetch('/api/cash-movements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: cashSession?.id,
+          type,
+          category,
+          amount: numAmount,
+          reason,
+          cashier: currentUser?.firstName || 'Cajero'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al sincronizar con el servidor');
+      }
+
+      // 2. Registrar en el store local (optimista)
       addCashMovement(movement)
       
-      // Registrar en el log de auditoría
+      // 3. Registrar en el log de auditoría
       logEvent({
         type: type === 'IN' ? 'CASH_IN' : 'CASH_OUT',
         details: `${category}: ${reason} - ${formatPrice(numAmount)}`
       })
 
-      toast.success(`${type === 'IN' ? 'Entrada' : 'Salida'} de dinero registrada`)
+      toast.success(`${type === 'IN' ? 'Entrada' : 'Salida'} de dinero registrada en la nube ✅`)
       onSuccess(movement)
       
       // Reset

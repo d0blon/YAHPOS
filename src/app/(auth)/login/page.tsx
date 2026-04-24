@@ -10,8 +10,6 @@ import { useAuthStore } from '@/stores'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -110,14 +108,12 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pt-28 pb-20">
+    <main className="flex-1 flex items-center justify-center py-16 w-full">
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto">
 
             {/* Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-blue-100/50 dark:shadow-black/40 border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-100/50 dark:shadow-black/40 border border-white/20 dark:border-gray-800/50 overflow-hidden">
 
               {/* Top accent bar */}
               <div className="h-1.5 bg-gradient-to-r from-corporate-blue via-blue-400 to-accent-yellow" />
@@ -276,8 +272,6 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+    </main>
   )
 }

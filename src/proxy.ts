@@ -101,17 +101,18 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // C. Verificación de Plan SaaS (Solo para el ecommerce público)
-  const isPublicEcommerce = request.nextUrl.pathname === '/' || 
-                             request.nextUrl.pathname.startsWith('/productos') ||
-                             request.nextUrl.pathname.startsWith('/categoria')
+  // C. Verificación de Plan SaaS (Bloqueo de E-commerce activo para plan Básico)
+  const isEcommerceRoute = request.nextUrl.pathname.startsWith('/productos') ||
+                           request.nextUrl.pathname.startsWith('/categoria') ||
+                           request.nextUrl.pathname.startsWith('/carrito') ||
+                           request.nextUrl.pathname.startsWith('/checkout')
 
-  if (isPublicEcommerce) {
+  if (isEcommerceRoute) {
     const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
     const tier = storeSettings?.tier || 'basico'
 
     if (tier === 'basico') {
-      return NextResponse.redirect(new URL('/upgrade', request.url))
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 

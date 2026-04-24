@@ -53,6 +53,8 @@ export function OfflineSyncManager() {
           status: 'completed',
           paymentStatus: 'completed',
           customerRut: order.customerRut,
+          pointsToEarn: order.pointsToEarn,
+          pointsRedeemed: order.pointsRedeemed,
           items: order.items.map(item => ({
             productId: item.product.id,
             quantity: item.quantity,

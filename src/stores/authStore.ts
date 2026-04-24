@@ -24,6 +24,7 @@ interface RegisterData {
   lastName: string
   phone?: string
   rut?: string
+  acceptMarketing?: boolean
 }
 
 // Mock user for development

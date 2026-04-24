@@ -131,6 +131,7 @@ interface PosState extends PosCart {
   setSuspendedOrders: (orders: SuspendedOrder[]) => void;
   syncDraftToServer: () => Promise<void>;
   loadDraftFromServer: (sessionId: string | number) => Promise<void>;
+  loadMovementsFromServer: (sessionId: string) => Promise<void>;
   isSyncing: boolean;
   isInitialLoading: boolean;
 }
@@ -430,6 +431,7 @@ export const usePosStore = create<PosState>()(
       loadDraftFromServer: async (sessionId) => {
         set({ isInitialLoading: true })
         try {
+          // Cargar draft de carrito
           const res = await fetch(`/api/pos/draft?sessionId=${sessionId}`)
           if (res.ok) {
             const { draft } = await res.json()
@@ -442,14 +444,37 @@ export const usePosStore = create<PosState>()(
                 set({ suspendedOrders: draft.suspended_orders_data })
               }
             }
-          } else if (res.status === 401) {
-            console.warn('[POS STORE] Unauthorized to load draft. User might need to re-login.')
           }
+
+          // Cargar movimientos de caja
+          await get().loadMovementsFromServer(sessionId.toString())
+
         } catch (error) {
           console.error('[POS STORE] Error loading draft:', error)
         } finally {
-          // Liberar SIEMPRE la pantalla de carga, pase lo que pase
           set({ isInitialLoading: false })
+        }
+      },
+
+      loadMovementsFromServer: async (sessionId) => {
+        try {
+          const res = await fetch(`/api/cash-movements?session_id=${sessionId}`)
+          if (res.ok) {
+            const data = await res.json()
+            const movements: CashMovement[] = data.map((m: any) => ({
+              id: m.id,
+              sessionId: m.session_id,
+              type: m.type,
+              category: m.category,
+              amount: parseFloat(m.amount),
+              reason: m.reason,
+              timestamp: new Date(m.created_at).getTime(),
+              cashier: m.cashier_name
+            }))
+            set({ cashMovements: movements })
+          }
+        } catch (error) {
+          console.error('[POS STORE] Error loading movements:', error)
         }
       },
 

@@ -6,7 +6,7 @@ import {
   CreditCard, Banknote, History, PauseCircle, PlayCircle, 
   Loader2, Settings, ShieldAlert, LogOut, Terminal, AlertTriangle,
   Award, PackageOpen, Monitor, DollarSign, Lock, ChevronRight, X, TrendingUp,
-  Sun, Moon, Wifi, WifiOff, Cloud, CloudOff, Store, LayoutDashboard, Zap, PlusCircle, Calculator, Archive
+  Sun, Moon, Wifi, WifiOff, Cloud, CloudOff, Store, LayoutDashboard, Zap, PlusCircle, Calculator, Archive, RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ import { formatPrice, cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { getProducts } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { PosReceiptModal } from '@/components/pos/PosReceiptModal'
 import { WeightInputModal } from '@/components/pos/WeightInputModal'
@@ -182,7 +183,8 @@ ProductCard.displayName = 'ProductCard';
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
 
-// --- QUICK ADD MODAL (NUMPAD) ---const QuickAddModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: (name: string, price: number) => void }) => {
+// --- QUICK ADD MODAL (NUMPAD) ---
+const QuickAddModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: (name: string, price: number) => void }) => {
   const [amount, setAmount] = useState('')
   const [name, setName] = useState('PRODUCTO GENÉRICO')
 
@@ -336,6 +338,30 @@ export default function PosTerminal() {
     }
   }, [isHydrated, isAuthenticated, authUser, router, setCurrentUser, currentUser, setInventory, inventory.length])
 
+  // -- REALTIME INVENTORY SYNC --
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const channel = supabase
+      .channel('pos-products-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('[POS] Cambio detectado en productos:', payload);
+          // Recargar el inventario si hay cambios
+          getProducts().then(res => {
+            if (res && res.length > 0) setInventory(res);
+          }).catch(err => console.warn('[POS] Error actualizando inventario en tiempo real', err));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated, setInventory]);
+
   // -- SERVER DRAFT RECOVERY (F5 / Login) --
   useEffect(() => {
     if (cashSession && isAuthenticated && isHydrated) {
@@ -475,6 +501,8 @@ export default function PosTerminal() {
               discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
               paymentMethod: paymentMethod,
               customerRut: customerRut,
+              pointsToEarn: pointsToEarn,
+              pointsRedeemed: pointsRedeemed,
               items: items.map(i => ({ productId: i.product.id, quantity: i.quantity, unitPrice: i.product.price }))
             })
           });
@@ -585,7 +613,7 @@ export default function PosTerminal() {
         <button 
           className={cn(
             "h-14 rounded-2xl flex items-center transition-all group shadow-lg",
-            isTrainingMode ? "bg-amber-500 text-white shadow-amber-500/20" : "bg-muted text-muted-foreground hover:bg-amber-500/20 hover:text-amber-500",
+            isTrainingMode ? "bg-amber-500 text-white shadow-amber-500/20" : "bg-muted text-muted-foreground hover:bg-amber-500 hover:shadow-amber-500/20 hover:text-white",
             isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
           )}
           onClick={() => setTrainingMode(!isTrainingMode)}
@@ -597,7 +625,7 @@ export default function PosTerminal() {
            <button 
              onClick={() => setViewHistory(true)} 
              className={cn(
-               "h-14 rounded-2xl text-muted-foreground hover:bg-muted hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
+               "h-14 rounded-2xl text-muted-foreground hover:bg-patagonia-600 hover:shadow-lg hover:shadow-patagonia-600/20 hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
                isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
              )}
            >
@@ -608,7 +636,7 @@ export default function PosTerminal() {
            <button 
              onClick={() => setViewMovements(true)} 
              className={cn(
-               "h-14 rounded-2xl text-muted-foreground hover:bg-muted hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
+               "h-14 rounded-2xl text-muted-foreground hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-500/20 hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
                isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
              )}
            >
@@ -624,7 +652,7 @@ export default function PosTerminal() {
                });
              }}
              className={cn(
-               "h-14 rounded-2xl text-muted-foreground hover:bg-muted hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
+               "h-14 rounded-2xl text-muted-foreground hover:bg-slate-700 dark:hover:bg-slate-600 hover:shadow-lg hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
                isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
              )}
            >
@@ -637,7 +665,7 @@ export default function PosTerminal() {
            <button 
              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
              className={cn(
-               "h-14 rounded-2xl text-accent-yellow hover:bg-accent-yellow/10 flex items-center transition-all group overflow-hidden",
+               "h-14 rounded-2xl text-amber-500 hover:bg-amber-500/10 flex items-center transition-all group overflow-hidden",
                isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
              )}
            >
@@ -646,16 +674,18 @@ export default function PosTerminal() {
            </button>
         </div>
 
-        <button 
-          onClick={() => setViewClosure(true)} 
-          className={cn(
-            "h-14 rounded-2xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 mb-4 shadow-lg shadow-rose-500/10 overflow-hidden",
-            isSidebarExpanded ? "px-6 w-full gap-4 mx-4" : "justify-center w-14 mx-auto"
-          )}
-        >
-          <Lock className="w-7 h-7 shrink-0"/>
-          {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap text-rose-100">Cerrar</span>}
-        </button>
+        <div className="w-full px-4 mt-auto">
+          <button 
+            onClick={() => setViewClosure(true)} 
+            className={cn(
+              "h-14 rounded-2xl bg-rose-500/10 text-rose-500 dark:text-rose-400 hover:bg-rose-500 hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 mb-4 shadow-lg shadow-rose-500/10 overflow-hidden shrink-0 w-full",
+              isSidebarExpanded ? "px-6 gap-4" : "justify-center w-14 mx-auto"
+            )}
+          >
+            <Lock className="w-7 h-7 shrink-0"/>
+            {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Cerrar</span>}
+          </button>
+        </div>
       </div>
 
       {/* 2. MAIN AREA */}
@@ -862,7 +892,7 @@ export default function PosTerminal() {
         {/* Cart Items Area */}
         {!viewSuspended ? (
           <>
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2">
                {items.length === 0 ? (
                  <div className="h-full flex flex-col items-center justify-center text-white/20 gap-4 opacity-50">
                     <ShoppingCart className="w-20 h-20" />
@@ -870,42 +900,42 @@ export default function PosTerminal() {
                  </div>
                ) : (
                  items.map((item) => (
-                    <div key={item.product.id} className="pos-card-glass p-6 rounded-[2.5rem] border-slate-100 dark:border-slate-800/50 hover:border-patagonia-600/30 transition-all group animate-in slide-in-from-right-4 duration-300">
-                       <div className="flex justify-between items-start mb-4">
-                          <div className="flex-1 min-w-0 pr-4">
-                             <p className="text-[9px] font-black text-patagonia-600 dark:text-patagonia-400 uppercase tracking-[0.2em] mb-1">
+                    <div key={item.product.id} className="pos-card-glass p-3 rounded-2xl border-slate-100 dark:border-slate-800/50 hover:border-patagonia-600/30 transition-all group animate-in slide-in-from-right-4 duration-300">
+                       <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1 min-w-0 pr-3">
+                             <p className="text-[8px] font-black text-patagonia-600 dark:text-patagonia-400 uppercase tracking-[0.2em] mb-0.5">
                                 {typeof item.product.category === 'string' ? item.product.category : (item.product.category as any)?.name || 'GENÉRICO'}
                              </p>
-                             <p className="text-slate-900 dark:text-white font-black leading-tight text-base group-hover:text-patagonia-600 transition-colors uppercase tracking-tighter">{item.product.name}</p>
+                             <p className="text-slate-900 dark:text-white font-black leading-tight text-sm group-hover:text-patagonia-600 transition-colors uppercase tracking-tighter line-clamp-2">{item.product.name}</p>
                           </div>
-                          <p className="text-xl font-black text-slate-900 dark:text-white tracking-tighter whitespace-nowrap">{formatPrice(item.product.price * item.quantity)}</p>
+                          <p className="text-lg font-black text-slate-900 dark:text-white tracking-tighter whitespace-nowrap">{formatPrice(item.product.price * item.quantity)}</p>
                        </div>
-                       <div className="flex items-center justify-between gap-4">
+                       <div className="flex items-center justify-between gap-3">
                           {item.product.unit === 'kg' ? (
-                            <div className="flex items-center gap-3 px-5 py-2.5 bg-patagonia-600/10 rounded-2xl border-2 border-patagonia-600/20 shadow-inner">
-                              <Monitor className="w-5 h-5 text-patagonia-600" />
-                              <span className="text-base font-black text-patagonia-600 tracking-tight">{item.quantity.toFixed(3)} KG</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-patagonia-600/10 rounded-xl border-2 border-patagonia-600/20 shadow-inner">
+                              <Monitor className="w-4 h-4 text-patagonia-600" />
+                              <span className="text-sm font-black text-patagonia-600 tracking-tight">{item.quantity.toFixed(3)} KG</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 rounded-2xl p-1.5 border border-slate-200/50 dark:border-slate-800">
+                            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-xl p-1 border border-slate-200/50 dark:border-slate-800">
                               <button 
                                 onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:text-rose-500 transition-all active:scale-90"
-                              ><Minus className="w-5 h-5" /></button>
-                              <span className="w-10 text-center text-slate-900 dark:text-white font-black text-lg tracking-tighter">{item.quantity}</span>
+                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:text-rose-500 transition-all active:scale-90"
+                              ><Minus className="w-4 h-4" /></button>
+                              <span className="w-8 text-center text-slate-900 dark:text-white font-black text-base tracking-tighter">{item.quantity}</span>
                               <button 
                                 onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:text-emerald-500 transition-all active:scale-90"
-                              ><Plus className="w-5 h-5" /></button>
+                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:text-emerald-500 transition-all active:scale-90"
+                              ><Plus className="w-4 h-4" /></button>
                             </div>
                           )}
                           
                           <button 
                             onClick={() => handleProtectedRemove(item.product.id, item.product.name)}
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-rose-500/50 bg-rose-500/5 border border-rose-500/10 hover:text-rose-500 hover:bg-rose-500/20 hover:scale-110 transition-all active:scale-90 shadow-sm"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-rose-500/70 bg-rose-500/10 border border-rose-500/20 hover:text-white hover:bg-rose-500 hover:scale-105 transition-all active:scale-95 shadow-sm"
                             title="Eliminar Producto"
                           >
-                            <Trash2 className="w-6 h-6" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                        </div>
                     </div>
@@ -1066,7 +1096,7 @@ export default function PosTerminal() {
       <QuickAddModal 
         isOpen={viewQuickAdd} 
         onClose={() => setViewQuickAdd(false)} 
-        onConfirm={(name, price) => {
+        onConfirm={(name: string, price: number) => {
           addGenericItem(name, price);
           setViewQuickAdd(false);
           toast.success(`'${name}' añadido al carrito`);

@@ -28,6 +28,7 @@ export default function Register() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptMarketing, setAcceptMarketing] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,14 +62,24 @@ export default function Register() {
 
     setIsLoading(true);
 
+    let formattedPhone = formData.phone;
+    if (formattedPhone) {
+      // Limpiamos espacios y evitamos duplicar el +56 si el usuario lo tipeó
+      let cleaned = formattedPhone.replace(/\s+/g, '');
+      if (cleaned.startsWith('+56')) cleaned = cleaned.slice(3);
+      else if (cleaned.startsWith('56') && cleaned.length > 9) cleaned = cleaned.slice(2); // asumiendo largo de chile
+      formattedPhone = `+56${cleaned}`;
+    }
+
     try {
       await register({
         firstName: formData.name,
         lastName: formData.lastName,
         email: formData.email,
-        phone: formData.phone,
+        phone: formattedPhone,
         rut: formData.rut,
-        password: formData.password
+        password: formData.password,
+        acceptMarketing
       });
 
       navigate.push('/');
@@ -80,7 +91,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 flex items-center justify-center py-12 px-4">
+    <div className="flex-1 flex items-center justify-center py-12 px-4 w-full">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -97,7 +108,7 @@ export default function Register() {
           </p>
         </div>
 
-        <Card>
+        <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800/50 shadow-2xl shadow-blue-100/50 dark:shadow-black/40">
           <CardHeader>
             <CardTitle>Registro</CardTitle>
             <CardDescription>
@@ -116,7 +127,7 @@ export default function Register() {
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
                     <Input
                       id="name"
                       name="name"
@@ -130,21 +141,25 @@ export default function Register() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Apellido</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    placeholder="Pérez"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    required
-                  />
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      placeholder="Pérez"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="rut">RUT</Label>
-                <div className="relative">
-                  <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="relative">
+                  <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
                   <Input
                     id="rut"
                     name="rut"
@@ -160,8 +175,8 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">Correo Electrónico</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
                   <Input
                     id="email"
                     name="email"
@@ -177,24 +192,25 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
+                  <span className="absolute left-9 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium z-10 pointer-events-none">+56</span>
                   <Input
                     id="phone"
                     name="phone"
                     type="tel"
-                    placeholder="+56 9 1234 5678"
+                    placeholder="9 1234 5678"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="pl-10"
+                    className="pl-[4.5rem]"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="address">Dirección</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
                   <Input
                     id="address"
                     name="address"
@@ -209,7 +225,7 @@ export default function Register() {
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
                   <Input
                     id="password"
                     name="password"
@@ -232,15 +248,19 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="flex items-start gap-2">
@@ -259,6 +279,18 @@ export default function Register() {
                   <Link href="/privacidad" className="text-red-600 hover:underline">
                     política de privacidad
                   </Link>
+                </Label>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="marketing"
+                  checked={acceptMarketing}
+                  onCheckedChange={(checked: boolean) => setAcceptMarketing(checked)}
+                  className="mt-1"
+                />
+                <Label htmlFor="marketing" className="text-sm font-normal leading-tight text-gray-600 dark:text-gray-400 cursor-pointer">
+                  Acepto recibir correos, SMS y mensajes por WhatsApp con ofertas y promociones exclusivas.
                 </Label>
               </div>
 

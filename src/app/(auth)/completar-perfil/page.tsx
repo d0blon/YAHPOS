@@ -6,7 +6,6 @@ import { User, Phone, FileText, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { formatRut, cleanRut } from '@/lib/utils'
-import Header from '@/components/layout/Header'
 
 function CompletarPerfilForm() {
   const router = useRouter()
@@ -64,12 +63,10 @@ function CompletarPerfilForm() {
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 pt-28 pb-20">
+    <main className="flex-1 flex items-center justify-center py-16 w-full">
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-3xl shadow-2xl shadow-blue-100/50 border border-gray-100 overflow-hidden">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-100/50 dark:shadow-black/40 border border-white/20 dark:border-gray-800/50 overflow-hidden">
               <div className="h-1.5 bg-gradient-to-r from-corporate-blue via-blue-400 to-accent-yellow" />
 
               <div className="p-8">
@@ -176,7 +173,6 @@ function CompletarPerfilForm() {
           </div>
         </div>
       </main>
-    </>
   )
 }
 

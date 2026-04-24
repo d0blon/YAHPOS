@@ -33,6 +33,9 @@ export async function POST(req: Request) {
     shippingAddress,
     paymentMethod, 
     status,
+    customerRut,
+    pointsToEarn,
+    pointsRedeemed,
     items 
   } = body
 
@@ -89,6 +92,31 @@ export async function POST(req: Request) {
           const newStock = Math.max(0, (p.stock || 0) - item.quantity);
           await supabase.from('products').update({ stock: newStock }).eq('id', productId);
         }
+      }
+    }
+
+    // 4. Actualizar Puntos de Fidelidad
+    if (customerRut && (pointsToEarn > 0 || pointsRedeemed > 0)) {
+      const cleanedRut = customerRut.replace(/[^0-9kK]/g, '').toUpperCase();
+      
+      // Buscar el perfil del cliente
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, loyalty_points')
+        .eq('rut', cleanedRut)
+        .single();
+        
+      if (profile) {
+        const currentPoints = profile.loyalty_points || 0;
+        const netPointsChange = (pointsToEarn || 0) - (pointsRedeemed || 0);
+        const newPoints = Math.max(0, currentPoints + netPointsChange);
+        
+        await supabase
+          .from('profiles')
+          .update({ loyalty_points: newPoints })
+          .eq('id', profile.id);
+          
+        console.log(`[API /orders] Puntos actualizados para ${cleanedRut}: ${currentPoints} -> ${newPoints} (Ganados: ${pointsToEarn}, Canjeados: ${pointsRedeemed})`);
       }
     }
   }

@@ -5,7 +5,7 @@ import { cleanRut } from '@/lib/utils'
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const { email, password, firstName, lastName, phone, rut } = await req.json()
+    const { email, password, firstName, lastName, phone, rut, acceptMarketing } = await req.json()
 
     if (!email || !password || !rut) {
       return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
           first_name: firstName,
           last_name: lastName,
           phone,
+          accepts_marketing: acceptMarketing ?? true,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingUser.id)
@@ -56,6 +57,7 @@ export async function POST(req: Request) {
           rut: cleanedRut,
           role: 'customer',
           loyalty_points: 0,
+          accepts_marketing: acceptMarketing ?? true,
           created_at: new Date().toISOString()
         }])
         .select()
