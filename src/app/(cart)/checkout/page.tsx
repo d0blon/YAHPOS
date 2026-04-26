@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -9,7 +9,8 @@ import {
   MapPin, 
   Check,
   ShieldCheck,
-  Lock
+  Lock,
+  Award
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,6 +45,20 @@ export default function CheckoutPage() {
   const [selectedShipping, setSelectedShipping] = useState('standard')
   const [selectedPayment, setSelectedPayment] = useState('webpay')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [loyaltyAccumulationRate, setLoyaltyAccumulationRate] = useState(100) // Default: cada $100 = 1 punto
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(d => {
+        if (d.settings?.loyalty?.accumulationRate) {
+          setLoyaltyAccumulationRate(Number(d.settings.loyalty.accumulationRate) || 100)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const pointsToEarn = Math.floor(subtotal / loyaltyAccumulationRate)
 
   const handleSubmit = async () => {
     setIsProcessing(true)
@@ -343,6 +358,14 @@ export default function CheckoutPage() {
                       </span>
                     </div>
                   </div>
+                  {pointsToEarn > 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <Award className="w-4 h-4 text-amber-500 shrink-0" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                        Ganarás <span className="font-black">{pointsToEarn} puntos</span> con esta compra
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

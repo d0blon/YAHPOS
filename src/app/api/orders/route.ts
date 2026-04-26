@@ -1,24 +1,40 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 export async function GET() {
-  const supabase = createServerClient()
+  const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(100)
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.store_id) return NextResponse.json({ error: 'Sin tienda' }, { status: 403 })
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('store_id', profile.store_id)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data ?? [])
+  } catch (err) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
-
-  return NextResponse.json(data ?? [])
 }
 
 export async function POST(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const body = await req.json()
   console.log('[API /orders] Recibido:', body)
 
@@ -36,18 +52,28 @@ export async function POST(req: Request) {
     customerRut,
     pointsToEarn,
     pointsRedeemed,
-    items 
+    items,
+    branchId
   } = body
 
   if (!userId || !total || !paymentMethod) {
     return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
   }
 
+  // 0. Obtener store_id del perfil del usuario que crea la orden
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('store_id')
+    .eq('id', userId || user?.id)
+    .single()
+
   // 1. Crear la orden con el esquema verificado
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert([{
-      user_id: userId && userId.length > 5 ? userId : '2aa7de68-3107-4a54-8bc9-83f8fdf317ff',
+      user_id: userId && userId.length > 5 ? userId : (user?.id || '2aa7de68-3107-4a54-8bc9-83f8fdf317ff'),
+      store_id: profile?.store_id,
       total: total,
       discount: discount ?? 0,
       status: status ?? 'completed',
@@ -83,10 +109,29 @@ export async function POST(req: Request) {
     }
 
     // 3. Actualizar stock (Reducción)
-    // Nota: En una app de producción esto debería ser una RPC o transacción atómica
     for (const item of items) {
       const productId = isNaN(Number(item.productId)) ? 0 : Number(item.productId);
       if (productId > 0) {
+        // Reducción en tabla de Sucursal (si existe branchId)
+        if (branchId) {
+          const { data: inv } = await supabase
+            .from('inventory')
+            .select('stock')
+            .eq('product_id', productId)
+            .eq('branch_id', branchId)
+            .single();
+          
+          if (inv) {
+            const newBranchStock = Math.max(0, (inv.stock || 0) - item.quantity);
+            await supabase
+              .from('inventory')
+              .update({ stock: newBranchStock })
+              .eq('product_id', productId)
+              .eq('branch_id', branchId);
+          }
+        }
+
+        // Reducción en tabla maestra (products)
         const { data: p } = await supabase.from('products').select('stock').eq('id', productId).single();
         if (p) {
           const newStock = Math.max(0, (p.stock || 0) - item.quantity);
@@ -122,4 +167,44 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json(order, { status: 201 })
+}
+
+export async function PATCH(req: Request) {
+  const supabase = await createClient()
+  const body = await req.json()
+  const { id, status, payment_status, fulfillment_status } = body
+
+  if (!id) return NextResponse.json({ error: 'Falta ID de orden' }, { status: 400 })
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.store_id) return NextResponse.json({ error: 'Sin tienda' }, { status: 403 })
+
+    const { data, error } = await supabase
+      .from('orders')
+      .update({
+        status,
+        payment_status,
+        fulfillment_status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('store_id', profile.store_id)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    return NextResponse.json(data)
+  } catch (err) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
 }

@@ -79,6 +79,7 @@ export interface User {
   identityVerified: boolean
   wishlist: string[]
   purchaseHistory: Order[]
+  storeId?: string
   createdAt: string
   updatedAt: string
 }
@@ -227,4 +228,22 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error'
   isRead: boolean
   createdAt: string
+}
+
+export interface Branch {
+  id: string
+  storeId: string
+  name: string
+  address?: string
+  isMain: boolean
+  isActive: boolean
+  createdAt: string
+}
+
+export interface Inventory {
+  id: string
+  productId: string
+  branchId: string
+  stock: number
+  updatedAt: string
 }

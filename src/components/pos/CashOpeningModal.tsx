@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Monitor, DollarSign, User, Loader2, ChevronRight, RefreshCw } from 'lucide-react'
+import { Monitor, DollarSign, User, Loader2, ChevronRight, RefreshCw, AlertCircle, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatPrice } from '@/lib/utils'
@@ -9,12 +9,20 @@ import { CashSession } from '@/stores/posStore'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 interface Terminal {
   id: number
   name: string
   description?: string
   is_active: boolean
+  status: 'open' | 'closed'
+  current_user_id?: string
+  current_user_name?: string
+  current_user?: {
+    first_name: string
+    last_name: string
+  }
 }
 
 interface Props {
@@ -25,6 +33,8 @@ interface Props {
 }
 
 export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResumeSession }: Props) {
+  const authUser = useAuthStore(state => state.user)
+  const router = useRouter()
   const [step, setStep] = useState<'checking' | 'resume' | 'select-terminal' | 'opening-amount'>('checking')
   const [terminals, setTerminals] = useState<Terminal[]>([])
   const [selectedTerminal, setSelectedTerminal] = useState<Terminal | null>(null)
@@ -67,7 +77,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
       }
     } catch {
       // Network error, timeout, or abort — show terminal selection anyway
-      setTerminals([{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true }])
+      setTerminals([{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'open' }])
       setStep('select-terminal')
     }
   }
@@ -81,9 +91,9 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
       clearTimeout(timeoutId)
       
       const data = await res.json()
-      setTerminals(Array.isArray(data) ? data : [{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true }])
+      setTerminals(Array.isArray(data) ? data : [{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'open' }])
     } catch {
-      setTerminals([{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true }])
+      setTerminals([{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'open' }])
     }
   }
 
@@ -254,30 +264,90 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
 
         {/* Step: Select terminal */}
         {step === 'select-terminal' && (
-          <div className="bg-slate-900 rounded-[3rem] p-10 space-y-8 border border-white/10 shadow-2xl shadow-black max-h-[60vh] flex flex-col">
+          <div className="bg-slate-900 rounded-[3rem] p-10 space-y-8 border border-white/10 shadow-2xl shadow-black max-h-[70vh] flex flex-col">
             <div className="text-center">
               <p className="text-white font-black text-2xl uppercase tracking-tight">Estación de Trabajo</p>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">¿En qué caja operarás hoy?</p>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">
+                {terminals.every(t => t.status === 'open' && t.current_user_id !== authUser?.id)
+                  ? '⚠️ Todas las cajas están en uso'
+                  : '¿En qué caja operarás hoy?'}
+              </p>
             </div>
+
             <div className="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
-              {terminals.map(terminal => (
-                <button
-                  key={terminal.id}
-                  onClick={() => handleSelectTerminal(terminal)}
-                  className="w-full flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/5 hover:border-patagonia-600/50 rounded-3xl p-6 transition-all group active:scale-95"
-                >
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-gradient-to-br from-patagonia-600/20 to-cyan-500/20 rounded-2xl flex items-center justify-center border border-patagonia-600/30 group-hover:scale-110 transition-transform">
-                      <Monitor className="w-6 h-6 text-patagonia-400" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-white font-black text-lg uppercase tracking-tight">{terminal.name}</p>
-                      {terminal.description && <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">{terminal.description}</p>}
-                    </div>
-                  </div>
-                  <ChevronRight className="w-6 h-6 text-slate-600 group-hover:text-patagonia-400 transition-colors" />
-                </button>
-              ))}
+              {terminals.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-slate-500 font-black uppercase tracking-widest text-[10px]">No hay terminales configurados</p>
+                </div>
+              ) : (
+                <>
+                  {terminals.map(terminal => {
+                    const isOccupied = terminal.status === 'open' && terminal.current_user_id !== authUser?.id
+                    const isMine = terminal.status === 'open' && terminal.current_user_id === authUser?.id
+                    const operatorName = terminal.current_user_name || 
+                                   (terminal.current_user ? `${terminal.current_user.first_name} ${terminal.current_user.last_name}` : 'Otro Cajero')
+                    
+                    return (
+                      <button
+                        key={terminal.id}
+                        disabled={isOccupied}
+                        onClick={() => handleSelectTerminal(terminal)}
+                        className={`w-full flex items-center justify-between border rounded-3xl p-6 transition-all group active:scale-95 ${
+                          isOccupied 
+                            ? 'bg-red-500/5 border-red-500/20 cursor-not-allowed opacity-60' 
+                            : isMine
+                              ? 'bg-patagonia-600/10 border-patagonia-600/40'
+                              : 'bg-white/5 hover:bg-white/10 border-white/5 hover:border-patagonia-600/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-5">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-transform ${
+                            isOccupied 
+                              ? 'bg-red-500/20 border-red-500/30' 
+                              : 'bg-gradient-to-br from-patagonia-600/20 to-cyan-500/20 border-patagonia-600/30 group-hover:scale-110'
+                          }`}>
+                            <Monitor className={`w-6 h-6 ${isOccupied ? 'text-red-400' : 'text-patagonia-400'}`} />
+                          </div>
+                          <div className="text-left">
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-black text-lg uppercase tracking-tight">{terminal.name}</p>
+                              {isOccupied && (
+                                <span className="bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">En Uso</span>
+                              )}
+                            </div>
+                            {isOccupied ? (
+                              <p className="text-red-400/60 text-[10px] font-bold uppercase tracking-widest mt-1">
+                                Ocupada por {operatorName}
+                              </p>
+                            ) : (
+                              terminal.description && <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">{terminal.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        {!isOccupied && <ChevronRight className="w-6 h-6 text-slate-600 group-hover:text-patagonia-400 transition-colors" />}
+                      </button>
+                    )
+                  })}
+                </>
+              )}
+            </div>
+
+            <div className="pt-6 border-t border-white/5 space-y-4">
+              {terminals.every(t => t.status === 'open' && t.current_user_id !== authUser?.id) && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+                   <p className="text-amber-200 text-[10px] font-black uppercase text-center tracking-widest">
+                     No hay terminales disponibles en este momento.
+                   </p>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                onClick={() => router.replace('/admin')}
+                className="w-full h-14 flex items-center justify-center gap-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group"
+              >
+                <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-[11px] font-black uppercase tracking-[0.2em]">Volver al Panel Administrativo</span>
+              </Button>
             </div>
           </div>
         )}

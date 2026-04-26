@@ -6,7 +6,8 @@ import {
   Settings, Store, Monitor, CreditCard, FileText, Palette,
   LayoutDashboard, Package, ShoppingCart, Users, TrendingUp,
   Save, CheckCircle, AlertCircle, Loader2, Eye, EyeOff,
-  Banknote, Wifi, Receipt, Terminal, Award
+  Banknote, Wifi, Receipt, Terminal, Award, HelpCircle, ShieldCheck, Key, X,
+  Image as ImageIcon, Maximize2, Info, Sparkles, ExternalLink
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,9 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
-import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
+import { AdminHeader } from '@/components/admin/AdminHeader'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { useAuthStore } from '@/stores/authStore'
 import { useSaaS } from '@/providers/SaaSProvider'
@@ -29,29 +29,44 @@ const TABS = [
   { id: 'pos', label: 'POS', icon: Monitor },
   { id: 'terminals', label: 'Terminales', icon: Terminal },
   { id: 'payments', label: 'Pagos Online', icon: CreditCard },
-  { id: 'sii', label: 'Boletas SII', icon: FileText },
   { id: 'loyalty', label: 'Fidelización', icon: Award },
-  { id: 'appearance', label: 'Apariencia', icon: Palette },
+  { id: 'appearance', label: 'Branding', icon: Palette },
+  { id: 'design', label: 'Editor Visual', icon: Monitor },
 ]
 
-function SectionCard({ title, description, children }: { title: string, description?: string, children: React.ReactNode }) {
+function SectionCard({ title, description, children, icon: Icon }: { title: string, description?: string, children: React.ReactNode, icon?: any }) {
   return (
-    <Card className="border-none shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent className="space-y-5">{children}</CardContent>
-    </Card>
+    <div className="glass-card overflow-hidden group hover:border-corporate-blue/30 transition-all duration-300">
+      <div className="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 flex items-center gap-4">
+        {Icon && (
+          <div className="w-10 h-10 rounded-xl bg-corporate-blue/10 flex items-center justify-center text-corporate-blue">
+            <Icon className="w-5 h-5" />
+          </div>
+        )}
+        <div>
+          <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">
+            {title}
+          </h3>
+          {description && <p className="text-xs text-gray-500 font-medium mt-0.5">{description}</p>}
+        </div>
+      </div>
+      <div className="p-6 space-y-6">
+        {children}
+      </div>
+    </div>
   )
 }
 
 function Field({ label, hint, children }: { label: string, hint?: string, children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</Label>
+    <div className="space-y-2">
+      <div className="flex justify-between items-end px-1">
+        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+          {label}
+        </Label>
+        {hint && <span className="text-[10px] text-gray-400 font-medium italic">{hint}</span>}
+      </div>
       {children}
-      {hint && <p className="text-xs text-gray-400">{hint}</p>}
     </div>
   )
 }
@@ -59,18 +74,18 @@ function Field({ label, hint, children }: { label: string, hint?: string, childr
 function SecretInput({ value, onChange, placeholder }: { value: string, onChange: (v: string) => void, placeholder?: string }) {
   const [show, setShow] = useState(false)
   return (
-    <div className="relative">
+    <div className="relative group">
       <Input
         type={show ? 'text' : 'password'}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder ?? '••••••••••••'}
-        className="rounded-xl h-11 pr-10"
+        className="rounded-xl h-12 bg-white/50 dark:bg-black/20 border-gray-200 dark:border-white/10 focus:ring-corporate-blue/20 transition-all pr-12 font-mono"
       />
       <button
         type="button"
         onClick={() => setShow(!show)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-corporate-blue hover:bg-corporate-blue/10 transition-all"
       >
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
@@ -78,11 +93,30 @@ function SecretInput({ value, onChange, placeholder }: { value: string, onChange
   )
 }
 
-function Toggle({ checked, onCheckedChange, label }: { checked: boolean, onCheckedChange: (v: boolean) => void, label: string }) {
+function Toggle({ checked, onCheckedChange, label, description }: { checked: boolean, onCheckedChange: (v: boolean) => void, label: string, description?: string }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-      <Checkbox checked={checked} onCheckedChange={v => onCheckedChange(!!v)} id={label} />
-      <Label htmlFor={label} className="text-sm font-medium cursor-pointer">{label}</Label>
+    <div 
+      className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
+        checked 
+          ? 'bg-corporate-blue/5 border-corporate-blue/20 ring-1 ring-corporate-blue/20' 
+          : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10'
+      }`}
+      onClick={() => onCheckedChange(!checked)}
+    >
+      <div className="pt-0.5">
+        <Checkbox 
+          checked={checked} 
+          onCheckedChange={v => onCheckedChange(!!v)} 
+          id={label}
+          className="rounded-md border-gray-300 data-[state=checked]:bg-corporate-blue data-[state=checked]:border-corporate-blue"
+        />
+      </div>
+      <div className="flex-1 space-y-1">
+        <Label htmlFor={label} className="text-sm font-black uppercase tracking-tight cursor-pointer block">
+          {label}
+        </Label>
+        {description && <p className="text-xs text-gray-500 font-medium leading-relaxed">{description}</p>}
+      </div>
     </div>
   )
 }
@@ -108,9 +142,15 @@ export default function AdminConfiguracion() {
     paymentTransfer: true 
   })
   const [payments, setPayments] = useState({ flowEnabled: false, flowApiKey: '', flowApiSecret: '', webpayEnabled: false, webpayCommerceCode: '', freeShippingMin: 30000 })
-  const [sii, setSii] = useState({ rut: '', razonSocial: '', giro: '', actividad: '', direccion: '', comuna: '', simpleApiKey: '' })
   const [loyalty, setLoyalty] = useState({ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true })
   const [appearance, setAppearance] = useState({ logoUrl: '', primaryColor: '#1e3a6e', secondaryColor: '#f5c518', darkMode: false })
+  const [design, setDesign] = useState({
+    heroImage: '',
+    heroTitle: '',
+    showPromotions: true,
+    productCardStyle: 'glass',
+    bannerType: 'simple'
+  })
   const [terminalsList, setTerminalsList] = useState<any[]>([])
   const [newTerminalName, setNewTerminalName] = useState('')
 
@@ -131,7 +171,6 @@ export default function AdminConfiguracion() {
           setStore(settings.store)
           setPos(settings.pos)
           setPayments(settings.payments)
-          setSii(settings.sii)
           setLoyalty(settings.loyalty || { enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true })
           setAppearance(settings.appearance)
           setUsingDefaults(usingDefaults)
@@ -165,8 +204,6 @@ export default function AdminConfiguracion() {
         payment_flow_enabled: String(payments.flowEnabled), payment_flow_api_key: payments.flowApiKey,
         payment_flow_api_secret: payments.flowApiSecret, payment_webpay_enabled: String(payments.webpayEnabled),
         payment_webpay_commerce_code: payments.webpayCommerceCode, payment_free_shipping_min: String(payments.freeShippingMin),
-        sii_rut: sii.rut, sii_razon_social: sii.razonSocial, sii_giro: sii.giro,
-        sii_actividad: sii.actividad, sii_direccion: sii.direccion, sii_comuna: sii.comuna, sii_simple_api_key: sii.simpleApiKey,
         loyalty_enabled: String(loyalty.enabled),
         loyalty_min_redemption: String(loyalty.minRedemption),
         loyalty_accumulation_rate: String(loyalty.accumulationRate),
@@ -189,16 +226,14 @@ export default function AdminConfiguracion() {
       toast.error(err.message)
       setTimeout(() => setSaveStatus('idle'), 3000)
     }
-  }, [store, pos, payments, sii, appearance])
+  }, [store, pos, payments, appearance, loyalty])
 
   if (isLoading) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-corporate-blue" />
-        </main>
-      </>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-10 h-10 animate-spin text-corporate-blue" />
+        <p className="text-sm font-black uppercase tracking-widest text-gray-400 animate-pulse">Cargando Configuración...</p>
+      </div>
     )
   }
 
@@ -303,31 +338,27 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
 
   return (
     <>
-      <Header />
       <SqlModal />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20">
-        <div className="container mx-auto px-4">
-          <div className="flex gap-8">
-            <AdminSidebar activePath="/admin/configuracion" />
-
-            {/* Main Content */}
-            <div className="flex-1 space-y-6">
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="space-y-8">
+        {/* Header section with Stats */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configuración General</h1>
-                  <p className="text-gray-600 dark:text-gray-400">Administra todos los parámetros del sistema</p>
+                  <h1 className="text-3xl font-black tracking-tighter uppercase italic">
+                    Configuración <span className="text-corporate-blue">General</span>
+                  </h1>
+                  <p className="text-gray-500 text-sm font-medium">Administra todos los parámetros del sistema</p>
                 </div>
+                
                 <div className="flex items-center gap-3">
                   {usingDefaults && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full font-medium border border-amber-200">
+                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-2xl border border-amber-200 dark:border-amber-800">
+                      <span className="text-[10px] text-amber-700 dark:text-amber-300 font-black uppercase tracking-widest">
                         ⚠ Tabla no inicializada
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-xs h-8 rounded-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                        className="text-[10px] h-7 rounded-lg border-amber-300 text-amber-700 hover:bg-amber-50 uppercase font-black"
                         onClick={async () => {
                           try {
                             const res = await fetch('/api/settings/init', { method: 'POST' })
@@ -349,27 +380,24 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                   <Button
                     onClick={handleSave}
                     disabled={saveStatus === 'saving'}
-                    className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-xl px-6 h-11 font-bold shadow-lg shadow-corporate-blue/20 flex items-center gap-2"
+                    className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-corporate-blue/20 flex items-center gap-3"
                   >
-                    {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {saveStatus === 'saved' && <CheckCircle className="w-4 h-4" />}
-                    {saveStatus === 'error' && <AlertCircle className="w-4 h-4" />}
-                    {saveStatus === 'idle' && <Save className="w-4 h-4" />}
-                    {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? 'Guardado ✓' : 'Guardar Cambios'}
+                    {saveStatus === 'saving' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    {saveStatus === 'saving' ? 'Guardando...' : 'Guardar Cambios'}
                   </Button>
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              {/* Tabs Toolbar */}
+              <div className="glass-card p-1.5 flex gap-1.5 overflow-x-auto">
                 {TABS.map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-3 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all ${
                       activeTab === tab.id 
-                        ? 'bg-corporate-blue text-white shadow-md shadow-corporate-blue/20' 
-                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'bg-corporate-blue text-white shadow-lg shadow-corporate-blue/20' 
+                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
                     }`}
                   >
                     <tab.icon className="w-4 h-4" />
@@ -613,39 +641,6 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                 </div>
               )}
 
-              {/* Tab: SII */}
-              {activeTab === 'sii' && (
-                <div className="space-y-4">
-                  <SectionCard title="Datos del Emisor (SII)" description="Información para generar boletas electrónicas válidas ante el SII.">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <Field label="RUT del Emisor">
-                        <Input className="rounded-xl h-11 font-mono" value={sii.rut} onChange={e => setSii({...sii, rut: e.target.value})} placeholder="12345678-9" />
-                      </Field>
-                      <Field label="Razón Social">
-                        <Input className="rounded-xl h-11" value={sii.razonSocial} onChange={e => setSii({...sii, razonSocial: e.target.value})} placeholder="Tu Supermercado SpA" />
-                      </Field>
-                      <Field label="Giro">
-                        <Input className="rounded-xl h-11" value={sii.giro} onChange={e => setSii({...sii, giro: e.target.value})} placeholder="Supermercado" />
-                      </Field>
-                      <Field label="Código de Actividad">
-                        <Input className="rounded-xl h-11 font-mono" value={sii.actividad} onChange={e => setSii({...sii, actividad: e.target.value})} placeholder="522030" />
-                      </Field>
-                      <Field label="Dirección del local">
-                        <Input className="rounded-xl h-11" value={sii.direccion} onChange={e => setSii({...sii, direccion: e.target.value})} placeholder="Av. Los Robles 123" />
-                      </Field>
-                      <Field label="Comuna">
-                        <Input className="rounded-xl h-11" value={sii.comuna} onChange={e => setSii({...sii, comuna: e.target.value})} placeholder="Castro" />
-                      </Field>
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard title="SimpleAPI — Boletas Electrónicas" description="Credenciales para el servicio de emisión de boletas.">
-                    <Field label="API Key de SimpleAPI" hint="Credencial para emitir boletas electrónicas">
-                      <SecretInput value={sii.simpleApiKey} onChange={v => setSii({...sii, simpleApiKey: v})} placeholder="0000-0000-0000-0000-0000" />
-                    </Field>
-                  </SectionCard>
-                </div>
-              )}
 
               {/* Tab: Apariencia */}
               {activeTab === 'appearance' && (
@@ -686,96 +681,150 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                 </div>
               )}
 
-              {/* Tab: Loyalty */}
-              {activeTab === 'loyalty' && (
-                <div className={cn("space-y-4 relative", isBasicPlan && "grayscale opacity-60 pointer-events-none select-none")}>
-                  {isBasicPlan && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-[2px]">
-                      <div className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-2xl border-2 border-patagonia-200 flex flex-col items-center text-center gap-4 max-w-sm">
-                        <div className="w-16 h-16 bg-patagonia-100 rounded-2xl flex items-center justify-center rotate-3">
-                          <Award className="w-8 h-8 text-patagonia-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-black text-xl text-gray-900 dark:text-white uppercase tracking-tighter">Plan Elite Requerido</h4>
-                          <p className="text-sm text-gray-500 mt-1">El sistema de fidelización y puntos está disponible exclusivamente para clientes <strong>PatagoniaPOS Elite</strong>.</p>
-                        </div>
-                        <Button className="bg-patagonia-600 text-white w-full rounded-xl h-11 font-bold">Mejorar Plan Ahora</Button>
-                      </div>
-                    </div>
-                  )}
-                  <SectionCard title="Configuración de Fidelización" description="Gestiona cómo tus clientes acumulan y usan sus puntos.">
-                    <Toggle 
-                      checked={loyalty.enabled} 
-                      onCheckedChange={v => setLoyalty({...loyalty, enabled: v})} 
-                      label="Habilitar sistema de puntos" 
-                    />
-                    
-                    {loyalty.enabled && (
-                      <div className="grid md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-                        <Field label="Tasa de Acumulación" hint="Cuántos pesos equivalen a 1 punto">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-bold text-gray-400">$</span>
-                            <Input 
-                              type="number" 
-                              className="rounded-xl h-11" 
-                              value={loyalty.accumulationRate} 
-                              onChange={e => setLoyalty({...loyalty, accumulationRate: Number(e.target.value)})} 
-                            />
-                            <span className="text-sm font-bold text-gray-400">= 1 pto</span>
-                          </div>
-                        </Field>
-                        
-                        <Field label="Valor del Punto" hint="Cuánto descuento da 1 punto">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-bold text-gray-400">1 pto = $</span>
-                            <Input 
-                              type="number" 
-                              className="rounded-xl h-11" 
-                              value={loyalty.redemptionRate} 
-                              onChange={e => setLoyalty({...loyalty, redemptionRate: Number(e.target.value)})} 
-                            />
-                          </div>
-                        </Field>
-
-                        <Field label="Mínimo para canjear" hint="Puntos necesarios para empezar a usar">
-                          <Input 
-                            type="number" 
-                            className="rounded-xl h-11" 
-                            value={loyalty.minRedemption} 
-                            onChange={e => setLoyalty({...loyalty, minRedemption: Number(e.target.value)})} 
-                          />
-                        </Field>
-
-                        <div className="flex flex-col justify-end">
-                          <Toggle 
-                            checked={loyalty.requireIdVerification} 
-                            onCheckedChange={v => setLoyalty({...loyalty, requireIdVerification: v})} 
-                            label="Exigir validación de Carnet (primera vez)" 
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </SectionCard>
-
-                  <div className="p-4 bg-green-50 dark:bg-green-950 rounded-2xl border border-green-100 dark:border-green-900 flex gap-4">
-                    <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0 border border-green-200">
-                      <Award className="w-6 h-6 text-green-600" />
+              {/* Tab: Diseño (Visual Editor) */}
+              {activeTab === 'design' && (
+                <div className="space-y-6">
+                  <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-2xl border border-purple-100 dark:border-purple-900/50 flex gap-4">
+                    <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0 border border-purple-200">
+                      <Sparkles className="w-6 h-6 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-green-900 dark:text-green-100">Resumen de Rentabilidad</p>
-                      <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                        Con esta configuración, un cliente que gasta <strong>$10.000</strong> recibirá <strong>{Math.floor(10000 / (loyalty.accumulationRate || 1))} puntos</strong>, 
-                        lo que equivale a <strong>${Math.floor((10000 / (loyalty.accumulationRate || 1)) * (loyalty.redemptionRate || 1))}</strong> de descuento (un <strong>{((loyalty.redemptionRate / loyalty.accumulationRate) * 100).toFixed(1)}%</strong> de cashback).
+                      <p className="text-sm font-black italic uppercase text-purple-900 dark:text-purple-100 tracking-tighter">Editor Visual Inteligente</p>
+                      <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                        Personaliza cómo se ve tu tienda online. Sigue las guías de imagen para mantener un aspecto premium y profesional.
                       </p>
                     </div>
                   </div>
+
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    {/* Hero Section Config */}
+                    <SectionCard 
+                      title="Banner Principal (Hero)" 
+                      description="La primera imagen que verán tus clientes al entrar."
+                      icon={ImageIcon}
+                    >
+                      <div className="space-y-4">
+                        <div className="relative aspect-video rounded-2xl bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-white/10 overflow-hidden group">
+                          {design.heroImage ? (
+                            <img src={design.heroImage} alt="Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 gap-2">
+                              <ImageIcon className="w-8 h-8" />
+                              <span className="text-[10px] font-black uppercase">Click para subir banner</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl">Cambiar Imagen</Button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 space-y-2">
+                          <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                            <Info className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Guía de Estilo: Banner</span>
+                          </div>
+                          <ul className="text-[11px] text-blue-600/80 dark:text-blue-400/80 space-y-1 list-disc pl-4">
+                            <li><strong>Tamaño recomendado:</strong> 1920x600px (o 16:9).</li>
+                            <li><strong>Contenido:</strong> Usa fotos de tu local o un ambiente general que represente tu marca.</li>
+                            <li><strong>Calidad:</strong> Evita fotos con mucho texto, ya que el sistema pondrá el texto encima.</li>
+                          </ul>
+                          <a 
+                            href="https://squoosh.app/" 
+                            target="_blank" 
+                            className="flex items-center gap-1.5 text-[10px] font-bold text-corporate-blue hover:underline mt-2"
+                          >
+                            Optimizar tamaño de imagen sin perder calidad <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+
+                        <Field label="Título sobre el Banner">
+                          <Input 
+                            className="rounded-xl h-11" 
+                            placeholder="Ej: Calidad que se siente en cada compra" 
+                            value={design.heroTitle}
+                            onChange={e => setDesign({...design, heroTitle: e.target.value})}
+                          />
+                        </Field>
+                      </div>
+                    </SectionCard>
+
+                    {/* Product Grid Config */}
+                    <SectionCard 
+                      title="Sección de Productos" 
+                      description="Configura cómo se muestran tus productos destacados."
+                      icon={Package}
+                    >
+                      <div className="space-y-6">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Estilo de Tarjeta</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button 
+                              onClick={() => setDesign({...design, productCardStyle: 'glass'})}
+                              className={cn(
+                                "p-4 rounded-2xl border text-left transition-all",
+                                design.productCardStyle === 'glass' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                              )}
+                            >
+                              <div className="w-full aspect-square bg-white/50 dark:bg-white/10 rounded-lg mb-2 shadow-sm border border-white/20" />
+                              <span className="text-[10px] font-black uppercase">Glassmorphism</span>
+                            </button>
+                            <button 
+                              onClick={() => setDesign({...design, productCardStyle: 'minimal'})}
+                              className={cn(
+                                "p-4 rounded-2xl border text-left transition-all",
+                                design.productCardStyle === 'minimal' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                              )}
+                            >
+                              <div className="w-full aspect-square bg-gray-200 dark:bg-gray-800 rounded-lg mb-2" />
+                              <span className="text-[10px] font-black uppercase">Minimalista</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800 space-y-2">
+                          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                            <Info className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Consejo de Fotografía</span>
+                          </div>
+                          <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                            <strong>¡Importante!</strong> Para las fotos de producto, usa fondos neutros (blanco o gris claro). No pongas fotos de tu negocio aquí, solo del producto individual.
+                          </p>
+                        </div>
+
+                        <Toggle 
+                          checked={design.showPromotions} 
+                          onCheckedChange={v => setDesign({...design, showPromotions: v})} 
+                          label="Mostrar Etiqueta de 'Oferta'" 
+                          description="Resalta automáticamente los productos que tengan precio rebajado."
+                        />
+                      </div>
+                    </SectionCard>
+                  </div>
+
+                  <SectionCard title="Sorteos y Promociones" description="Funciones avanzadas para aumentar ventas." icon={Sparkles}>
+                     <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                        <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center text-amber-600">
+                          <Sparkles className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <h4 className="font-black italic uppercase tracking-tighter text-lg">Módulo de Sorteos IA</h4>
+                          <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1">Crea sorteos automáticos para tus seguidores y clientes. Esta función es parte del <strong>Centro de Innovación</strong>.</p>
+                        </div>
+                        <Button 
+                           onClick={() => {
+                              // Esto abriría el modal de innovación desde el header o similar
+                              // Por ahora mostramos un toast informativo
+                              toast.info('Solicita la activación en el Centro de Innovación IA (Arriba a la derecha)')
+                           }}
+                           className="bg-corporate-blue rounded-xl px-8 uppercase font-black italic text-xs tracking-widest"
+                        >
+                           Solicitar Implementación
+                        </Button>
+                     </div>
+                  </SectionCard>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      </main>
-      <Footer />
+      </div>
     </>
   )
 }

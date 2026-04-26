@@ -1,0 +1,145 @@
+---
+description: Reglas de diseño UI/UX para el e-commerce PatagoniaPOS
+globs: ["src/sections/*.tsx", "src/app/(shop)/**/*.tsx", "src/components/**/*.tsx", "src/app/globals.css"]
+alwaysApply: false
+---
+
+# Estándares de Diseño UI/UX — PatagoniaPOS
+
+## Filosofía: Impeccable Design (Paul Bakaus)
+El objetivo es una interfaz que se vea **premium, espaciosa y viva**.
+Evitar: tarjetas dentro de tarjetas, colores planos genéricos, animaciones bruscas.
+
+---
+
+## Paleta de Colores
+
+```css
+/* Modo Claro */
+--corporate-blue: hsl(220, 96%, 21%);   /* Azul marino profundo */
+--accent-yellow: hsl(45, 100%, 51%);    /* Amarillo cálido (CTA) */
+--corporate-dark: hsl(220, 80%, 8%);    /* Dark navy */
+
+/* Usar siempre con clases Tailwind custom: */
+/* text-corporate-blue, bg-accent-yellow, bg-corporate-dark */
+```
+
+## Glassmorphism (Patrón Aprobado)
+```tsx
+// Glass card estándar
+<div className="
+  bg-white/5 
+  backdrop-blur-xl 
+  border border-white/10 
+  rounded-2xl 
+  shadow-[0_8px_32px_rgba(0,0,0,0.12)]
+">
+```
+
+## Tipografía
+
+| Uso | Fuente | Tailwind |
+|---|---|---|
+| Headings grandes | Outfit | `font-outfit font-black tracking-tight` |
+| Cuerpo | Inter | `font-inter font-medium` |
+| Labels/badges | Inter | `font-inter font-bold uppercase tracking-widest text-xs` |
+
+## Espaciado Intencional
+- Secciones: `py-24` mínimo entre secciones
+- Heading a párrafo: `mb-6`
+- Grid de cards: `gap-6` o `gap-8`
+- No usar `gap-2` o `gap-3` para layouts principales
+
+---
+
+## Animaciones GSAP — Valores Aprobados
+
+```typescript
+// Entrada desde abajo (stagger)
+gsap.from('.elemento', {
+  y: 40,
+  opacity: 0,
+  duration: 0.7,
+  stagger: 0.08,
+  ease: 'power3.out'
+})
+
+// Entrada con rebote (cards/iconos)
+gsap.from('.card', {
+  y: 50,
+  opacity: 0,
+  scale: 0.95,
+  duration: 0.6,
+  stagger: 0.05,
+  ease: 'back.out(1.4)',
+  clearProps: 'all'  // SIEMPRE en cards para evitar residuos
+})
+
+// Parallax suave
+gsap.to('.fondo', {
+  y: -80,
+  ease: 'none',
+  scrollTrigger: {
+    trigger: container.current,
+    start: 'top bottom',
+    end: 'bottom top',
+    scrub: 1.5
+  }
+})
+```
+
+### Reglas de GSAP
+- **Siempre** usar `{ scope: container }` en `useGSAP()` para cleanup automático
+- **Siempre** registrar plugins dentro de `if (typeof window !== 'undefined')`
+- **Nunca** usar `useEffect` para animaciones — usar `useGSAP`
+- Usar `clearProps: 'all'` en animaciones de cards para evitar estados residuales
+
+---
+
+## Componentes UI Reutilizables
+
+### Badge de sección
+```tsx
+<Badge variant="secondary" className="
+  mb-6 
+  bg-corporate-blue/10 text-corporate-blue 
+  dark:bg-white/10 dark:text-white 
+  border-none 
+  px-4 py-1.5 
+  text-xs font-black uppercase tracking-widest
+">
+  Etiqueta de Sección
+</Badge>
+```
+
+### Heading de sección
+```tsx
+<h2 className="
+  text-4xl md:text-5xl lg:text-6xl 
+  font-black 
+  text-gray-900 dark:text-white 
+  tracking-tighter
+">
+  Título en <span className="
+    text-transparent bg-clip-text 
+    bg-gradient-to-r from-corporate-blue to-purple-600 
+    dark:from-accent-yellow dark:to-yellow-500
+  ">Gradiente</span>
+</h2>
+```
+
+### Background accents (blobs decorativos)
+```tsx
+{/* Siempre dentro de sección con relative overflow-hidden */}
+<div className="absolute top-0 right-0 w-[600px] h-[600px] bg-corporate-blue/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+<div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent-yellow/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/3 pointer-events-none" />
+```
+
+---
+
+## Patrones Prohibidos ❌
+- `<div className="card"><div className="card-inner">` — Tarjetas anidadas
+- Colores planos como `bg-blue-500` para fondos principales — usar con opacidad o gradiente
+- `opacity-0` sin animación de entrada — siempre animar
+- `overflow-hidden` en el body — rompe ScrollTrigger
+- `position: fixed` dentro de `transform` — afecta al Navbar

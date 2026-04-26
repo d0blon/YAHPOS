@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 export async function GET(req: Request) {
   try {
@@ -7,23 +7,17 @@ export async function GET(req: Request) {
     const rut = searchParams.get('rut')
     if (!rut) return NextResponse.json({ error: 'RUT required' }, { status: 400 })
 
-    const supabase = createServerClient()
-    const isUsingServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
-    console.log(`[API Search] Usando Service Role Key (Bypass RLS): ${isUsingServiceKey}`)
-    
+    const supabase = await createClient()
     const cleaned = rut.replace(/[^0-9kK]/g, '').toUpperCase()
-    console.log(`[API Search] Iniciando búsqueda para RUT: ${cleaned}`)
+    console.log(`[API Search] Buscando RUT: ${cleaned}`)
 
-    // Intentar buscar por RUT limpio primero
     let { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('rut', cleaned)
       .limit(1)
 
-    // Si no encuentra nada, intentar buscar con el formato original (puntos/guión) por si acaso
     if ((!data || data.length === 0) && !error) {
-      console.log(`[API Search] No encontrado por RUT limpio. Reintentando con formato original: ${rut}`)
       const secondTry = await supabase
         .from('profiles')
         .select('*')
@@ -40,12 +34,10 @@ export async function GET(req: Request) {
     }
 
     if (!data || data.length === 0) {
-      console.log('[API Search] No se encontró ningún cliente en la DB.')
       return NextResponse.json(null)
     }
 
     const user = data[0]
-    console.log('[API Search] Cliente encontrado:', user.first_name, user.last_name)
     return NextResponse.json({
       id: user.id,
       name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Sin nombre',
@@ -65,7 +57,7 @@ export async function POST(req: Request) {
     const { rut, name, email, points = 0 } = body
     if (!rut || !name) return NextResponse.json({ error: 'RUT and Name required' }, { status: 400 })
 
-    const supabase = createServerClient()
+    const supabase = await createClient()
     const cleaned = rut.replace(/[^0-9kK]/g, '').toUpperCase()
 
     const [firstName, ...lastNameParts] = name.split(' ')
@@ -86,7 +78,7 @@ export async function POST(req: Request) {
       .single()
 
     if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({

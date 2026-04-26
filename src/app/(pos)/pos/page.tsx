@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { 
-  Search, ShoppingCart, User, Plus, Minus, Trash2, 
+  Search, ShoppingCart, User, Plus, Minus, Trash2, MapPin,
   CreditCard, Banknote, History, PauseCircle, PlayCircle, 
   Loader2, Settings, ShieldAlert, LogOut, Terminal, AlertTriangle,
   Award, PackageOpen, Monitor, DollarSign, Lock, ChevronRight, X, TrendingUp,
-  Sun, Moon, Wifi, WifiOff, Cloud, CloudOff, Store, LayoutDashboard, Zap, PlusCircle, Calculator, Archive, RefreshCw
+  Sun, Moon, Wifi, WifiOff, Cloud, CloudOff, Store, LayoutDashboard, Zap, PlusCircle, Calculator, Archive, RefreshCw,
+  Smartphone, Tablet
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,7 @@ import { usePosStore } from '@/stores/posStore'
 import { formatPrice, cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
 import { useSaaS } from '@/providers/SaaSProvider'
-import { getProducts } from '@/lib/api'
+import { getProducts, getBranches } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { PosReceiptModal } from '@/components/pos/PosReceiptModal'
@@ -26,7 +27,7 @@ import { PosSettingsModal } from '@/components/pos/PosSettingsModal'
 import { ManagerPinModal } from '@/components/pos/ManagerPinModal'
 import { CashOpeningModal } from '@/components/pos/CashOpeningModal'
 import CustomerModal from '@/components/pos/CustomerModal'
-import { Product } from '@/types'
+import { Product, Branch } from '@/types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OrderRecord, CashMovement } from '@/stores/posStore'
 import { PosSidebar } from '@/components/pos/PosSidebar'
@@ -132,7 +133,7 @@ const ProductCard = React.memo(({ p, onClick }: { p: Product, onClick: (p: Produ
     <button 
       onClick={(e) => onClick(p, e)}
       className="group relative flex flex-col bg-white dark:bg-slate-900 rounded-[2rem] p-4 text-left border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl hover:-translate-y-2 hover:border-patagonia-600 transition-all duration-500 ease-out active:scale-[0.98] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
-      style={{ animationDelay: `${Math.random() * 150}ms` }}
+      style={{ animationDelay: `${((p.id.charCodeAt(p.id.length - 1) || 0) % 10) * 30}ms` }}
     >
       <div className="w-full aspect-square bg-slate-50 dark:bg-slate-800/50 rounded-3xl mb-4 relative overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-800">
         {p.image && !imgError ? (
@@ -182,6 +183,7 @@ ProductCard.displayName = 'ProductCard';
 
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 // --- QUICK ADD MODAL (NUMPAD) ---
 const QuickAddModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: (name: string, price: number) => void }) => {
@@ -247,6 +249,46 @@ const QuickAddModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClos
   )
 }
 
+// --- BRANCH SELECTION MODAL ---
+const BranchSelectionModal = ({ isOpen, branches, onSelect }: { isOpen: boolean, branches: Branch[], onSelect: (id: string) => void }) => {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+        <div className="p-10 text-center space-y-4">
+          <div className="w-20 h-20 bg-patagonia-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-patagonia-600/30 mx-auto mb-6">
+            <Store className="w-10 h-10" />
+          </div>
+          <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">Seleccionar Sucursal</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs">Identifica el local donde estás operando para gestionar el stock correctamente</p>
+        </div>
+        
+        <div className="p-10 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {branches.map(branch => (
+            <button
+              key={branch.id}
+              onClick={() => onSelect(branch.id)}
+              className="group relative bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[2rem] text-left border-2 border-transparent hover:border-patagonia-600 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-patagonia-600 shadow-sm transition-colors">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-black text-xl text-slate-900 dark:text-white uppercase tracking-tighter">{branch.name}</h4>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">{branch.address || 'Sin dirección'}</p>
+                </div>
+              </div>
+              <ChevronRight className="absolute right-8 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-hover:text-patagonia-600 group-hover:translate-x-2 transition-all" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PosTerminal() {
   const { theme, setTheme } = useTheme()
   const { config } = useSaaS()
@@ -258,8 +300,12 @@ export default function PosTerminal() {
     customerRut, customerName, customerPoints, pointsToEarn, setCustomer, suspendCurrentOrder, resumeOrder, removeSuspendedOrder, suspendedOrders,
     inventory, setInventory, processCheckoutStock, salesHistory, addSale, isTrainingMode, setTrainingMode,
     currentUser, setCurrentUser, settings, cashSession, setCashSession,
-    addGenericItem, pointsRedeemed, setPointsRedeemed, isSyncing, isInitialLoading
+    addGenericItem, pointsRedeemed, setPointsRedeemed, isSyncing, isInitialLoading,
+    selectedBranchId, setSelectedBranchId
   } = usePosStore()
+
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false)
 
   // 0. Seguridad de Salida (Prevenir pérdida de datos)
   useEffect(() => {
@@ -287,7 +333,7 @@ export default function PosTerminal() {
   const [viewSuspended, setViewSuspended] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false)
-  const [receiptData, setReceiptData] = useState<any | null>(null)
+  const [receiptData, setReceiptData] = useState<OrderRecord | null>(null)
   const [isRedeeming, setIsRedeeming] = useState(false)
   
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
@@ -330,13 +376,52 @@ export default function PosTerminal() {
        setCurrentUser(authUser)
     }
 
-    // Solo cargar inventario si no hay
-    if (inventory.length === 0) {
-      getProducts().then(res => {
-        if (res && res.length > 0) setInventory(res)
-      }).catch(() => console.warn('[POS] Error al sincronizar inventario'))
+    // Cargar sucursales si es Plan Élite
+    if (config.tier === 'elite') {
+      getBranches().then(res => {
+        setBranches(res)
+        // Si solo hay una sucursal, seleccionarla automáticamente
+        if (res.length === 1 && !selectedBranchId) {
+          setSelectedBranchId(res[0].id)
+        } else if (res.length > 1 && !selectedBranchId) {
+          setIsBranchModalOpen(true)
+        }
+      })
     }
-  }, [isHydrated, isAuthenticated, authUser, router, setCurrentUser, currentUser, setInventory, inventory.length])
+
+    // Solo cargar inventario si no hay o si cambió la sucursal
+    getProducts(selectedBranchId || undefined).then(res => {
+      if (res && res.length > 0) setInventory(res)
+    }).catch(() => console.warn('[POS] Error al sincronizar inventario'))
+
+    // 1.1 Cargar Configuraciones Globales (Lealtad, Terminales, etc.)
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.settings) {
+          const { loyalty, pos } = data.settings;
+          usePosStore.getState().updateSettings({
+            loyaltyEnabled: loyalty?.enabled ?? true,
+            loyalty: {
+              accumulationRate: 1 / (Number(loyalty?.accumulationRate) || 100),
+              redemptionRate: Number(loyalty?.redemptionRate) || 1,
+              redemptionMultiple: Number(loyalty?.minRedemption) || 1
+            },
+            activeTerminals: {
+              cash: pos?.paymentCash ?? true,
+              transbank: pos?.paymentTransbank ?? true,
+              getnet: pos?.paymentGetnet ?? false,
+              tuu: pos?.paymentTuu ?? false,
+              sumup: pos?.paymentSumup ?? false,
+              transfer: pos?.paymentTransfer ?? true
+            }
+          });
+          console.log('[POS] Configuraciones sincronizadas ✅');
+        }
+      })
+      .catch(err => console.warn('[POS] Error al cargar configuraciones', err));
+
+  }, [isHydrated, isAuthenticated, authUser, router, setCurrentUser, currentUser, setInventory, selectedBranchId, config.tier])
 
   // -- REALTIME INVENTORY SYNC --
   useEffect(() => {
@@ -460,12 +545,13 @@ export default function PosTerminal() {
     }
   }, [items, suspendedOrders, cashSession, isAuthenticated]);
 
-  const handleCheckout = async (paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PUNTOS', receivedAmount?: number) => {
+  const handleCheckout = async (paymentMethod: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'PUNTOS', receivedAmount?: number, terminalType?: string) => {
     setIsProcessing(true);
     setIsPaymentModalOpen(false);
     try {
-      if (paymentMethod === 'TARJETA') {
-        toast.info('Procesando Pago con Tarjeta...');
+      if (paymentMethod === 'TARJETA' || paymentMethod === 'TERMINAL') {
+        const msg = paymentMethod === 'TERMINAL' ? `Enviando monto a ${terminalType}...` : 'Procesando Pago con Tarjeta...';
+        toast.info(msg);
         await new Promise(r => setTimeout(r, 1500));
       }
       
@@ -483,7 +569,7 @@ export default function PosTerminal() {
         customerRut,
         customerName,
         date: new Date().toLocaleString('es-CL'),
-        paymentMethod,
+        paymentMethod: paymentMethod === 'TERMINAL' ? `TERMINAL (${terminalType})` : paymentMethod,
         isOffline: !isOnline,
         timestamp: Date.now()
       };
@@ -503,6 +589,7 @@ export default function PosTerminal() {
               customerRut: customerRut,
               pointsToEarn: pointsToEarn,
               pointsRedeemed: pointsRedeemed,
+              branchId: selectedBranchId,
               items: items.map(i => ({ productId: i.product.id, quantity: i.quantity, unitPrice: i.product.price }))
             })
           });
@@ -573,14 +660,28 @@ export default function PosTerminal() {
     } else removeItem(productId);
   }
 
+  const handleDashboardNav = () => {
+    // Esta función se mantiene como respaldo
+    window.location.href = '/admin';
+  };
+
   if (!isHydrated) return null;
 
   return (
     <div className="h-screen bg-background flex overflow-hidden font-sans text-foreground">
       <SyncOverlay isVisible={isInitialLoading} status="syncing" />
       <OfflineSyncManager />
+
+      <CashOpeningModal 
+        isOpen={!cashSession && isHydrated}
+        cashierName={authUser?.firstName || 'Cajero'}
+        onSessionOpened={setCashSession}
+        onResumeSession={setCashSession}
+      />
       
-      {/* 1. LEFT NAVIGATION (Sidebar) */}
+      {cashSession && (
+        <>
+          {/* 1. LEFT NAVIGATION (Sidebar) */}
       <div className={cn(
         "bg-card flex flex-col items-center py-6 gap-6 border-r border-border shrink-0 z-30 shadow-2xl transition-all duration-300 relative",
         isSidebarExpanded ? "w-64" : "w-22"
@@ -593,21 +694,25 @@ export default function PosTerminal() {
         <ChevronRight className={cn("w-5 h-5 transition-transform duration-300", isSidebarExpanded && "rotate-180")} />
       </button>
 
-      <div className="w-14 h-14 bg-accent-yellow rounded-2xl flex items-center justify-center shadow-lg shadow-accent-yellow/20 active:scale-90 transition-all cursor-pointer group relative">
+      <Link 
+        href="/"
+        className="w-14 h-14 bg-accent-yellow rounded-2xl flex items-center justify-center shadow-lg shadow-accent-yellow/20 active:scale-90 transition-all cursor-pointer group relative shrink-0"
+        title="Ver Tienda Online"
+      >
         <Store className="w-7 h-7 text-foreground group-hover:scale-110 transition-transform" />
-      </div>
+      </Link>
       
       <div className="flex-1 flex flex-col gap-6 mt-4 w-full px-4">
         <button 
-          onClick={() => window.location.href = '/admin'}
+          onClick={handleDashboardNav}
           className={cn(
-            "h-14 rounded-2xl bg-muted text-muted-foreground hover:bg-patagonia-600 hover:text-white flex items-center transition-all group shadow-lg",
+            "h-14 rounded-2xl bg-muted text-muted-foreground hover:bg-patagonia-600 hover:text-white flex items-center transition-all group shadow-lg cursor-pointer",
             isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
           )}
-          title="Dashboard"
+          title="Panel de Admin"
         >
            <LayoutDashboard className="w-7 h-7 shrink-0 group-hover:scale-110 transition-transform" />
-           {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Dashboard</span>}
+           {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Panel de Admin</span>}
         </button>
 
         <button 
@@ -722,6 +827,17 @@ export default function PosTerminal() {
            </div>
 
            <div className="flex items-center gap-6">
+              {config.tier === 'elite' && (
+                <button 
+                  onClick={() => setIsBranchModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-patagonia-600/10 text-patagonia-600 border border-patagonia-600/20 hover:bg-patagonia-600 hover:text-white transition-all group"
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {branches.find(b => b.id === selectedBranchId)?.name || 'Sucursal'}
+                  </span>
+                </button>
+              )}
               <OfflineIndicator isSyncing={isSyncing} />
               <div className="text-right hidden sm:block">
                  <p className="text-xs font-black text-foreground leading-tight">{authUser?.firstName} {authUser?.lastName}</p>
@@ -904,7 +1020,7 @@ export default function PosTerminal() {
                        <div className="flex justify-between items-start mb-2">
                           <div className="flex-1 min-w-0 pr-3">
                              <p className="text-[8px] font-black text-patagonia-600 dark:text-patagonia-400 uppercase tracking-[0.2em] mb-0.5">
-                                {typeof item.product.category === 'string' ? item.product.category : (item.product.category as any)?.name || 'GENÉRICO'}
+                                {typeof item.product.category === 'string' ? item.product.category : (item.product.category as { name?: string })?.name || 'GENÉRICO'}
                              </p>
                              <p className="text-slate-900 dark:text-white font-black leading-tight text-sm group-hover:text-patagonia-600 transition-colors uppercase tracking-tighter line-clamp-2">{item.product.name}</p>
                           </div>
@@ -1051,13 +1167,6 @@ export default function PosTerminal() {
       </div>
 
       {/* MODALS */}
-      <CashOpeningModal 
-        isOpen={!cashSession && isHydrated}
-        cashierName={authUser?.firstName || 'Cajero'}
-        onSessionOpened={setCashSession}
-        onResumeSession={setCashSession}
-      />
-
       <CustomerModal 
         isOpen={isCustomerModalOpen} 
         onClose={() => setIsCustomerModalOpen(false)} 
@@ -1103,6 +1212,16 @@ export default function PosTerminal() {
         }} 
       />
 
+      <BranchSelectionModal 
+        isOpen={isBranchModalOpen}
+        branches={branches}
+        onSelect={(id) => {
+          setSelectedBranchId(id);
+          setIsBranchModalOpen(false);
+          toast.success('Sucursal actualizada');
+        }}
+      />
+
       <AnimatePresence>
         {flyingItems.map(item => (
           <FlyingItem 
@@ -1113,6 +1232,8 @@ export default function PosTerminal() {
           />
         ))}
       </AnimatePresence>
+        </>
+      )}
     </div>
   )
 }

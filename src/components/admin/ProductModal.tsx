@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Save, Package, Tag, DollarSign, Archive, Barcode, Scale, Info, AlertCircle, Loader2 } from 'lucide-react'
+import { X, Save, Package, Tag, DollarSign, Archive, Barcode, Scale, Info, AlertCircle, Loader2, MapPin } from 'lucide-react'
+import { useSaaS } from '@/providers/SaaSProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +20,10 @@ interface ProductModalProps {
 export default function ProductModal({ isOpen, onClose, product, onSaved }: ProductModalProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [categories, setCategories] = useState<any[]>([])
+  const [branches, setBranches] = useState<any[]>([])
+  const [branchStocks, setBranchStocks] = useState<{[key: string]: number}>({})
+  const { isFeatureEnabled } = useSaaS()
+  const isMultiBranch = isFeatureEnabled('multi-branch')
   
   const [formData, setFormData] = useState({
     name: '',
@@ -35,7 +40,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
     isFeatured: false
   })
 
-  // Cargar categorías al abrir
+  // Cargar categorías y sucursales al abrir
   useEffect(() => {
     if (isOpen) {
       fetch('/api/categories')
@@ -43,17 +48,22 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         .then(data => {
           if (Array.isArray(data)) {
             setCategories(data)
-          } else {
-            console.warn('Categorías no es un array:', data)
-            setCategories([])
           }
         })
-        .catch(err => {
-          console.error('Error cargando categorías:', err)
-          setCategories([])
-        })
+        .catch(err => console.error('Error cargando categorías:', err))
+
+      if (isMultiBranch) {
+        fetch('/api/branches')
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) {
+              setBranches(data)
+            }
+          })
+          .catch(err => console.error('Error cargando sucursales:', err))
+      }
     }
-  }, [isOpen])
+  }, [isOpen, isMultiBranch])
 
   // Cargar datos del producto si estamos editando
   useEffect(() => {
@@ -72,6 +82,15 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         isActive: product.isActive !== undefined ? product.isActive : true,
         isFeatured: product.isFeatured || false
       })
+
+      // Cargar stocks por sucursal si existen en el producto
+      if (product.inventory && Array.isArray(product.inventory)) {
+        const stocks: {[key: string]: number} = {}
+        product.inventory.forEach((inv: any) => {
+          stocks[inv.branch_id] = inv.stock
+        })
+        setBranchStocks(stocks)
+      }
     } else {
       setFormData({
         name: '',
@@ -87,6 +106,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         isActive: true,
         isFeatured: false
       })
+      setBranchStocks({})
     }
   }, [product, isOpen])
 
@@ -100,10 +120,18 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
       const url = product ? `/api/products/${product.id}` : '/api/products'
       const method = product ? 'PATCH' : 'POST'
 
+      const payload = {
+        ...formData,
+        branchStocks: isMultiBranch ? Object.entries(branchStocks).map(([branchId, stock]) => ({
+          branchId,
+          stock
+        })) : []
+      }
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       })
 
       if (!res.ok) {
@@ -236,19 +264,51 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             </div>
             */}
 
-            {/* Stock */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm font-bold">
-                <Archive className="w-4 h-4 text-corporate-blue" /> Stock Inicial
-              </Label>
-              <Input 
-                type="number"
-                required
-                min="0"
-                value={formData.stock}
-                onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
-                className="rounded-xl border-gray-200 h-11"
-              />
+            {/* Stock Section */}
+            <div className="col-span-full">
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <Label className="flex items-center gap-2 text-sm font-bold mb-4">
+                  <Archive className="w-4 h-4 text-corporate-blue" /> Control de Inventario
+                </Label>
+                
+                {!isMultiBranch ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-500 uppercase font-bold tracking-wider">Stock Global</Label>
+                    <Input 
+                      type="number"
+                      required
+                      min="0"
+                      value={formData.stock}
+                      onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
+                      className="rounded-xl border-gray-200 h-11"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {branches.length === 0 && (
+                      <p className="text-sm text-gray-500 italic">Cargando sucursales...</p>
+                    )}
+                    {branches.map(branch => (
+                      <div key={branch.id} className="space-y-2 bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <Label className="flex items-center gap-2 text-xs font-bold text-gray-600 dark:text-gray-400">
+                          <MapPin className="w-3 h-3 text-blue-400" /> {branch.name}
+                        </Label>
+                        <Input 
+                          type="number"
+                          min="0"
+                          placeholder="Stock en este local..."
+                          value={branchStocks[branch.id] || 0}
+                          onChange={e => setBranchStocks({
+                            ...branchStocks, 
+                            [branch.id]: Number(e.target.value)
+                          })}
+                          className="h-9 text-sm rounded-lg border-gray-100"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Umbral Bajo Stock */}

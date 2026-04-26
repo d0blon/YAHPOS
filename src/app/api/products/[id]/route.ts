@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 type Params = Promise<{ id: string }>
 
@@ -7,12 +7,12 @@ export async function GET(
   req: Request,
   { params }: { params: Params }
 ) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { id } = await params
 
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select('*, inventory(*)')
     .eq('id', id)
     .single()
 
@@ -27,7 +27,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Params }
 ) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { id } = await params
   const body = await req.json()
 
@@ -45,26 +45,45 @@ export async function PATCH(
   // Remove undefined fields to avoid overwriting with null
   Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])
 
-  const { data, error } = await supabase
+  const { data: product, error: productError } = await supabase
     .from('products')
     .update(updateData)
     .eq('id', id)
     .select()
     .single()
 
-  if (error) {
-    console.error('[PATCH /api/products] Supabase error:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (productError) {
+    console.error('[PATCH /api/products] Supabase error:', productError.message)
+    return NextResponse.json({ error: productError.message }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  // Si hay stock por sucursal, upsert en tabla inventory
+  if (body.branchStocks && Array.isArray(body.branchStocks)) {
+    for (const bs of body.branchStocks) {
+      const { error: invError } = await supabase
+        .from('inventory')
+        .upsert({
+          product_id: id,
+          branch_id: bs.branchId,
+          stock: bs.stock
+        }, {
+          onConflict: 'product_id, branch_id'
+        })
+
+      if (invError) {
+        console.error('[PATCH /api/products] Inventory upsert error:', invError.message)
+      }
+    }
+  }
+
+  return NextResponse.json(product)
 }
 
 export async function DELETE(
   req: Request,
   { params }: { params: Params }
 ) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { id } = await params
 
   const { error } = await supabase

@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const origin = requestUrl.origin
 
   if (code) {
-    const supabase = createServerClient()
+    const supabase = await createClient()
     
     try {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${origin}/login?error=auth_failed`)
       }
 
-      // Check if the user needs to complete their profile
       const user = data.user
       const hasProfile = user?.user_metadata?.first_name || user?.user_metadata?.full_name
 

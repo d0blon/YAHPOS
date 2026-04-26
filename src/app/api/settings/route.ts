@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 // Default settings - fallback if table doesn't exist
 const DEFAULTS: Record<string, string> = {
@@ -41,7 +41,10 @@ const DEFAULTS: Record<string, string> = {
   sii_actividad: '522030',
   sii_direccion: 'Dirección 123',
   sii_comuna: 'Santiago',
-  sii_simple_api_key: '',
+  sii_certificate: '',
+  sii_certificate_password: '',
+  sii_caf_file: '',
+  sii_environment: 'certificacion',
 
   // Apariencia
   appearance_logo_url: '',
@@ -98,7 +101,10 @@ function groupSettings(flat: Record<string, string>) {
       actividad: flat.sii_actividad,
       direccion: flat.sii_direccion,
       comuna: flat.sii_comuna,
-      simpleApiKey: flat.sii_simple_api_key,
+      certificate: flat.sii_certificate,
+      certificatePassword: flat.sii_certificate_password,
+      cafFile: flat.sii_caf_file,
+      environment: flat.sii_environment,
     },
     appearance: {
       logoUrl: flat.appearance_logo_url,
@@ -117,59 +123,77 @@ function groupSettings(flat: Record<string, string>) {
 }
 
 export async function GET() {
-  const supabase = createServerClient()
+  const supabase = await createClient()
 
   try {
+    // 1. Obtener usuario actual
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    // 2. Obtener store_id del perfil
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.store_id) {
+      return NextResponse.json({ error: 'Usuario no asociado a una tienda' }, { status: 403 })
+    }
+
+    // 3. Obtener ajustes filtrados por store_id
     const { data, error } = await supabase
       .from('settings')
       .select('key, value')
+      .eq('store_id', profile.store_id)
 
     if (error) {
-      // Table might not exist — return defaults
-      console.warn('[settings] Using defaults:', error.message)
-      return NextResponse.json({ 
-        settings: groupSettings(DEFAULTS), 
-        usingDefaults: true 
-      })
+      console.warn('[settings] Error fetching:', error.message)
+      return NextResponse.json({ settings: groupSettings(DEFAULTS), usingDefaults: true })
     }
 
-    // Merge DB values over defaults
     const flat = { ...DEFAULTS }
     for (const row of data ?? []) {
       flat[row.key] = row.value ?? flat[row.key]
     }
 
-    return NextResponse.json({ 
-      settings: groupSettings(flat), 
-      usingDefaults: false 
-    })
+    return NextResponse.json({ settings: groupSettings(flat), usingDefaults: false })
   } catch (err: any) {
-    return NextResponse.json({ 
-      settings: groupSettings(DEFAULTS), 
-      usingDefaults: true 
-    })
+    return NextResponse.json({ settings: groupSettings(DEFAULTS), usingDefaults: true })
   }
 }
 
 export async function PATCH(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
 
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.store_id) return NextResponse.json({ error: 'Sin tienda' }, { status: 403 })
+
     const body = await req.json() as Record<string, string>
 
-    // Upsert each key-value pair
+    // Upsert cada par incluyendo el store_id
     const rows = Object.entries(body).map(([key, value]) => ({
+      store_id: profile.store_id,
       key,
       value: String(value),
     }))
 
     const { error } = await supabase
       .from('settings')
-      .upsert(rows, { onConflict: 'key' })
+      .upsert(rows, { onConflict: 'store_id,key' })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json({ success: true })
   } catch (err: any) {

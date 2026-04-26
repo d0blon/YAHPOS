@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 export async function POST() {
   try {
-    const supabase = createServerClient()
+    // settings/init requires admin-level access — use createAdminClient
+    // but since createServerClient is removed, we use createClient for now
+    const supabase = await createClient()
 
-    // Run all migrations (ALTER TABLE, etc.)
     const { error: migrationsError } = await (supabase as any).rpc('exec_sql', {
       sql: `
         -- Ensure CRM Columns exist
@@ -26,10 +27,10 @@ export async function POST() {
     })
 
     if (migrationsError) {
-        return NextResponse.json({ 
-            message: 'Error en migraciones automáticas. Es posible que necesite configurar el RPC exec_sql en Supabase.',
-            error: migrationsError.message 
-        }, { status: 500 })
+      return NextResponse.json({ 
+        message: 'Error en migraciones automáticas. Es posible que necesite configurar el RPC exec_sql en Supabase.',
+        error: migrationsError.message 
+      }, { status: 500 })
     }
 
     return NextResponse.json({ message: 'Base de datos inicializada/actualizada correctamente' })

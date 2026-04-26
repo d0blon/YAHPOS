@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>()(
           // Obtener el perfil real con el rol correcto
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role, rut, first_name, last_name, phone, loyalty_points')
+            .select('role, rut, first_name, last_name, phone, loyalty_points, store_id')
             .eq('id', data.user.id)
             .single()
 
@@ -91,6 +91,7 @@ export const useAuthStore = create<AuthState>()(
             role: profile?.role || 'customer',
             rut: profile?.rut || '',
             loyaltyPoints: profile?.loyalty_points ?? 0,
+            storeId: profile?.store_id,
             identityVerified: false,
             wishlist: [],
             purchaseHistory: [],
@@ -168,6 +169,7 @@ export const useAuthStore = create<AuthState>()(
                 rut: data.rut || currentUser.rut,
                 phone: data.phone || currentUser.phone,
                 loyaltyPoints: data.loyalty_points ?? currentUser.loyaltyPoints,
+                storeId: data.store_id || currentUser.storeId,
                 identityVerified: data.identity_verified ?? currentUser.identityVerified ?? false,
                 updatedAt: data.updated_at || new Date().toISOString()
               } 
@@ -181,6 +183,22 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'patagoniapos-auth',
       storage: createJSONStorage(() => localStorage),
+      // Deserialización segura: si el dato guardado está corrupto o es un string
+      // plano (bug de versiones anteriores), lo ignora y parte de estado limpio
+      deserialize: (str: string) => {
+        try {
+          const parsed = JSON.parse(str)
+          // Validar que el estado tiene la forma correcta
+          if (typeof parsed?.state?.user === 'string') {
+            // Datos corruptos: user es un string JSON, no un objeto
+            return { state: { user: null, isAuthenticated: false, isLoading: false } }
+          }
+          return parsed
+        } catch {
+          return { state: { user: null, isAuthenticated: false, isLoading: false } }
+        }
+      },
     }
+
   )
 )

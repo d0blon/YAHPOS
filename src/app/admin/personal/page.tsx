@@ -6,9 +6,13 @@ import Footer from '@/components/layout/Footer'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { HardHat, Store, Package, ShoppingCart, Beef, Search, Clock, ShieldAlert } from 'lucide-react'
+import { HardHat, Store, Package, ShoppingCart, Beef, Search, Clock, ShieldAlert, Plus, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 // Defines the Staff type matching our DB
 type StaffProfile = {
@@ -34,6 +38,14 @@ export default function PersonalDashboard() {
   const [staff, setStaff] = useState<StaffProfile[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newStaff, setNewStaff] = useState({ 
+    rut: '', 
+    first_name: '', 
+    last_name: '', 
+    role: 'manager' 
+  })
 
   React.useEffect(() => {
     const fetchStaff = async () => {
@@ -94,6 +106,50 @@ export default function PersonalDashboard() {
     }
   }
 
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    try {
+      const res = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStaff)
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Error al agregar trabajador')
+      }
+      const data = await res.json()
+      
+      // Update local state if not already there (prevent double entries if polling happens)
+      setStaff(prev => {
+        if (prev.some(s => s.id === data.id)) return prev
+        return [...prev, data]
+      })
+      
+      setIsAddModalOpen(false)
+      setNewStaff({ rut: '', first_name: '', last_name: '', role: 'manager' })
+      toast.success('Trabajador agregado correctamente')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleRemoveStaff = async (id: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar a este trabajador?')) return
+    
+    try {
+      const res = await fetch(`/api/staff?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar trabajador')
+      setStaff(prev => prev.filter(s => s.id !== id))
+      toast.success('Trabajador eliminado correctamente')
+    } catch (err: any) {
+      toast.error(err.message)
+    }
+  }
+
   const filteredStaff = staff.filter(s => {
     const fullName = `${s.first_name || ''} ${s.last_name || ''}`.trim()
     return fullName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -113,50 +169,52 @@ export default function PersonalDashboard() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20">
-        <div className="container mx-auto px-4">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20 mesh-bg">
+        <div className="container mx-auto px-4 animate-fade-in">
           <div className="flex gap-8">
             <AdminSidebar activePath="/admin/personal" />
 
-            <div className="flex-1 space-y-6">
-              
-              {/* Header */}
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="flex-1 space-y-8">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                  <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-                    <div className="p-2 bg-corporate-blue text-white rounded-xl shadow-lg shadow-corporate-blue/20">
-                      <HardHat className="w-6 h-6" />
-                    </div>
-                    Gestión de Personal
+                  <h1 className="text-3xl font-black tracking-tighter uppercase italic">
+                    Gestión de <span className="text-corporate-blue">Personal</span>
                   </h1>
-                  <p className="text-gray-500 mt-2 font-medium">Asignación y monitoreo de áreas de trabajo en vivo.</p>
+                  <p className="text-gray-500 text-sm font-medium">Asignación y monitoreo de áreas de trabajo en vivo</p>
                 </div>
                 
-                <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                  <div className="px-4 py-2 text-center">
-                    <p className="text-2xl font-black text-emerald-600">{activeStaffCount}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Activos</p>
+                <div className="flex items-center gap-4 bg-white/50 dark:bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-white/20 dark:border-white/10 shadow-lg">
+                  <div className="px-6 py-2 text-center">
+                    <p className="text-3xl font-black text-emerald-600">{activeStaffCount}</p>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Activos</p>
                   </div>
-                  <div className="w-px h-8 bg-gray-100 dark:bg-gray-700"></div>
-                  <div className="px-4 py-2 text-center">
-                    <p className="text-2xl font-black text-gray-400">{staff.length - activeStaffCount}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Ausentes</p>
+                  <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
+                  <div className="px-6 py-2 text-center">
+                    <p className="text-3xl font-black text-gray-400">{staff.length - activeStaffCount}</p>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Ausentes</p>
                   </div>
                 </div>
               </div>
 
               {/* Toolbar */}
-              <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="flex flex-col md:flex-row gap-4 items-center bg-white/50 dark:bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl">
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input 
                     type="text" 
-                    placeholder="Buscar trabajador..." 
+                    placeholder="Buscar trabajador por nombre o RUT..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-blue/50 text-sm font-medium transition-all"
+                    className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-900/50 border-none rounded-2xl text-lg font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-corporate-blue/50 transition-all"
                   />
                 </div>
+                <Button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="w-full md:w-auto bg-corporate-blue hover:bg-corporate-blue/90 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-corporate-blue/20 flex items-center gap-2 transition-all hover:scale-105"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nuevo Trabajador
+                </Button>
               </div>
 
               {/* Staff Grid */}
@@ -196,9 +254,18 @@ export default function PersonalDashboard() {
                               </div>
                             </div>
                           </div>
-                          {isRecentlyUpdated && (
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mt-1" title="Activo recientemente" />
-                          )}
+                          <div className="flex flex-col items-end gap-2">
+                            {isRecentlyUpdated && (
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mt-1" title="Activo recientemente" />
+                            )}
+                            <button 
+                              onClick={() => handleRemoveStaff(worker.id)}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Eliminar trabajador"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="px-5 pb-5 pt-2">
@@ -228,6 +295,76 @@ export default function PersonalDashboard() {
                   })}
                 </div>
               )}
+
+              {/* Add Staff Modal */}
+              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                <DialogContent className="sm:max-w-[425px] rounded-3xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-black">Nuevo Trabajador</DialogTitle>
+                    <DialogDescription>
+                      Agrega un nuevo miembro al equipo. Si el RUT ya existe, se promoverá a personal.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddStaff} className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="rut">RUT</Label>
+                      <Input 
+                        id="rut" 
+                        placeholder="12.345.678-9" 
+                        value={newStaff.rut}
+                        onChange={e => setNewStaff({...newStaff, rut: e.target.value})}
+                        required
+                        className="rounded-xl"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="first_name">Nombre</Label>
+                        <Input 
+                          id="first_name" 
+                          placeholder="Juan" 
+                          value={newStaff.first_name}
+                          onChange={e => setNewStaff({...newStaff, first_name: e.target.value})}
+                          required
+                          className="rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="last_name">Apellido</Label>
+                        <Input 
+                          id="last_name" 
+                          placeholder="Pérez" 
+                          value={newStaff.last_name}
+                          onChange={e => setNewStaff({...newStaff, last_name: e.target.value})}
+                          className="rounded-xl"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Rol / Cargo</Label>
+                      <select 
+                        id="role"
+                        value={newStaff.role}
+                        onChange={e => setNewStaff({...newStaff, role: e.target.value})}
+                        className="w-full flex h-10 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      >
+                        {ROLES.map(role => (
+                          <option key={role.id} value={role.id}>{role.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <DialogFooter className="pt-4">
+                      <Button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="w-full bg-corporate-blue hover:bg-corporate-blue/90 text-white rounded-xl py-6 font-bold text-lg shadow-xl shadow-corporate-blue/20"
+                      >
+                        {isSubmitting ? 'Guardando...' : 'Crear Trabajador'}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
 
             </div>
           </div>

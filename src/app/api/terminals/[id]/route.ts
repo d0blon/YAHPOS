@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 type Params = Promise<{ id: string }>
 
 export async function PATCH(req: Request, { params }: { params: Params }) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { id } = await params
   const body = await req.json()
 
@@ -20,7 +20,7 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
 }
 
 export async function DELETE(req: Request, { params }: { params: Params }) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { id } = await params
 
   const { error } = await supabase

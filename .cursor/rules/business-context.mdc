@@ -1,0 +1,54 @@
+---
+description: Contexto del negocio y estrategia de PatagoniaPOS
+globs: []
+alwaysApply: true
+---
+
+# Contexto de Negocio — PatagoniaPOS
+
+## ¿Quién es Blaz Baez?
+Desarrollador y fundador de PatagoniaPOS. Construyó toda la plataforma él solo.
+- Idioma de trabajo: **Español**
+- Estilo de comunicación: directo, sin vueltas
+- Expectativa: código de producción, no MVPs genéricos
+
+## ¿Qué es PatagoniaPOS?
+Una plataforma SaaS B2B que vende a negocios locales (almacenes, minimarkets, tiendas) en la Patagonia chilena. Cada negocio es un **tenant** con su propio inventario, personal, sucursales y (si pagan el plan correcto) su propio e-commerce.
+
+## Modelo de Negocio
+
+### Planes
+| Plan | Precio | Incluye |
+|---|---|---|
+| **Básico** | Bajo | POS offline, inventario, caja, CRM básico |
+| **Plus** | Medio | Todo lo anterior + E-commerce, pedidos online, catálogo público |
+| **Élite** | Alto | Todo lo anterior + Multi-sucursal, API, logística avanzada, picking fees |
+
+### Servicios Adicionales (para clientes que quieren personalización)
+- El diseño base del e-commerce es configurable por el cliente (imágenes, colores, nombre)
+- Cambios de diseño grandes (rediseños completos, sorteos, promociones especiales) = **servicio de desarrollo separado con costo extra**
+- El cliente no interactúa con el código — lo hace Blaz con su herramienta AI
+
+## Flujo de Upgrade de Plan
+1. Cliente pide upgrade
+2. Blaz lo activa en Supabase (campo `store_settings.tier`)
+3. El cliente VE el cambio de forma instantánea sin recargar la página (Supabase Realtime)
+
+## Configuración de Tienda por el Cliente
+El cliente puede configurar desde su panel (`/admin/configuracion`):
+- Nombre de la tienda
+- Logo
+- Color de acento
+- Imágenes de productos/banners
+
+**Recomendaciones de imágenes a darle a los clientes:**
+- Foto del local/negocio → Hero/Banner principal
+- Fotos de productos → Cards de productos (recomendado: 800x800px, WebP)
+- Logo → Header (recomendado: fondo transparente PNG, mín. 200px ancho)
+- Tool recomendada para optimizar sin perder calidad: **Squoosh** (squoosh.app)
+
+## Lo que NO debes hacer cuando trabajes en este proyecto
+- No romper el middleware de auth — protege datos de todos los tenants
+- No hacer queries sin filtrar por `store_id` — GDPR/privacidad entre tenants
+- No usar el `createAdminClient()` en componentes cliente — bypass RLS es peligroso
+- No hardcodear datos de un tenant específico — todo debe ser dinámico

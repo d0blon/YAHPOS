@@ -88,11 +88,13 @@ Este documento consolida todas las características y misiones que hemos "guarda
 ---
 
 ## 🧾 Misión: Facturación Electrónica (SII Chile) - DETALLES
-- **Estado Actual:** Motor técnico terminado. 
+- **Estado Actual:** Motor técnico e interfaz de onboarding terminados. ✅
+- **Completado:**
+    - [x] Interfaz de carga de Certificado Digital (.pfx) en Admin.
+    - [x] Interfaz de carga de archivos CAF (Folios) en Admin.
+    - [x] Almacenamiento seguro en base de datos (Base64).
 - **Pendiente:** 
-    - [ ] UI para subir Certificado Digital (.pfx).
-    - [ ] UI para subir archivos CAF (Folios).
-    - [ ] Proceso de postulación ante el SII (Set de pruebas).
+    - [ ] Proceso de postulación ante el SII (Set de pruebas manuales).
 
 ---
 

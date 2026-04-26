@@ -4,27 +4,48 @@ import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { formatPrice, cn } from '@/lib/utils'
-import { Banknote, CreditCard, X, Delete, CheckCircle2, ArrowRight, RefreshCw } from 'lucide-react'
+import { Banknote, CreditCard, X, Delete, CheckCircle2, ArrowRight, RefreshCw, Smartphone, Zap, Globe, Building2, Tablet } from 'lucide-react'
+import { usePosStore } from '@/stores/posStore'
 
 interface PaymentModalProps {
   isOpen: boolean
   onClose: () => void
   total: number
-  onConfirm: (method: 'EFECTIVO' | 'TARJETA', receivedAmount?: number) => void
+  onConfirm: (method: 'EFECTIVO' | 'TARJETA' | 'TERMINAL', receivedAmount?: number, terminalType?: string) => void
 }
 
 export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModalProps) {
-  const [method, setMethod] = useState<'EFECTIVO' | 'TARJETA'>('EFECTIVO')
+  const { settings } = usePosStore();
+  const [method, setMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TERMINAL'>('EFECTIVO')
+  const [selectedTerminal, setSelectedTerminal] = useState('')
+  const [isTerminalConfirmed, setIsTerminalConfirmed] = useState(false)
   const [receivedStr, setReceivedStr] = useState('')
   const receivedAmount = parseInt(receivedStr) || 0
   const change = receivedAmount - total
 
   const bills = [1000, 2000, 5000, 10000, 20000]
 
+  const allTerminals = [
+    { id: 'SumUp', key: 'sumup', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-500/10', desc: 'Sin arriendo, solo comisión. Simple.' },
+    { id: 'Mercado Pago', key: 'other_card', icon: Globe, color: 'text-blue-500', bg: 'bg-blue-500/10', desc: 'Abono inmediato + Chip 4G gratis.' },
+    { id: 'TUU', key: 'tuu', icon: Tablet, color: 'text-emerald-500', bg: 'bg-emerald-500/10', desc: 'Integración SII. Boleta en equipo.' },
+    { id: 'Getnet', key: 'getnet', icon: Building2, color: 'text-rose-500', bg: 'bg-rose-500/10', desc: 'Dinero el mismo día. Santander.' },
+    { id: 'Compraquí', key: 'other_card', icon: CreditCard, color: 'text-indigo-500', bg: 'bg-indigo-500/10', desc: 'Respaldo BancoEstado. Confiable.' }
+  ];
+
+  const activeTerminalsList = allTerminals.filter(t => {
+    if (!settings.activeTerminals) return true;
+    return settings.activeTerminals[t.key as keyof typeof settings.activeTerminals] === true;
+  });
+
   useEffect(() => {
     if (isOpen) {
       setMethod('EFECTIVO')
       setReceivedStr('')
+      setIsTerminalConfirmed(false)
+      if (activeTerminalsList.length > 0) {
+        setSelectedTerminal(activeTerminalsList[0].id)
+      }
     }
   }, [isOpen])
 
@@ -41,7 +62,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
     setReceivedStr(bill.toString())
   }
 
-  const canConfirm = method === 'TARJETA' || receivedAmount >= total
+  const canConfirm = method === 'EFECTIVO' ? receivedAmount >= total : (method === 'TERMINAL' ? (selectedTerminal !== '' && isTerminalConfirmed) : true)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -83,6 +104,19 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
               <CreditCard className={cn("w-10 h-10 transition-transform group-hover:scale-110", method === 'TARJETA' ? "text-white" : "text-slate-300")} />
               <span className="font-black uppercase tracking-[0.2em] text-[10px]">Tarjeta</span>
               {method === 'TARJETA' && <div className="absolute top-2 right-4 w-2 h-2 bg-white rounded-full animate-ping" />}
+            </button>
+
+            <button 
+              onClick={() => setMethod('TERMINAL')}
+              className={cn(                "w-full p-8 rounded-[2.5rem] border-2 flex flex-col items-center gap-4 transition-all duration-300 group relative overflow-hidden",
+                method === 'TERMINAL' 
+                  ? "bg-amber-500 border-amber-500 text-white shadow-2xl shadow-amber-500/30 scale-[1.02]" 
+                  : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-amber-500/30"
+              )}
+            >
+              <Smartphone className={cn("w-10 h-10 transition-transform group-hover:scale-110", method === 'TERMINAL' ? "text-white" : "text-slate-300")} />
+              <span className="font-black uppercase tracking-[0.2em] text-[10px]">Terminal</span>
+              {method === 'TERMINAL' && <div className="absolute top-2 right-4 w-2 h-2 bg-white rounded-full animate-ping" />}
             </button>
           </div>
 
@@ -152,7 +186,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                 </div>
               </div>
             </div>
-          ) : (
+          ) : method === 'TARJETA' ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-10 animate-in fade-in zoom-in-95 duration-700 py-10">
               <div className="relative">
                 <div className="w-48 h-48 bg-patagonia-600/10 rounded-[4rem] flex items-center justify-center relative border-4 border-patagonia-600/20">
@@ -173,6 +207,65 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                  <div className="w-3 h-3 bg-patagonia-600 rounded-full animate-bounce" />
               </div>
             </div>
+          ) : (
+            <div className="flex-1 flex flex-col space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-[2.5rem] p-8 flex items-center justify-between">
+                 <div>
+                   <h3 className="text-2xl font-black text-amber-500 uppercase italic tracking-tighter">Terminal Físico</h3>
+                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Seleccione el terminal para enviar el monto</p>
+                 </div>
+                 <Smartphone className="w-12 h-12 text-amber-500" />
+              </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                  {activeTerminalsList.map(term => (
+                    <button
+                      key={term.id}
+                      onClick={() => {
+                        setSelectedTerminal(term.id);
+                        setIsTerminalConfirmed(false);
+                      }}
+                      className={cn(
+                        "p-5 rounded-[1.5rem] border-2 flex items-center gap-4 transition-all group relative overflow-hidden",
+                        selectedTerminal === term.id 
+                          ? "bg-white dark:bg-slate-800 border-amber-500 shadow-xl scale-[1.02]" 
+                          : "bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-amber-500/30"
+                      )}
+                    >
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", term.bg)}>
+                        <term.icon className={cn("w-5 h-5", term.color)} />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-black uppercase tracking-tighter text-xs">{term.id}</p>
+                        <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest leading-tight">{term.desc}</p>
+                      </div>
+                      {selectedTerminal === term.id && <CheckCircle2 className="w-5 h-5 text-amber-500 ml-auto" />}
+                    </button>
+                  ))}
+                </div>
+
+                {selectedTerminal && !isTerminalConfirmed && (
+                  <button 
+                    onClick={() => setIsTerminalConfirmed(true)}
+                    className="w-full py-5 bg-amber-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-amber-600 transition-all shadow-lg animate-pulse"
+                  >
+                    Confirmar Pago en {selectedTerminal}
+                  </button>
+                )}
+
+                {isTerminalConfirmed && (
+                  <div className="p-5 bg-slate-900 rounded-3xl border border-white/5 flex items-center justify-center gap-4">
+                     <RefreshCw className="w-5 h-5 text-amber-500 animate-spin" />
+                     <span className="text-[10px] font-black text-white uppercase tracking-widest">Esperando Confirmación de {selectedTerminal}...</span>
+                     <button 
+                       onClick={() => setIsTerminalConfirmed(false)}
+                       className="ml-auto text-[8px] text-slate-500 hover:text-white underline uppercase"
+                     >
+                       Cancelar
+                     </button>
+                  </div>
+                )}
+            </div>
           )}
 
           <div className="mt-12 flex flex-col sm:flex-row gap-4">
@@ -185,12 +278,13 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
             </Button>
             <Button 
               disabled={!canConfirm}
-              onClick={() => onConfirm(method, receivedAmount)}
+              onClick={() => onConfirm(method, receivedAmount, selectedTerminal)}
               className={cn(
                 "flex-1 h-20 rounded-3xl font-black uppercase tracking-[0.3em] text-sm shadow-2xl transition-all active:scale-[0.98] group",
                 method === 'EFECTIVO' 
                   ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/40 text-white" 
-                  : "bg-patagonia-600 hover:bg-patagonia-700 shadow-patagonia-600/40 text-white"
+                  : method === 'TARJETA' ? "bg-patagonia-600 hover:bg-patagonia-700 shadow-patagonia-600/40 text-white"
+                  : "bg-amber-500 hover:bg-amber-600 shadow-amber-500/40 text-white"
               )}
             >
               {canConfirm ? (

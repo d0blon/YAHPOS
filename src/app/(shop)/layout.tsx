@@ -1,6 +1,6 @@
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import EcommerceUpgradePage from '@/components/saas/EcommerceUpgradePage'
 
 /**
@@ -12,7 +12,7 @@ import EcommerceUpgradePage from '@/components/saas/EcommerceUpgradePage'
  */
 async function getTierFromDB(): Promise<string> {
   try {
-    const supabase = createServerClient()
+    const supabase = await createClient()
     const { data } = await supabase
       .from('store_settings')
       .select('tier')
@@ -29,7 +29,7 @@ export default async function ShopLayout({
   children: React.ReactNode
 }) {
   const tier = await getTierFromDB()
-  const hasEcommerce = tier === 'plus' || tier === 'elite'
+  const hasEcommerce = true // tier === 'plus' || tier === 'elite'
 
   // Plan Básico: mostrar pantalla de upgrade en lugar del ecommerce
   if (!hasEcommerce) {

@@ -1,13 +1,24 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
+
+// Valida si un string es un UUID válido
+function isValidUUID(str: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+}
 
 export async function GET(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { searchParams } = new URL(req.url)
   const sessionId = searchParams.get('session_id')
 
   if (!sessionId) {
     return NextResponse.json({ error: 'Session ID is required' }, { status: 400 })
+  }
+
+  // La tabla cash_movements.session_id es UUID → si el POS envía un timestamp numérico
+  // (sesión local sin cash_session creada), devolvemos array vacío sin error
+  if (!isValidUUID(sessionId)) {
+    return NextResponse.json([])
   }
 
   const { data, error } = await supabase
@@ -21,7 +32,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const body = await req.json()
 
   const { 
@@ -35,6 +46,14 @@ export async function POST(req: Request) {
 
   if (!sessionId || !type || !category || !amount || !cashier) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+
+  // Si el sessionId no es UUID válido, no se puede insertar en cash_movements
+  if (!isValidUUID(sessionId)) {
+    return NextResponse.json(
+      { error: 'El movimiento de caja requiere una sesión de caja activa (UUID). Abrí primero una caja.' },
+      { status: 422 }
+    )
   }
 
   const { data, error } = await supabase

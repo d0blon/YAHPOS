@@ -116,8 +116,9 @@ export default function CategoryPage() {
       try {
         const allProducts = await getProducts();
         const categoryProducts = allProducts.filter(p => {
-          const c = p.category as any;
-          return c === slug || c?.slug === slug;
+          const catStr = p.category as unknown as string;
+          const c = typeof catStr === 'string' ? catStr.toLowerCase() : p.category?.slug?.toLowerCase() || '';
+          return c === slug.toLowerCase();
         }).map(p => {
           // Dynamic brand extraction
           let foundBrand = 'Otra';

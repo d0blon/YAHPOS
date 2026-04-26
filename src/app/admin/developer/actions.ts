@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { verifyMasterTOTP } from '@/lib/security'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
 const MASTER_ENCRYPTED = process.env.MASTER_KEY_ENCRYPTED || ''
@@ -42,7 +42,7 @@ export async function verifyDeveloperAccessAction(password: string, code: string
  * Obtiene la configuración actual de la tienda (SaaS).
  */
 export async function getStoreSettingsAction() {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('store_settings')
     .select('*')
@@ -53,15 +53,15 @@ export async function getStoreSettingsAction() {
 }
 
 /**
- * Actualiza la configuración de la tienda.
+ * Actualiza la configuración de una tienda específica.
  */
-export async function updateStoreSettingsAction(settings: any) {
-  const supabase = createServerClient()
+export async function updateStoreSettingsAction(storeId: string, settings: any) {
+  const supabase = await createClient()
   
   const { error } = await supabase
     .from('store_settings')
     .update(settings)
-    .eq('id', '00000000-0000-0000-0000-000000000000')
+    .eq('id', storeId)
 
   if (error) {
     return { success: false, error: error.message }
@@ -69,7 +69,33 @@ export async function updateStoreSettingsAction(settings: any) {
 
   revalidatePath('/')
   revalidatePath('/admin')
+  revalidatePath('/admin/developer')
   return { success: true }
+}
+
+/**
+ * Elimina un negocio y sus configuraciones.
+ */
+export async function deleteStoreAction(storeId: string) {
+  const supabase = await createClient()
+  
+  try {
+    // 1. Eliminar settings (cascada manual si no está en DB)
+    await supabase.from('store_settings').delete().eq('id', storeId)
+    
+    // 2. Eliminar store
+    const { error } = await supabase
+      .from('stores')
+      .delete()
+      .eq('id', storeId)
+
+    if (error) throw error
+
+    revalidatePath('/admin/developer')
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
 }
 
 /**
@@ -80,3 +106,64 @@ export async function logoutDeveloperAction() {
   cookieStore.delete('dev_token')
   return { success: true }
 }
+
+/**
+ * Obtiene todos los negocios (tenants) registrados.
+ */
+export async function listStoresAction() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching stores:', error)
+    return []
+  }
+  return data || []
+}
+
+/**
+ * Crea un nuevo negocio (tenant) y sus ajustes iniciales.
+ */
+export async function createStoreAction(storeData: { name: string, slug: string, tier: string }) {
+  const supabase = await createClient()
+  
+  try {
+    // 1. Crear el registro del negocio
+    const { data: newStore, error: storeError } = await supabase
+      .from('stores')
+      .insert({
+        name: storeData.name,
+        slug: storeData.slug,
+        tier: storeData.tier,
+        is_active: true
+      })
+      .select()
+      .single()
+
+    if (storeError) throw storeError
+
+    // 2. Crear los ajustes iniciales para este negocio en store_settings
+    const { error: settingsError } = await supabase
+      .from('store_settings')
+      .insert({
+        id: newStore.id, // Usamos el ID del store como ID de settings
+        store_name: storeData.name,
+        tier: storeData.tier
+      })
+
+    if (settingsError) {
+      console.warn('Could not create store_settings:', settingsError.message)
+      // No fallamos la creación del store, pero avisamos
+    }
+
+    revalidatePath('/admin/developer')
+    return { success: true, store: newStore }
+  } catch (error: any) {
+    console.error('Error creating store:', error)
+    return { success: false, error: error.message }
+  }
+}
+

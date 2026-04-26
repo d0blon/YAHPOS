@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { SiiEngine } from '@/lib/sii/engine';
-import { createServerClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 export async function POST(req: Request) {
-  const supabase = createServerClient();
+  const supabase = await createClient();
   
   try {
     const { items, totals, type = 39 } = await req.json();

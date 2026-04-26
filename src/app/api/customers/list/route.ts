@@ -1,33 +1,30 @@
+import { createClient } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
 
 export async function GET() {
+  const supabase = await createClient()
+  
   try {
-    const supabase = createServerClient()
-    
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, rut, email, loyalty_points, created_at, role')
+      .select('*')
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching customers:', error.message)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    if (error) throw error
 
-    // Map to the format expected by the frontend
-    const formattedData = data.map(c => ({
-      id: c.id,
-      name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Sin nombre',
-      rut: c.rut || '—',
-      email: c.email || '',
-      loyalty_points: c.loyalty_points || 0,
-      createdAt: c.created_at,
-      role: c.role || 'customer'
+    const customers = data.map(profile => ({
+      id: profile.id,
+      name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Sin Nombre',
+      rut: profile.rut,
+      email: profile.email,
+      loyalty_points: profile.loyalty_points || 0,
+      createdAt: profile.created_at,
+      role: profile.role
     }))
 
-    return NextResponse.json(formattedData)
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json(customers)
+  } catch (error: any) {
+    console.error('Error fetching customers list:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

@@ -1,3 +1,4 @@
+// @ts-ignore
 import * as forge from 'node-forge';
 import { SignedXml } from 'xml-crypto';
 import * as fs from 'fs';
@@ -5,13 +6,15 @@ import * as fs from 'fs';
 export class SiiSigner {
   private p12: forge.pkcs12.Pkcs12P12;
 
-  constructor(pfxPath: string, password: string) {
-    if (!fs.existsSync(pfxPath)) {
-      throw new Error(`Certificado no encontrado en: ${pfxPath}`);
+  constructor(pfxData: string | Buffer, password: string) {
+    let pfxDer;
+    if (typeof pfxData === 'string') {
+      // Si es un Data URL (base64)
+      const base64 = pfxData.includes('base64,') ? pfxData.split('base64,')[1] : pfxData;
+      pfxDer = forge.util.decode64(base64);
+    } else {
+      pfxDer = pfxData.toString('binary');
     }
-    const pfxBuffer = fs.readFileSync(pfxPath);
-    const pfxBase64 = pfxBuffer.toString('base64');
-    const pfxDer = forge.util.decode64(pfxBase64);
     
     this.p12 = forge.pkcs12.pkcs12FromP12(pfxDer, password);
   }
@@ -47,13 +50,15 @@ export class SiiSigner {
     const sig = new SignedXml();
     
     // Configuración específica requerida por el SII
-    sig.addReference(
+    ;(sig as any).addReference(
       `//*[local-name()='${tagToSign}']`,
       ["http://www.w3.org/2000/09/xmldsig#enveloped-signature", "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"],
       "http://www.w3.org/2000/09/xmldsig#sha1"
     );
     
+    // @ts-ignore
     sig.keyInfoProvider = {
+      // @ts-ignore
       getKeyInfo: () => `<X509Data><X509Certificate>${this.getCertificatePem()}</X509Certificate></X509Data>`,
       getKey: () => Buffer.from(privateKey)
     };

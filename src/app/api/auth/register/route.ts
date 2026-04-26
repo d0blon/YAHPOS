@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import { cleanRut } from '@/lib/utils'
 
 export async function POST(req: Request) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createClient()
     const { email, password, firstName, lastName, phone, rut, acceptMarketing } = await req.json()
 
     if (!email || !password || !rut) {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       .single()
 
     if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error fetching user:', fetchError.message)
+      console.error('Error fetching user:', fetchError.message)
     }
 
     if (existingUser) {

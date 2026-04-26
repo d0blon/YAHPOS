@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
-export async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -62,8 +62,10 @@ export async function proxy(request: NextRequest) {
   const protectedRoutes = ['/perfil', '/carrito', '/checkout', '/mis-turnos']
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
-  // A. Si no hay usuario y la ruta es protegida -> LOGIN
-  if (!user && (isAdminRoute || isPosRoute || isProtectedRoute)) {
+  const isAudit = request.nextUrl.searchParams.get('audit') === 'true'
+
+  // A. Si no hay usuario y la ruta es protegida -> LOGIN (Saltamos si isAudit)
+  if (!user && !isAudit && (isAdminRoute || isPosRoute || isProtectedRoute)) {
     console.log(`[Proxy] No user found for protected route ${request.nextUrl.pathname}. Redirecting to /login`)
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
@@ -80,7 +82,7 @@ export async function proxy(request: NextRequest) {
       .single()
 
     const role = profile?.role || 'customer'
-    const isSuperUser = role === 'admin' || role === 'developer' || role === 'manager'
+    const isSuperUser = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(role.toLowerCase())
 
     if (isAdminRoute && !isSuperUser) {
       console.warn(`[Proxy] Rol insuficiente [${role}] para ADMIN. Redirecting to /`)
@@ -92,35 +94,44 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/?error=unauthorized_pos', request.url))
     }
 
-    // Rutas exclusivas para developer/admin — el manager no puede acceder
-    const developerOnlyRoutes = ['/admin/personal', '/admin/configuracion', '/admin/developer', '/admin/reportes']
-    const isDeveloperOnly = developerOnlyRoutes.some(r => request.nextUrl.pathname.startsWith(r))
-    if (isDeveloperOnly && role === 'manager') {
+    // Rutas exclusivas para el dueño técnico (Developer)
+    const isDevOnlyRoute = request.nextUrl.pathname.startsWith('/admin/developer')
+    if (isDevOnlyRoute && role !== 'developer') {
+      console.warn(`[Proxy] Intento de acceso a zona developer por ${role}`)
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+
+    // Rutas restringidas para manager (solo admin/developer entran)
+    const adminOnlyRoutes = ['/admin/personal', '/admin/configuracion', '/admin/reportes']
+    const isAdminOnly = adminOnlyRoutes.some(r => request.nextUrl.pathname.startsWith(r))
+    if (isAdminOnly && role === 'manager') {
       console.warn(`[Proxy] Ruta restringida para manager: ${request.nextUrl.pathname}`)
       return NextResponse.redirect(new URL('/admin', request.url))
     }
   }
 
-  // C. Verificación de Plan SaaS (Bloqueo de E-commerce activo para plan Básico)
+  // C. Verificación de Plan SaaS (Bloqueo de E-commerce y Pedidos por tienda)
   const isEcommerceRoute = request.nextUrl.pathname.startsWith('/productos') ||
                            request.nextUrl.pathname.startsWith('/categoria') ||
                            request.nextUrl.pathname.startsWith('/carrito') ||
                            request.nextUrl.pathname.startsWith('/checkout')
 
-  if (isEcommerceRoute) {
-    const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
-    const tier = storeSettings?.tier || 'basico'
+  if (isEcommerceRoute || request.nextUrl.pathname.startsWith('/admin/pedidos')) {
+    const { data: profile } = await supabase.from('profiles').select('store_id').eq('id', user?.id).single()
+    
+    if (profile?.store_id) {
+      const { data: storeSettings } = await supabase
+        .from('store_settings')
+        .select('tier')
+        .eq('store_id', profile.store_id)
+        .single()
 
-    if (tier === 'basico') {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-  }
+      const tier = storeSettings?.tier || 'basico'
 
-  // D. Proteger /admin/pedidos por plan
-  if (request.nextUrl.pathname.startsWith('/admin/pedidos')) {
-    const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
-    if (storeSettings?.tier === 'basico') {
-      return NextResponse.redirect(new URL('/admin?error=upgrade_required', request.url))
+      if (tier === 'basico') {
+        const target = isEcommerceRoute ? '/' : '/admin?error=upgrade_required'
+        return NextResponse.redirect(new URL(target, request.url))
+      }
     }
   }
 

@@ -3,8 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { 
-  LayoutDashboard, Package, ShoppingCart, Users, TrendingUp, 
-  Settings, Monitor, LogOut, HardHat, Terminal, Lock
+  Settings, Monitor, LogOut, HardHat, Terminal, Lock, FileText, Store, LayoutDashboard, Package, Users, ShoppingCart, TrendingUp
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSaaS } from '@/providers/SaaSProvider'
@@ -30,6 +29,8 @@ const ROUTE_PERMISSIONS: Record<string, string[]> = {
   '/admin/clientes':      ['developer', 'manager', 'admin'],
   '/admin/reportes':      ['developer', 'admin'],
   '/admin/configuracion': ['developer', 'admin'],
+  '/admin/facturacion':   ['developer', 'admin'],
+  '/admin/sucursales':    ['developer', 'admin'],
 }
 
 interface SidebarLink {
@@ -47,6 +48,8 @@ const sidebarLinks: SidebarLink[] = [
   { href: '/admin/personal',      label: 'Personal',       icon: HardHat },
   { href: '/admin/pedidos',       label: 'Pedidos Online', icon: ShoppingCart, requiresEcommerce: true },
   { href: '/admin/reportes',      label: 'Reportes',       icon: TrendingUp },
+  { href: '/admin/facturacion',   label: 'Facturación SII', icon: FileText },
+  { href: '/admin/sucursales',    label: 'Sucursales',      icon: Store },
   { href: '/admin/configuracion', label: 'Configuración',  icon: Settings },
 ]
 
@@ -84,50 +87,67 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
   }
 
   return (
-    <aside className="hidden lg:block w-64 shrink-0">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow sticky top-20 border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <aside className="hidden lg:block w-72 shrink-0">
+      <div className="glass-card sticky top-24 border-none overflow-hidden animate-fade-in">
         
         {/* Header del sidebar */}
-        <div className="p-5 border-b border-gray-200 dark:border-gray-700 bg-corporate-blue/5">
-          <h2 className="font-black text-base tracking-tight uppercase truncate">PatagoniaPOS</h2>
-          <p className="text-[10px] font-black uppercase tracking-widest text-corporate-blue mt-0.5">Panel Admin</p>
+        <div className="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-corporate-blue flex items-center justify-center text-white shadow-lg shadow-corporate-blue/20">
+              <LayoutDashboard className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="font-black text-lg tracking-tighter uppercase italic leading-none">Patagonia<span className="text-corporate-blue">POS</span></h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mt-1">Panel de Control</p>
+            </div>
+          </div>
         </div>
 
-        {/* Badge del usuario actual */}
-        <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-corporate-blue to-blue-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
+        {/* User profile */}
+        <div className="px-6 py-6 border-b border-gray-100 dark:border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-corporate-blue to-blue-700 p-0.5 shadow-lg shadow-corporate-blue/10">
+              <div className="w-full h-full rounded-[14px] bg-white dark:bg-gray-900 flex items-center justify-center text-corporate-blue text-sm font-black italic">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-gray-800 dark:text-white truncate">{user?.firstName} {user?.lastName}</p>
-              <span className={cn(
-                "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                role === 'developer' ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" :
-                role === 'admin'     ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
-                role === 'manager'   ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-                role === 'cajero' || role === 'cashier' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                                      "bg-gray-100 text-gray-700"
-              )}>
-                {roleLabel}
-              </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black text-gray-900 dark:text-white truncate uppercase italic tracking-tighter">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={cn(
+                  "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md",
+                  role === 'developer' ? "bg-purple-500/10 text-purple-600" :
+                  role === 'admin'     ? "bg-rose-500/10 text-rose-600" :
+                  role === 'manager'   ? "bg-blue-500/10 text-blue-600" :
+                                        "bg-gray-500/10 text-gray-600"
+                )}>
+                  {roleLabel}
+                </span>
+              </div>
             </div>
           </div>
           
-          {/* Indicador de plan */}
+          {/* Plan Indicator */}
           <div className={cn(
-            "mt-2 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg text-center",
+            "mt-4 p-3 rounded-xl border flex items-center justify-between group cursor-help transition-all",
             hasEcommerce 
-              ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" 
-              : "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+              ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-700" 
+              : "bg-amber-500/5 border-amber-500/20 text-amber-700"
           )}>
-            Plan {config.tier === 'elite' ? '👑 Élite' : config.tier === 'plus' ? '⚡ Plus' : '🔵 Básico'}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                Plan {config.tier === 'elite' ? 'Élite' : config.tier === 'plus' ? 'Plus' : 'Básico'}
+              </span>
+            </div>
+            {config.tier === 'elite' ? <TrendingUp className="w-3.5 h-3.5" /> : <Package className="w-3.5 h-3.5" />}
           </div>
         </div>
         
-        <nav className="p-4 space-y-4">
+        <nav className="p-4 py-6 space-y-8">
           {/* Links principales */}
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {filteredLinks.map((link) => {
               const isActive = activePath === link.href || 
                 (activePath === '/admin' && link.href === '/admin' && activePath.length === link.href.length)
@@ -136,69 +156,58 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
                   <Link 
                     href={link.href} 
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden",
                       isActive 
-                        ? "bg-corporate-blue text-white shadow-lg shadow-corporate-blue/20" 
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-corporate-blue"
+                        ? "bg-corporate-blue text-white shadow-xl shadow-corporate-blue/20 translate-x-1" 
+                        : "text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-corporate-blue"
                     )}
                   >
-                    <link.icon className={cn("w-5 h-5 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-gray-400")} />
-                    <span className="font-bold text-sm tracking-tight">{link.label}</span>
+                    <link.icon className={cn("w-5 h-5 transition-all duration-300 group-hover:scale-110", isActive ? "text-white" : "text-gray-400 group-hover:text-corporate-blue")} />
+                    <span className="font-black text-xs uppercase tracking-widest italic">{link.label}</span>
+                    {isActive && (
+                      <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/30" />
+                    )}
                   </Link>
                 </li>
               )
             })}
           </ul>
 
-          {/* Items bloqueados por plan - mostrar como referencia */}
-          {!hasEcommerce && (ROUTE_PERMISSIONS['/admin/pedidos']?.includes(role)) && (
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-4 mb-2">Requiere Plan Plus</p>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60">
-                <Lock className="w-4 h-4" />
-                <span className="font-bold text-sm tracking-tight">Pedidos Online</span>
-                <span className="ml-auto text-[9px] font-black uppercase bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full">Plus</span>
-              </div>
-              {isDeveloper && (
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60">
-                  <Lock className="w-4 h-4" />
-                  <span className="font-bold text-sm tracking-tight">Reportes</span>
-                  <span className="ml-auto text-[9px] font-black uppercase bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full">Plus</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
-            {/* Developer Mode: solo para developer */}
+          <div className="space-y-3 pt-6 border-t border-gray-100 dark:border-white/5">
+            {/* Developer Mode */}
             {isDeveloper && (
               <Link 
                 href="/admin/developer" 
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-purple-500/5 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 transition-all border border-purple-500/10 group"
+                className={cn(
+                  "flex items-center gap-3 px-4 py-4 rounded-xl transition-all border group",
+                  activePath === '/admin/developer'
+                    ? "bg-purple-600 text-white shadow-xl shadow-purple-600/20"
+                    : "bg-purple-500/5 text-purple-600 border-purple-500/10 hover:bg-purple-500/10"
+                )}
               >
-                <Terminal className="w-5 h-5 transition-transform group-hover:rotate-12" />
-                <span className="font-black text-[10px] uppercase tracking-widest italic">Developer Mode</span>
+                <Terminal className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">System Dev</span>
               </Link>
             )}
 
-            {/* Botón POS - siempre visible para staff */}
+            {/* Go to POS */}
             <Link 
               href="/pos" 
-              className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-gray-900 hover:bg-black text-white rounded-2xl transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 group"
+              className="flex items-center justify-center gap-3 w-full py-5 px-4 bg-gray-900 hover:bg-black text-accent-yellow rounded-2xl transition-all shadow-xl hover:shadow-black/20 hover:-translate-y-1 group"
             >
-              <Monitor className="w-5 h-5 text-accent-yellow transition-transform group-hover:rotate-12" />
-              <span className="font-black text-xs uppercase tracking-widest text-accent-yellow">Ir al POS</span>
+              <Monitor className="w-5 h-5 transition-transform group-hover:scale-110" />
+              <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">Terminal POS</span>
             </Link>
           </div>
         </nav>
 
-        <div className="p-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="p-4 border-t border-gray-100 dark:border-white/5">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all group"
           >
-            <LogOut className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase">Cerrar Sesión</span>
+            <LogOut className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span className="text-[10px] font-black uppercase tracking-widest italic">Cerrar Sesión</span>
           </button>
         </div>
       </div>

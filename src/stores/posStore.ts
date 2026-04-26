@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware'
 import { get, set, del } from 'idb-keyval'
-import { Product, User } from '@/types'
+import { Product, User, Branch } from '@/types'
 
 export interface CashSession {
   id: number;
@@ -24,6 +24,14 @@ export interface PosSettings {
     accumulationRate: number; // e.g. 1% -> 0.01
     redemptionRate: number;   // e.g. 1 point = $1
     redemptionMultiple: number; // e.g. only redeem in 100s
+  };
+  activeTerminals?: {
+    cash: boolean;
+    transbank: boolean;
+    getnet: boolean;
+    tuu: boolean;
+    sumup: boolean;
+    transfer: boolean;
   };
 }
 
@@ -85,7 +93,7 @@ export interface OrderRecord {
   customerName?: string;
   customerPoints?: number;
   pointsToEarn: number;
-  paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PUNTOS';
+  paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PUNTOS' | 'TRANSFERENCIA' | 'GETNET' | 'TUU' | 'SUMUP' | 'COMPRAQUI' | 'MERCADOPAGO' | string;
   timestamp: number;
   isOffline: boolean;
   discount?: number;
@@ -134,6 +142,8 @@ interface PosState extends PosCart {
   loadMovementsFromServer: (sessionId: string) => Promise<void>;
   isSyncing: boolean;
   isInitialLoading: boolean;
+  selectedBranchId: string | null;
+  setSelectedBranchId: (id: string | null) => void;
 }
 
 const calculatePosTotals = (items: PosItem[], pointsRedeemed = 0, settings?: PosSettings): Omit<PosCart, 'items' | 'customerRut' | 'customerName' | 'customerPoints'> => {
@@ -199,6 +209,11 @@ export const usePosStore = create<PosState>()(
       },
       isTrainingMode: false,
       cashSession: null,
+      selectedBranchId: null,
+
+      setSelectedBranchId: (id: string | null) => {
+        set({ selectedBranchId: id });
+      },
       
       addItem: (product: Product, quantity = 1) => {
         const { items } = get()

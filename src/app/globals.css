@@ -81,51 +81,51 @@
 
 @layer base {
   :root {
-    /* MODO CLARO - HEX Sólido para estabilidad total */
-    --background: #fdfcff;
-    --foreground: #1a0033;
-    --card: #ffffff;
-    --card-foreground: #1a0033;
-    --popover: #ffffff;
-    --popover-foreground: #1a0033;
-    --primary: #9500ff;
-    --primary-foreground: #ffffff;
-    --secondary: #f4e5ff;
-    --secondary-foreground: #4c0080;
-    --muted: #f0e6f5;
-    --muted-foreground: #664d80;
-    --accent: #d499ff;
-    --accent-foreground: #1a0033;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-    --border: #e2d6f0;
-    --input: #e2d6f0;
-    --ring: #7700cc;
+    /* MODO CLARO - HSL para compatibilidad con tailwind.config.ts */
+    --background: hsl(260, 100%, 99%);
+    --foreground: hsl(271, 100%, 10%);
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: hsl(271, 100%, 10%);
+    --popover: hsl(0, 0%, 100%);
+    --popover-foreground: hsl(271, 100%, 10%);
+    --primary: hsl(275, 100%, 50%);
+    --primary-foreground: hsl(0, 0%, 100%);
+    --secondary: hsl(275, 100%, 95%);
+    --secondary-foreground: hsl(280, 100%, 25%);
+    --muted: hsl(280, 43%, 93%);
+    --muted-foreground: hsl(280, 25%, 40%);
+    --accent: hsl(275, 100%, 80%);
+    --accent-foreground: hsl(271, 100%, 10%);
+    --destructive: hsl(0, 84%, 60%);
+    --destructive-foreground: hsl(0, 0%, 100%);
+    --border: hsl(268, 46%, 89%);
+    --input: hsl(268, 46%, 89%);
+    --ring: hsl(275, 100%, 40%);
     --radius: 1rem;
     --font-heading: 'Outfit', sans-serif;
   }
 
   .dark {
-    /* MODO OSCURO - HEX Sólido Indigo PatagoniaPOS */
-    --background: #0d001a;
-    --foreground: #ffffff;
-    --card: #150024;
-    --card-foreground: #fdfcff;
-    --popover: #150024;
-    --popover-foreground: #ffffff;
-    --primary: #bf66ff;
-    --primary-foreground: #ffffff;
-    --secondary: #1e0033;
-    --secondary-foreground: #eaccff;
-    --muted: #1e0033;
-    --muted-foreground: #d499ff;
-    --accent: #aa33ff;
-    --accent-foreground: #ffffff;
-    --destructive: #7f1d1d;
-    --destructive-foreground: #ffffff;
-    --border: #3b0066;
-    --input: #3b0066;
-    --ring: #bf66ff;
+    /* MODO OSCURO - HSL Indigo PatagoniaPOS */
+    --background: hsl(270, 100%, 5%);
+    --foreground: hsl(0, 0%, 100%);
+    --card: hsl(275, 100%, 7%);
+    --card-foreground: hsl(260, 100%, 99%);
+    --popover: hsl(275, 100%, 7%);
+    --popover-foreground: hsl(0, 0%, 100%);
+    --primary: hsl(275, 100%, 70%);
+    --primary-foreground: hsl(0, 0%, 100%);
+    --secondary: hsl(275, 100%, 10%);
+    --secondary-foreground: hsl(275, 100%, 90%);
+    --muted: hsl(275, 100%, 10%);
+    --muted-foreground: hsl(275, 100%, 80%);
+    --accent: hsl(275, 100%, 60%);
+    --accent-foreground: hsl(0, 0%, 100%);
+    --destructive: hsl(0, 63%, 31%);
+    --destructive-foreground: hsl(0, 0%, 100%);
+    --border: hsl(275, 100%, 20%);
+    --input: hsl(275, 100%, 20%);
+    --ring: hsl(275, 100%, 70%);
   }
 
   * {

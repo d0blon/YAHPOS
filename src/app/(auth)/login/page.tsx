@@ -21,6 +21,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,9 +44,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+      // Si por alguna razón recibimos la sesión como string (corrupción de storage), la ignoramos o intentamos parsear
+      const currentSession = typeof session === 'string' ? JSON.parse(session) : session
+
+      if (event === 'SIGNED_IN' && currentSession?.user) {
         // 1. Obtener datos básicos de metadata
-        const metadata = session.user.user_metadata || {}
+        const metadata = currentSession.user.user_metadata || {}
         
         // 2. Consultar el perfil REAL en la base de datos para obtener el rol correcto
         const fetchRealProfile = async () => {
@@ -49,12 +57,12 @@ export default function LoginPage() {
             const { data: profile } = await supabase
               .from('profiles')
               .select('role, rut, first_name, last_name')
-              .eq('id', session.user.id)
+              .eq('id', currentSession.user.id)
               .single()
 
             const appUser = {
-              id: session.user.id,
-              email: session.user.email || '',
+              id: currentSession.user.id,
+              email: currentSession.user.email || '',
               firstName: profile?.first_name || metadata.first_name || metadata.full_name || 'Usuario',
               lastName: profile?.last_name || metadata.last_name || '',
               phone: metadata.phone || '',
@@ -79,7 +87,7 @@ export default function LoginPage() {
           } catch (error) {
             console.error('Error fetching profile:', error)
             // Fallback al menos con el email
-            setAuthSession({ id: session.user.id, email: session.user.email, role: 'customer' } as any)
+            setAuthSession({ id: currentSession.user.id, email: currentSession.user.email, role: 'customer' } as any)
             router.push('/')
           }
         }
@@ -98,6 +106,10 @@ export default function LoginPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/login`,
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline',
+          },
         },
       })
       if (error) throw error
@@ -122,14 +134,18 @@ export default function LoginPage() {
                 {/* Header */}
                 <div className="text-center mb-8">
                   <div className="mb-6">
-                    <img 
-                      src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
-                      alt="Logo" 
-                      className={cn(
-                        "h-24 mx-auto object-contain",
-                        theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
-                      )} 
-                    />
+                    {mounted ? (
+                      <img 
+                        src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
+                        alt="Logo" 
+                        className={cn(
+                          "h-24 mx-auto object-contain",
+                          theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
+                        )} 
+                      />
+                    ) : (
+                      <div className="h-24 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
+                    )}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                     Tu supermercado online de confianza
@@ -256,18 +272,6 @@ export default function LoginPage() {
                   </p>
                 </div>
 
-                {/* Dev credentials hint */}
-                <div className="mt-6 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mb-0.5">Credenciales de prueba</p>
-                      <p className="text-xs text-amber-600 dark:text-amber-500">
-                        cliente@australmarket.cl / password
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

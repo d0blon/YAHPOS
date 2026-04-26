@@ -1,0 +1,90 @@
+---
+description: Errores conocidos y bugs pendientes de resolver en PatagoniaPOS
+globs: ["src/sections/*.tsx", "src/app/(shop)/**/*.tsx", "src/app/api/products/**"]
+alwaysApply: false
+---
+
+# Bugs y Tareas Pendientes — PatagoniaPOS
+
+## 🔴 Bugs Críticos Activos
+
+### BUG-001: Categorías muestran 0 productos
+**Archivos afectados:**
+- `src/sections/Categories.tsx`
+- `src/app/api/products/route.ts`
+
+**Causa probable:**
+`Categories.tsx` llama a `getProducts()` → `/api/products` → busca el primer `store_id` activo en Supabase. Si los productos en la base de datos no tienen `category` como string slug sino como un objeto `category_id` (relación FK), el filtro falla silenciosamente.
+
+```typescript
+// El filtro actual en Categories.tsx es:
+acc[slug] = products.filter(p => (p.category?.slug || p.category) === slug).length
+// Problema: la API normaliza category como string, no como objeto Category
+```
+
+**Fix requerido:**
+1. Verificar en Supabase qué devuelve `products.category` vs `products.category_id`
+2. En `/api/products/route.ts`, hacer JOIN con la tabla `categories` para traer el slug
+3. O alternativamente, consultar categorías directamente desde `/api/categories`
+
+---
+
+### BUG-002: Categories.tsx tiene imports duplicados
+**Archivo:** `src/sections/Categories.tsx`
+
+```typescript
+// LÍNEA 14 Y 16 — import duplicado que causa error de compilación
+import { getProducts } from '@/lib/api'  // línea 14
+import { getProducts } from '@/lib/api'  // línea 16 — DUPLICADO
+```
+
+**Fix:** Eliminar el import duplicado y los imports no usados (Apple, Coffee, Milk, etc.)
+
+---
+
+## 🟡 Tareas de Rediseño Pendientes (GSAP + Impeccable)
+
+### TAREA-001: Rediseño CategoriesClient
+**Archivo:** `src/sections/CategoriesClient.tsx`
+**Estado:** Tiene estructura base, faltan micro-animaciones avanzadas y glassmorphism refinado
+**Referencia visual:** Seguir el mismo estilo que `HeroClient.tsx`
+
+### TAREA-002: Rediseño FeaturedProductsClient
+**Archivo:** `src/sections/FeaturedProductsClient.tsx`
+**Estado:** Pendiente rediseño premium
+**Detalles:** Cards de producto con hover 3D sutil, badge de descuento animado, skeleton loading
+
+### TAREA-003: Rediseño OffersBanner
+**Archivo:** `src/sections/OffersBanner.tsx`
+**Estado:** Pendiente rediseño
+**Detalles:** Banner dinámico con countdown timer animado si hay ofertas activas
+
+### TAREA-004: Refinar Página de Catálogo/Filtros
+**Archivo:** `src/app/(shop)/categoria/[slug]/page.tsx`
+**Estado:** Pendiente
+**Detalles:** Sidebar de filtros con glassmorphism, grid de productos con animación stagger
+
+---
+
+## ✅ Bugs Resueltos (para referencia)
+
+### RESUELTO: Modo Claro no funcionaba
+**Causa:** Variables CSS en `globals.css` usaban sintaxis de valores raw HSL (`220 96% 21%`) incompatible con Tailwind v4.
+**Fix aplicado:** Cambiar a sintaxis funcional `hsl(220, 96%, 21%)` en todas las variables de `:root` y `.dark`.
+
+### RESUELTO: TypeScript errors en categoria/[slug]/page.tsx
+**Causa:** Tipos `Product.category` asumía `string` pero el tipo definía `Category` como objeto.
+
+### RESUELTO: SaaSProvider sin Realtime
+**Fix aplicado:** `SaaSProvider.tsx` ahora suscribe a `supabase.channel('schema-db-changes')` en `store_settings` y actualiza el config inmediatamente cuando el tier cambia en la base de datos. El cliente ya NO necesita recargar la página (F5) para ver el cambio de plan.
+
+---
+
+## 📝 Preguntas de Arquitectura Abiertas
+
+1. **¿Los productos en Supabase tienen `category` como string o como FK a `categories.id`?**
+   - Si es FK: la API necesita hacer `.select('*, categories(*)')` y mapear el slug
+   - Si es string slug: verificar que los slugs coincidan con los definidos en el front
+
+2. **¿Supabase Realtime está habilitado para la tabla `store_settings`?**
+   - Verificar en Supabase Dashboard → Database → Replication que `store_settings` esté en la Publication

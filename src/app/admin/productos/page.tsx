@@ -11,11 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
 import { toast } from 'sonner'
 import ProductModal from '@/components/admin/ProductModal'
-import AdminSidebar from '@/components/admin/AdminSidebar'
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<any[]>([])
@@ -78,158 +75,168 @@ export default function AdminProducts() {
 
   return (
     <>
-      <Header />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20">
-        <div className="container mx-auto px-4">
-          <div className="flex gap-8">
-            <AdminSidebar activePath="/admin/productos" />
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black tracking-tighter uppercase italic">
+              Gestión de <span className="text-corporate-blue">Inventario</span>
+            </h1>
+            <p className="text-gray-500 text-sm font-medium">Catálogo de productos y control de stock centralizado</p>
+          </div>
+          <Button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-corporate-blue hover:bg-corporate-blue/90 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-corporate-blue/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            Nuevo Producto
+          </Button>
+        </div>
 
-            <div className="flex-1 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Productos</h1>
-                  <p className="text-gray-600 dark:text-gray-400">Administra el catálogo de AustralPOS</p>
-                </div>
-                <Button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-xl px-6 h-12 font-bold shadow-lg shadow-corporate-blue/20 flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Nuevo Producto
-                </Button>
-              </div>
-
-              <Card className="border-none shadow-sm overflow-hidden">
-                <CardHeader className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-                  <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input 
-                      placeholder="Buscar por nombre o SKU..." 
-                      className="pl-10 h-10 bg-gray-50 border-none rounded-lg"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gray-50 dark:bg-gray-900/50 text-left">
-                          <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
-                          <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
-                          <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Precio</th>
-                          <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
-                          <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                          <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {isLoading ? (
-                          <tr>
-                            <td colSpan={6} className="py-20 text-center">
-                              <Loader2 className="w-8 h-8 text-corporate-blue animate-spin mx-auto" />
-                              <p className="mt-2 text-gray-500 font-medium">Cargando catálogo...</p>
-                            </td>
-                          </tr>
-                        ) : filteredProducts.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="py-20 text-center text-gray-500">
-                              No se encontraron productos
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredProducts.map((p) => (
-                            <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                              <td className="py-4 px-6">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
-                                    {p.image ? (
-                                      <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center">
-                                        <Package className="w-6 h-6 text-gray-300" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-gray-900 dark:text-white leading-tight">{p.name}</p>
-                                    <p className="text-xs text-gray-500 font-mono mt-1">{p.sku || 'SIN SKU'}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-4 px-6">
-                                <Badge variant="secondary" className="font-medium text-xs bg-gray-100 text-gray-600">
-                                  {typeof p.category === 'string' ? p.category : p.category?.name ?? 'Sin categoría'}
-                                </Badge>
-                              </td>
-                              <td className="py-4 px-6">
-                                <div className="font-bold text-gray-900 dark:text-white">
-                                  ${p.price.toLocaleString()}
-                                  {p.discount > 0 && (
-                                    <span className="ml-2 text-xs font-bold text-green-600">-{p.discount}%</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="py-4 px-6">
-                                <div className="flex items-center gap-2">
-                                  <span className={`font-bold ${p.stock <= p.lowStockThreshold ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                    {p.stock}
-                                  </span>
-                                  <span className="text-xs text-gray-500">{p.unit}</span>
-                                  {p.stock <= p.lowStockThreshold && (
-                                    <AlertTriangle className="w-4 h-4 text-red-500" />
-                                  )}
-                                </div>
-                              </td>
-                              <td className="py-4 px-6">
-                                <button className="flex items-center gap-2 group">
-                                  {p.isActive ? (
-                                    <Badge variant="success" className="gap-1.5 font-bold">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                      Activo
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="secondary" className="gap-1.5 font-bold">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                                      Inactivo
-                                    </Badge>
-                                  )}
-                                </button>
-                              </td>
-                              <td className="py-4 px-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => handleEdit(p)}
-                                    className="h-9 w-9 text-gray-400 hover:text-corporate-blue hover:bg-corporate-blue/5"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => handleDelete(p.id, p.name)}
-                                    className="h-9 w-9 text-gray-400 hover:text-red-500 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+        {/* Toolbar */}
+        <div className="flex flex-col md:flex-row gap-4 items-center bg-white/50 dark:bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input 
+              placeholder="Buscar por nombre, SKU o categoría..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 py-6 bg-white dark:bg-gray-900/50 border-none rounded-2xl text-lg font-medium shadow-inner w-full"
+            />
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button variant="outline" className="flex-1 md:flex-none rounded-2xl py-6 border-white/40 bg-white/40 dark:bg-gray-800/40">
+              <Settings className="w-4 h-4 mr-2" />
+              Filtros
+            </Button>
+            <Button variant="outline" className="flex-1 md:flex-none rounded-2xl py-6 border-white/40 bg-white/40 dark:bg-gray-800/40">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Stocks Bajos
+            </Button>
           </div>
         </div>
-      </main>
-      <Footer />
+
+        <Card className="border-none shadow-sm overflow-hidden">
+          <CardHeader className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl font-black uppercase tracking-tighter italic">Lista de <span className="text-corporate-blue">Productos</span></CardTitle>
+              <Badge className="bg-corporate-blue/10 text-corporate-blue border-none font-bold">{filteredProducts.length} Ítems</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-900/50 text-left">
+                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
+                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
+                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Precio</th>
+                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="py-20 text-center">
+                        <Loader2 className="w-8 h-8 text-corporate-blue animate-spin mx-auto" />
+                        <p className="mt-2 text-gray-500 font-medium">Cargando catálogo...</p>
+                      </td>
+                    </tr>
+                  ) : filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-20 text-center text-gray-500">
+                        No se encontraron productos
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProducts.map((p) => (
+                      <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                              {p.image ? (
+                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-gray-300" />
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-900 dark:text-white leading-tight">{p.name}</p>
+                              <p className="text-xs text-gray-500 font-mono mt-1">{p.sku || 'SIN SKU'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <Badge variant="secondary" className="font-medium text-xs bg-gray-100 text-gray-600">
+                            {typeof p.category === 'string' ? p.category : p.category?.name ?? 'Sin categoría'}
+                          </Badge>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="font-bold text-gray-900 dark:text-white">
+                            ${p.price.toLocaleString()}
+                            {p.discount > 0 && (
+                              <span className="ml-2 text-xs font-bold text-green-600">-{p.discount}%</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold ${p.stock <= p.lowStockThreshold ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                              {p.stock}
+                            </span>
+                            <span className="text-xs text-gray-500">{p.unit}</span>
+                            {p.stock <= p.lowStockThreshold && (
+                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <button className="flex items-center gap-2 group">
+                            {p.isActive ? (
+                              <Badge variant="success" className="gap-1.5 font-bold">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                Activo
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1.5 font-bold">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                Inactivo
+                              </Badge>
+                            )}
+                          </button>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleEdit(p)}
+                              className="h-9 w-9 text-gray-400 hover:text-corporate-blue hover:bg-corporate-blue/5"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDelete(p.id, p.name)}
+                              className="h-9 w-9 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <ProductModal 
         isOpen={isModalOpen} 

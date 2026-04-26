@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 type Params = Promise<{ id: string }>
 
 // PATCH - Close a session
 export async function PATCH(req: Request, { params }: { params: Params }) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { id } = await params
   const body = await req.json()
 
+  // 1. Obtener la sesión para saber qué terminal liberar
+  const { data: session } = await supabase
+    .from('cash_sessions')
+    .select('terminal_id')
+    .eq('id', id)
+    .single()
+
+  // 2. Cerrar la sesión
   const { data, error } = await supabase
     .from('cash_sessions')
     .update({
@@ -25,5 +33,17 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // 3. LIBERAR EL TERMINAL
+  if (session?.terminal_id) {
+    await supabase
+      .from('terminals')
+      .update({
+        status: 'closed',
+        current_user_id: null
+      })
+      .eq('id', session.terminal_id)
+  }
+
   return NextResponse.json(data)
 }

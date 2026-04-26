@@ -2,7 +2,7 @@ import Hero from '@/sections/Hero'
 import FeaturedProducts from '@/sections/FeaturedProducts'
 import Categories from '@/sections/Categories'
 import OffersBanner from '@/sections/OffersBanner'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import { Store, MapPin, Gift, ArrowRight } from 'lucide-react'
 
@@ -12,9 +12,9 @@ export const metadata = {
 }
 
 export default async function Home() {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
-  const tier = storeSettings?.tier || 'basico'
+  const tier = 'elite' // storeSettings?.tier || 'basico'
 
   if (tier === 'basico') {
     return (

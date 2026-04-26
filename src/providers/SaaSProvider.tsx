@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { getStoreSettingsAction } from '@/app/admin/developer/actions'
+import { supabase } from '@/lib/supabase'
 
 interface SaaSConfig {
   tier: 'basico' | 'plus' | 'elite'
@@ -22,7 +23,7 @@ const SaaSContext = createContext<SaaSContextType | undefined>(undefined)
 
 export function SaaSProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<SaaSConfig>({
-    tier: 'basico',
+    tier: 'elite',
     store_name: 'PatagoniaMarket',
     store_logo: null,
     white_label_enabled: false,
@@ -41,6 +42,30 @@ export function SaaSProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchConfig()
+
+    // Suscripción en tiempo real a cambios en la tabla store_settings
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'store_settings',
+        },
+        (payload) => {
+          console.log('Store settings updated in real-time!', payload)
+          // Actualizar la configuración inmediatamente en la UI
+          if (payload.new) {
+            setConfig(payload.new as SaaSConfig)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   /**

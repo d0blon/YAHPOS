@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 export async function GET(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -60,7 +60,6 @@ export async function POST(req: Request) {
     .select()
 
   if (error) {
-    // If table doesn't exist, we might want to log it but don't crash the POS
     console.error('[POS DRAFT] Error upserting:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

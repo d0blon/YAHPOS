@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 // GET - Find active session by user ID or terminal
 export async function GET(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { searchParams } = new URL(req.url)
   const terminalId = searchParams.get('terminal_id')
@@ -36,37 +36,54 @@ export async function GET(req: Request) {
 
 // POST - Open a new cash session
 export async function POST(req: Request) {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const body = await req.json()
+  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  // Close any existing open session for this user
-  if (user) {
-    await supabase
-      .from('cash_sessions')
-      .update({ status: 'closed', closed_at: new Date().toISOString() })
-      .eq('user_id', user.id)
-      .eq('status', 'open')
-  } else if (body.cashier_name) {
-    await supabase
-      .from('cash_sessions')
-      .update({ status: 'closed', closed_at: new Date().toISOString() })
-      .eq('cashier_name', body.cashier_name)
-      .eq('status', 'open')
+  const body = await req.json()
+  const terminalId = body.terminal_id
+
+  // 1. Verificar disponibilidad del terminal
+  const { data: terminal } = await supabase
+    .from('terminals')
+    .select('status, current_user_id')
+    .eq('id', terminalId)
+    .single()
+
+  if (terminal?.status === 'open' && terminal.current_user_id !== user.id) {
+    return NextResponse.json({ error: 'Este terminal ya está siendo usado por otro cajero.' }, { status: 409 })
   }
 
-  const { data, error } = await supabase
+  // 2. Cerrar cualquier sesión previa del usuario
+  await supabase
+    .from('cash_sessions')
+    .update({ status: 'closed', closed_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .eq('status', 'open')
+
+  // 3. Crear nueva sesión
+  const { data: session, error: sessionError } = await supabase
     .from('cash_sessions')
     .insert([{
-      terminal_id: body.terminal_id,
+      terminal_id: terminalId,
       cashier_name: body.cashier_name,
-      user_id: user?.id || null,
+      user_id: user.id,
       opening_amount: body.opening_amount,
       status: 'open',
     }])
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  if (sessionError) return NextResponse.json({ error: sessionError.message }, { status: 500 })
+
+  // 4. BLOQUEAR TERMINAL
+  await supabase
+    .from('terminals')
+    .update({
+      status: 'open',
+      current_user_id: user.id
+    })
+    .eq('id', terminalId)
+
+  return NextResponse.json(session, { status: 201 })
 }
