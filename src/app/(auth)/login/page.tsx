@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react'
-import { useTheme } from 'next-themes'
+import { useTheme } from '@/providers/ThemeProvider'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores'

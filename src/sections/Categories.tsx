@@ -1,18 +1,3 @@
-import Link from 'next/link';
-import { 
-  Apple, 
-  Coffee, 
-  Milk, 
-  Sparkles, 
-  Home, 
-  Beef, 
-  Wine, 
-  Baby,
-  ArrowRight
-} from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { getProducts } from '@/lib/api'
-
 import { getProducts } from '@/lib/api'
 import CategoriesClient from './CategoriesClient'
 
@@ -25,7 +10,7 @@ export default async function Categories() {
   ];
   
   const counts = categories.reduce((acc, slug) => {
-    acc[slug] = products.filter(p => (p.category?.slug || p.category) === slug).length;
+    acc[slug] = products.filter((p: any) => p.categorySlug === slug).length
     return acc;
   }, {} as Record<string, number>);
 

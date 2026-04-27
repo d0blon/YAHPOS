@@ -6,6 +6,10 @@ import {
   Headphones, Globe, Zap, Star, Crown, ArrowRight
 } from 'lucide-react'
 import { useSaaS } from '@/providers/SaaSProvider'
+import { useRef } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { ensureGsapRegistered, toArray } from '@/lib/gsap'
 
 // ────────────────────────────────────────────────────
 // Footer Plan Plus / Elite
@@ -13,6 +17,8 @@ import { useSaaS } from '@/providers/SaaSProvider'
 // Footer completo + PatagoniaPOS siempre al final.
 // ────────────────────────────────────────────────────
 function FooterPlus({ storeName }: { storeName: string }) {
+  ensureGsapRegistered()
+  const root = useRef<HTMLElement>(null)
   const footerLinks = {
     shop: [
       { href: '/categoria/alimentos', label: 'Alimentos' },
@@ -35,139 +41,150 @@ function FooterPlus({ storeName }: { storeName: string }) {
   }
 
   return (
-    <footer className="bg-gray-900 text-white">
-      {/* Features Bar */}
-      <div className="border-b border-gray-800">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { icon: Truck, title: 'Envío Rápido', sub: 'Entrega el mismo día' },
-              { icon: CreditCard, title: 'Pago Seguro', sub: 'Múltiples métodos' },
-              { icon: ShieldCheck, title: 'Garantía', sub: 'Calidad asegurada' },
-              { icon: Headphones, title: 'Soporte 24/7', sub: 'Siempre disponibles' },
-            ].map(({ icon: Icon, title, sub }) => (
-              <div key={title} className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-corporate-blue/20 rounded-xl flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-accent-yellow" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm">{title}</h4>
-                  <p className="text-xs text-gray-400">{sub}</p>
-                </div>
+    <footer ref={root} className="bg-[#030712] text-white relative overflow-hidden pt-20 pb-10 md:pb-6 border-t border-white/5">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]" />
+      </div>
+
+      <FooterFX scope={root.current} />
+
+      {/* Features Bar - Premium Glass Cards */}
+      <div className="container mx-auto px-4 mb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { icon: Truck, title: 'ENVÍO ELITE', sub: 'Mismo día garantizado', color: 'text-blue-400' },
+            { icon: CreditCard, title: 'PAGO BLINDADO', sub: 'Seguridad nivel bancario', color: 'text-purple-400' },
+            { icon: ShieldCheck, title: 'GARANTÍA TOTAL', sub: 'Satisfacción certificada', color: 'text-emerald-400' },
+            { icon: Headphones, title: 'SOPORTE 24/7', sub: 'Línea prioritaria miembros', color: 'text-amber-400' },
+          ].map(({ icon: Icon, title, sub, color }) => (
+            <div 
+              key={title} 
+              className="footer-feature premium-card p-8 rounded-[2rem] group"
+            >
+              <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/5">
+                <Icon className={`w-6 h-6 ${color}`} />
               </div>
-            ))}
-          </div>
+              <h4 className="font-black text-xs uppercase tracking-[0.2em] mb-2 text-white/90">{title}</h4>
+              <p className="text-sm text-gray-500 leading-relaxed font-medium">{sub}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Main Footer */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Brand: nombre del negocio + powered by PatagoniaPOS */}
-          <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-3 mb-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-corporate-blue to-corporate-dark rounded-xl flex items-center justify-center">
-                <span className="text-white font-black text-2xl uppercase">{storeName.charAt(0)}</span>
+      {/* Main Footer Content */}
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
+          {/* Brand & Social */}
+          <div className="lg:col-span-4 footer-col">
+            <Link href="/" className="inline-flex items-center gap-3 mb-8 group">
+              <div className="w-14 h-14 bg-white text-black rounded-2xl flex items-center justify-center font-black text-2xl group-hover:rotate-6 transition-transform duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                {storeName.charAt(0)}
               </div>
               <div>
-                <h2 className="font-black text-xl tracking-tighter uppercase leading-tight">{storeName}</h2>
-                <p className="text-[10px] font-bold text-corporate-blue uppercase tracking-widest">
-                  Powered by PatagoniaPOS
-                </p>
+                <h2 className="font-black text-2xl tracking-tighter uppercase leading-none mb-1">{storeName}</h2>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Premium Store</p>
+                </div>
               </div>
             </Link>
-            <p className="text-gray-400 text-sm mt-4 mb-6 max-w-sm font-medium">
-              Tu destino de compras local. Tecnología PatagoniaPOS al servicio de tu negocio.
+            
+            <p className="text-gray-400 text-lg leading-relaxed mb-8 max-w-sm">
+              Redefiniendo el e-commerce local con tecnología de vanguardia y atención personalizada.
             </p>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm text-gray-400 font-medium">
-                <MapPin className="w-4 h-4 text-accent-yellow shrink-0" />
-                <span>Castro, Chiloé, Chile</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-400 font-medium">
-                <Phone className="w-4 h-4 text-accent-yellow shrink-0" />
-                <span>+56 9 1234 5678</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-400 font-medium">
-                <Mail className="w-4 h-4 text-accent-yellow shrink-0" />
-                <span>contacto@{storeName.toLowerCase().replace(/\s/g, '')}.cl</span>
-              </div>
+
+            <div className="flex gap-4">
+              {['fb', 'ig', 'tw', 'wa'].map((social) => (
+                <div key={social} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all cursor-pointer">
+                  <span className="text-[10px] font-black uppercase">{social}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div>
-            <h3 className="font-black text-sm uppercase tracking-widest mb-6 opacity-50">Tienda</h3>
-            <ul className="space-y-4">
-              {footerLinks.shop.map(link => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-gray-400 hover:text-white transition-colors font-medium">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Links Grid */}
+          <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-8">
+            <div className="footer-col">
+              <h3 className="font-black text-xs uppercase tracking-[0.2em] mb-8 text-gray-500">Explorar</h3>
+              <ul className="space-y-4">
+                {footerLinks.shop.map(link => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-gray-400 hover:text-white transition-all duration-300 flex items-center gap-2 group">
+                      <span className="w-0 group-hover:w-2 h-[1px] bg-white transition-all duration-300" />
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          <div>
-            <h3 className="font-black text-sm uppercase tracking-widest mb-6 opacity-50">Empresa</h3>
-            <ul className="space-y-4">
-              {footerLinks.company.map(link => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-gray-400 hover:text-white transition-colors font-medium">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+            <div className="footer-col">
+              <h3 className="font-black text-xs uppercase tracking-[0.2em] mb-8 text-gray-500">Empresa</h3>
+              <ul className="space-y-4">
+                {footerLinks.company.map(link => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-gray-400 hover:text-white transition-all duration-300 flex items-center gap-2 group">
+                      <span className="w-0 group-hover:w-2 h-[1px] bg-white transition-all duration-300" />
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          <div>
-            <h3 className="font-black text-sm uppercase tracking-widest mb-6 opacity-50">Soporte</h3>
-            <ul className="space-y-4 mb-8">
-              {footerLinks.support.map(link => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-gray-400 hover:text-white transition-colors font-medium">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <h3 className="font-black text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2 text-accent-yellow">
-              <Clock className="w-4 h-4" /> Horarios
-            </h3>
-            <ul className="space-y-2">
-              {[
-                { day: 'Lun - Vie', hours: '8:00 - 21:00' },
-                { day: 'Sábado', hours: '8:00 - 20:00' },
-                { day: 'Domingo', hours: '9:00 - 18:00' },
-              ].map(item => (
-                <li key={item.day} className="text-xs text-gray-400 font-medium">
-                  <span className="text-gray-300 font-bold">{item.day}:</span> {item.hours}
-                </li>
-              ))}
-            </ul>
+            <div className="footer-col col-span-2 md:col-span-1">
+              <h3 className="font-black text-xs uppercase tracking-[0.2em] mb-8 text-gray-500">Contacto</h3>
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-400 leading-relaxed">
+                    Avenida Costanera 1234, <br />Castro, Chiloé
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    hola@{storeName.toLowerCase().replace(/\s/g, '')}.cl
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Lun - Sab</p>
+                    <p className="text-sm font-bold">09:00 - 20:00</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom — PatagoniaPOS siempre al final */}
-      <div className="border-t border-gray-800">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-black uppercase tracking-widest text-gray-500">
-                © 2026 {storeName}. <span className="opacity-60">Todos los derechos reservados.</span>
+        {/* Bottom Bar */}
+        <div className="pt-10 border-t border-white/5 footer-bottom">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] mb-2">
+                © 2026 {storeName} / Todos los derechos reservados
               </p>
-              <p className="text-[10px] font-bold text-corporate-blue tracking-tight">
-                © 2026 PatagoniaPOS Tech. Todos los derechos reservados. · patagoniapos.cl
+              <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2 justify-center md:justify-start">
+                <Zap className="w-3 h-3" /> Powered by PatagoniaPOS Technology
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <Link href="/terminos" className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Términos</Link>
-              <Link href="/privacidad" className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Privacidad</Link>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sistemas OK</span>
+            
+            <div className="flex items-center gap-8">
+              <Link href="/terminos" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Legal</Link>
+              <Link href="/privacidad" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Privacidad</Link>
+              <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Network Active</span>
               </div>
             </div>
           </div>
@@ -177,140 +194,123 @@ function FooterPlus({ storeName }: { storeName: string }) {
   )
 }
 
+
 // ────────────────────────────────────────────────────
 // Footer Plan Básico
 // Solo el dueño ve esto (no hay ecommerce público).
 // 100% publicidad PatagoniaPOS + CTA para subir de plan.
 // ────────────────────────────────────────────────────
 function FooterBasico() {
+  ensureGsapRegistered()
+  const root = useRef<HTMLElement>(null)
   return (
-    <footer className="bg-gray-950 text-white border-t border-gray-800/50">
-      {/* Upgrade Banner */}
-      <div className="border-b border-gray-800/50 bg-gradient-to-r from-corporate-blue/10 to-purple-900/10">
-        <div className="container mx-auto px-4 py-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+    <footer ref={root} className="bg-[#030712] text-white relative overflow-hidden py-20 border-t border-white/5">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[140px]" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[140px]" />
+      </div>
+
+      <FooterFX scope={root.current} />
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-4xl mx-auto glass-card p-8 md:p-16 rounded-[40px] bg-gradient-to-br from-white/5 to-transparent border border-white/10 text-center">
+          <div className="inline-flex items-center gap-3 mb-8 px-6 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+            <Zap className="w-4 h-4 text-blue-400" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Unlock Full Potential</span>
+          </div>
+          
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight">
+            ¿Listo para llevar tu <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">negocio al futuro?</span>
+          </h2>
+          
+          <p className="text-gray-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
+            Activa tu tienda online hoy mismo. Sincronización automática de stock, pagos integrados y una experiencia de usuario que enamora.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 max-w-lg mx-auto">
+            <div className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
+              <Star className="w-8 h-8 text-yellow-400 mb-4 mx-auto group-hover:scale-110 transition-transform" />
+              <h3 className="font-bold text-lg mb-1">Plan Plus</h3>
+              <p className="text-sm text-gray-500">Ecommerce Completo</p>
+            </div>
+            <div className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
+              <Crown className="w-8 h-8 text-purple-400 mb-4 mx-auto group-hover:scale-110 transition-transform" />
+              <h3 className="font-bold text-lg mb-1">Plan Élite</h3>
+              <p className="text-sm text-gray-500">Multisucursal & IA</p>
+            </div>
+          </div>
+
+          <a 
+            href="https://patagoniapos.cl" 
+            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all duration-500 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+          >
+            Ver Planes & Precios <ArrowRight className="w-5 h-5" />
+          </a>
+        </div>
+
+        <div className="mt-20 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-white/5 pt-10">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center font-black text-lg">P</div>
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-corporate-blue mb-2">
-                ¿Quieres que tus clientes compren online?
-              </p>
-              <h3 className="text-xl font-black uppercase tracking-tighter">
-                Activa tu <span className="text-accent-yellow">Tienda Online</span> con Plan Plus
-              </h3>
-              <p className="text-gray-400 text-sm mt-1 max-w-lg">
-                Con el <strong className="text-white">Plan Plus</strong> tus clientes podrán ver tu catálogo y hacer pedidos desde el celular, sin que tú hagas nada extra.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-              <div className="p-4 bg-black/40 rounded-2xl border border-fuchsia-500/20 min-w-[150px]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="w-4 h-4 text-fuchsia-400" />
-                  <p className="text-xs font-black uppercase tracking-tight text-fuchsia-400">Plan Plus</p>
-                </div>
-                <ul className="space-y-1">
-                  {['Tienda online', 'Pedidos app', 'Reportes'].map(f => (
-                    <li key={f} className="text-[10px] text-gray-400 flex items-center gap-1">
-                      <span className="text-fuchsia-400">✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="p-4 bg-black/40 rounded-2xl border border-amber-500/20 min-w-[150px]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Crown className="w-4 h-4 text-amber-400" />
-                  <p className="text-xs font-black uppercase tracking-tight text-amber-400">Plan Élite</p>
-                </div>
-                <ul className="space-y-1">
-                  {['Sucursales', 'IA + Reportes', 'API externa'].map(f => (
-                    <li key={f} className="text-[10px] text-gray-400 flex items-center gap-1">
-                      <span className="text-amber-400">✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <p className="font-black text-sm tracking-tighter uppercase leading-none">PatagoniaPOS</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest">Advanced SaaS Platform</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Nuestros datos */}
-      <div className="container mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-corporate-blue rounded-xl flex items-center justify-center">
-                <span className="text-white font-black text-lg italic">P</span>
-              </div>
-              <h2 className="font-black text-lg tracking-tighter uppercase">
-                Patagonia<span className="text-accent-yellow italic">POS</span>
-              </h2>
-            </Link>
-            <p className="text-gray-400 text-sm mb-6 max-w-lg font-medium">
-              Plataforma de punto de venta e e-commerce para negocios locales de la Patagonia. 
-              Tecnología robusta, soporte cercano, precios justos.
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { icon: Zap, text: 'POS offline siempre activo', color: 'text-blue-400' },
-                { icon: Globe, text: 'Ecommerce con Plan Plus', color: 'text-fuchsia-400' },
-                { icon: ShieldCheck, text: 'Seguridad AES-256', color: 'text-green-400' },
-                { icon: Headphones, text: 'Soporte técnico local', color: 'text-amber-400' },
-              ].map(({ icon: Icon, text, color }) => (
-                <div key={text} className="flex items-center gap-2">
-                  <Icon className={`w-4 h-4 shrink-0 ${color}`} />
-                  <span className="text-xs text-gray-400 font-medium">{text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-black text-sm uppercase tracking-widest mb-4 text-gray-500">Contáctanos</h3>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 text-sm text-gray-400 font-medium">
-                <MapPin className="w-4 h-4 text-corporate-blue shrink-0 mt-0.5" />
-                <span>Blanco Encalada 235, Castro, Chiloé</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-400 font-medium">
-                <Phone className="w-4 h-4 text-corporate-blue shrink-0" />
-                <span>+56 9 1234 5678</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-400 font-medium">
-                <Mail className="w-4 h-4 text-corporate-blue shrink-0" />
-                <span>hola@patagoniapos.cl</span>
-              </div>
-              <a 
-                href="https://patagoniapos.cl" 
-                className="flex items-center gap-2 mt-4 text-xs font-black text-corporate-blue hover:text-blue-400 transition-colors uppercase tracking-widest"
-              >
-                <Globe className="w-4 h-4" />
-                patagoniapos.cl
-                <ArrowRight className="w-3 h-3" />
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom */}
-      <div className="border-t border-gray-800/50">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-xs font-black uppercase tracking-widest text-gray-600">
-              © 2026 PatagoniaPOS Tech. <span className="opacity-60">Todos los derechos reservados.</span>
-            </p>
-            <div className="flex items-center gap-4">
-              <Link href="/terminos" className="text-xs font-bold text-gray-600 hover:text-white uppercase tracking-widest transition-colors">Términos</Link>
-              <Link href="/privacidad" className="text-xs font-bold text-gray-600 hover:text-white uppercase tracking-widest transition-colors">Privacidad</Link>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Sistemas OK</span>
-              </div>
-            </div>
+          
+          <div className="flex items-center gap-8">
+            <Link href="/terminos" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Términos</Link>
+            <Link href="/privacidad" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Privacidad</Link>
+            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">© 2026 PatagoniaPOS Tech</p>
           </div>
         </div>
       </div>
     </footer>
   )
+}
+
+
+function FooterFX({ scope }: { scope: HTMLElement | null }) {
+  ensureGsapRegistered()
+  useGSAP(() => {
+    if (!scope) return
+    const features = toArray('.footer-feature', scope)
+    const cols = toArray('.footer-col', scope)
+    const bottom = toArray('.footer-bottom', scope)
+
+    if (features.length) {
+      gsap.from(features, {
+        y: 18,
+        opacity: 0,
+        duration: 0.55,
+        stagger: 0.08,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: scope, start: 'top 92%' },
+      })
+    }
+    if (cols.length) {
+      gsap.from(cols, {
+        y: 26,
+        opacity: 0,
+        duration: 0.7,
+        stagger: 0.08,
+        ease: 'power3.out',
+        scrollTrigger: { trigger: scope, start: 'top 88%' },
+        clearProps: 'transform,opacity',
+      })
+    }
+    if (bottom.length) {
+      gsap.from(bottom, {
+        y: 10,
+        opacity: 0,
+        duration: 0.45,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: scope, start: 'bottom 95%' },
+      })
+    }
+  }, { scope: scope ?? undefined })
+
+  return null
 }
 
 // ────────────────────────────────────────────────────

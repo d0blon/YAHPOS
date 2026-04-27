@@ -11,7 +11,7 @@ interface PosReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   orderData: {
-    orderId: string;
+    id: string;
     items: PosItem[];
     subtotal: number;
     total: number;
@@ -19,7 +19,7 @@ interface PosReceiptModalProps {
     customerRut?: string;
     customerName?: string;
     customerPoints?: number;
-    date: string;
+    date?: string;
     paymentMethod: string;
     isOffline?: boolean;
   } | null;
@@ -68,8 +68,8 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
               <p className="font-bold text-lg mb-1">
                 {orderData.isOffline ? 'PRE-FOLIO INTERNO' : 'BOLETA ELECTRÓNICA'}
               </p>
-              <p className="text-xs">N°: {orderData.orderId}</p>
-              <p className="text-xs">Fecha: {orderData.date}</p>
+              <p className="text-xs">N°: {orderData.id}</p>
+              <p className="text-xs">Fecha: {orderData.date ?? new Date().toLocaleString('es-CL')}</p>
             </div>
             {orderData.customerRut && (
                <p className="text-xs mt-2 text-left bg-gray-100 print:bg-transparent p-1">Cliente RUT: {orderData.customerRut}</p>

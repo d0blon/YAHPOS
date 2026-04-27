@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -10,7 +10,13 @@ import {
   Check,
   ShieldCheck,
   Lock,
-  Award
+  Award,
+  ChevronRight,
+  Package,
+  Wallet,
+  Zap,
+  ShoppingBag,
+  ArrowRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,23 +27,28 @@ import { formatPrice } from '@/lib/utils'
 import { toast } from 'sonner'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import ShopBackdrop from '@/components/layout/ShopBackdrop'
 import Link from 'next/link'
 import { createOrder, createWebpayTransaction } from '@/lib/api'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { ensureGsapRegistered } from '@/lib/gsap'
 
 const paymentMethods = [
-  { id: 'webpay', name: 'Webpay Plus', description: 'Paga con tarjeta de crédito o débito', icon: CreditCard },
-  { id: 'flow', name: 'Flow', description: 'Múltiples métodos de pago', icon: CreditCard },
-  { id: 'transfer', name: 'Transferencia Bancaria', description: 'Transferencia directa', icon: CreditCard },
-  { id: 'cash', name: 'Efectivo', description: 'Pago contra entrega', icon: CreditCard },
+  { id: 'webpay', name: 'Webpay Plus', description: 'Crédito / Débito', icon: CreditCard, color: 'blue' },
+  { id: 'flow', name: 'Flow', description: 'Multimétodo', icon: Zap, color: 'purple' },
+  { id: 'transfer', name: 'Transferencia', description: 'Directo al banco', icon: Wallet, color: 'green' },
+  { id: 'cash', name: 'Efectivo', description: 'Contra entrega', icon: ShoppingBag, color: 'orange' },
 ]
 
 const shippingMethods = [
   { id: 'standard', name: 'Envío Estándar', description: '2-3 días hábiles', price: 3500 },
-  { id: 'express', name: 'Envío Express', description: '24 horas', price: 5500 },
-  { id: 'pickup', name: 'Retiro en Tienda', description: 'Gratis', price: 0 },
+  { id: 'express', name: 'Envío Express', description: '24 horas hábiles', price: 5500 },
+  { id: 'pickup', name: 'Retiro en Tienda', description: 'Pick-up gratuito', price: 0 },
 ]
 
 export default function CheckoutPage() {
+  ensureGsapRegistered()
   const navigate = useRouter()
   const { items, subtotal, total, clearCart } = useCartStore()
   const { user, isAuthenticated } = useAuthStore()
@@ -45,7 +56,10 @@ export default function CheckoutPage() {
   const [selectedShipping, setSelectedShipping] = useState('standard')
   const [selectedPayment, setSelectedPayment] = useState('webpay')
   const [isProcessing, setIsProcessing] = useState(false)
-  const [loyaltyAccumulationRate, setLoyaltyAccumulationRate] = useState(100) // Default: cada $100 = 1 punto
+  const [loyaltyAccumulationRate, setLoyaltyAccumulationRate] = useState(100)
+  
+  const containerRef = useRef<HTMLDivElement>(null)
+  const stepRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch('/api/settings')
@@ -57,6 +71,33 @@ export default function CheckoutPage() {
       })
       .catch(() => {})
   }, [])
+
+  useGSAP(() => {
+    gsap.from('.checkout-header', {
+      y: -20,
+      opacity: 0,
+      duration: 0.8,
+      ease: 'power4.out'
+    })
+    
+    gsap.from('.checkout-step-nav', {
+      y: 20,
+      opacity: 0,
+      duration: 0.8,
+      delay: 0.2,
+      ease: 'power4.out'
+    })
+  }, { scope: containerRef })
+
+  useGSAP(() => {
+    // Animate step transition
+    if (stepRef.current) {
+      gsap.fromTo(stepRef.current, 
+        { x: 20, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
+      )
+    }
+  }, { dependencies: [step] })
 
   const pointsToEarn = Math.floor(subtotal / loyaltyAccumulationRate)
 
@@ -84,14 +125,14 @@ export default function CheckoutPage() {
         paymentMethod: selectedPayment,
         shippingType: selectedShipping,
         shippingAddress: {
-          fullName: `${(document.querySelector('input[placeholder="Nombre"]') as HTMLInputElement)?.value || ''} ${(document.querySelector('input[placeholder="Apellido"]') as HTMLInputElement)?.value || ''}`.trim(),
-          email: (document.querySelector('input[placeholder="Email"]') as HTMLInputElement)?.value || '',
-          phone: (document.querySelector('input[placeholder="Teléfono"]') as HTMLInputElement)?.value || '',
-          street: (document.querySelector('input[placeholder="Calle"]') as HTMLInputElement)?.value || '',
-          number: (document.querySelector('input[placeholder="Número"]') as HTMLInputElement)?.value || '',
-          apartment: (document.querySelector('input[placeholder="Departamento (opcional)"]') as HTMLInputElement)?.value || '',
-          commune: (document.querySelector('input[placeholder="Comuna"]') as HTMLInputElement)?.value || '',
-          city: (document.querySelector('input[placeholder="Ciudad"]') as HTMLInputElement)?.value || '',
+          fullName: `${(document.querySelector('input[name="firstName"]') as HTMLInputElement)?.value || ''} ${(document.querySelector('input[name="lastName"]') as HTMLInputElement)?.value || ''}`.trim(),
+          email: (document.querySelector('input[name="email"]') as HTMLInputElement)?.value || '',
+          phone: (document.querySelector('input[name="phone"]') as HTMLInputElement)?.value || '',
+          street: (document.querySelector('input[name="street"]') as HTMLInputElement)?.value || '',
+          number: (document.querySelector('input[name="number"]') as HTMLInputElement)?.value || '',
+          apartment: (document.querySelector('input[name="apartment"]') as HTMLInputElement)?.value || '',
+          commune: (document.querySelector('input[name="commune"]') as HTMLInputElement)?.value || '',
+          city: (document.querySelector('input[name="city"]') as HTMLInputElement)?.value || '',
         },
       }
       
@@ -128,246 +169,379 @@ export default function CheckoutPage() {
 
   return (
     <>
+      <ShopBackdrop />
       <Header />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-32 pb-20">
-        <div className="container mx-auto px-4">
-          <nav className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-8">
-            <Link href="/" className="hover:text-corporate-blue">Inicio</Link>
-            <span>/</span>
-            <Link href="/carrito" className="hover:text-corporate-blue">Carrito</Link>
-            <span>/</span>
-            <span className="text-gray-900 dark:text-white font-medium">Checkout</span>
-          </nav>
-
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-            Finalizar Compra
-          </h1>
-
-          <div className="flex items-center gap-4 mb-8">
-            {[{ step: 1, label: 'Envío' }, { step: 2, label: 'Pago' }, { step: 3, label: 'Confirmar' }].map((s, index, arr) => (
-              <React.Fragment key={s.step}>
-                <div className={`flex items-center gap-2 ${step >= s.step ? 'text-corporate-blue' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    step >= s.step ? 'bg-corporate-blue text-white' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    {step > s.step ? <Check className="w-4 h-4" /> : s.step}
-                  </div>
-                  <span className="hidden sm:inline font-medium">{s.label}</span>
-                </div>
-                {index < arr.length - 1 && <div className={`flex-1 h-1 rounded-full ${step > s.step ? 'bg-corporate-blue' : 'bg-gray-200'}`} />}
-              </React.Fragment>
-            ))}
+      <main ref={containerRef} className="min-h-screen pt-32 pb-20 relative z-10">
+        <div className="container mx-auto px-4 max-w-7xl">
+          {/* Top Info */}
+          <div className="checkout-header mb-12">
+            <nav className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-500 mb-6">
+              <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
+              <ChevronRight className="w-3 h-3 text-gray-700" />
+              <Link href="/carrito" className="hover:text-white transition-colors">Carrito</Link>
+              <ChevronRight className="w-3 h-3 text-gray-700" />
+              <span className="text-blue-400">Checkout Seguro</span>
+            </nav>
+            
+            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase mb-2">
+              Finalizar <span className="text-blue-500 italic">Pedido</span>
+            </h1>
+            <p className="text-gray-500 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-green-500" />
+              CONEXIÓN ENCRIPTADA DE PUNTA A PUNTA
+            </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              {step === 1 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-corporate-blue" />
-                      Dirección de Envío
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <input type="text" placeholder="Nombre" defaultValue={user?.firstName} className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="text" placeholder="Apellido" defaultValue={user?.lastName} className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="email" placeholder="Email" defaultValue={user?.email} className="md:col-span-2 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="tel" placeholder="Teléfono" defaultValue={user?.phone} className="md:col-span-2 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="text" placeholder="Calle" className="md:col-span-2 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="text" placeholder="Número" className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="text" placeholder="Departamento (opcional)" className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="text" placeholder="Comuna" className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
-                      <input type="text" placeholder="Ciudad" className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50" />
+          {/* Custom Step Indicator */}
+          <div className="checkout-step-nav mb-12 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center justify-between min-w-[600px] bg-white/5 border border-white/10 rounded-3xl p-2">
+              {[
+                { s: 1, label: 'INFORMACIÓN', icon: MapPin },
+                { s: 2, label: 'MÉTODO DE PAGO', icon: CreditCard },
+                { s: 3, label: 'CONFIRMACIÓN', icon: Check }
+              ].map((item, idx) => (
+                <div 
+                  key={item.s} 
+                  className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl transition-all duration-500 ${
+                    step === item.s ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${
+                    step === item.s ? 'bg-white text-blue-600' : (step > item.s ? 'bg-green-500 text-white' : 'bg-white/5')
+                  }`}>
+                    {step > item.s ? <Check className="w-4 h-4" /> : item.s}
+                  </div>
+                  <span className="text-[10px] font-black tracking-[0.2em] uppercase">{item.label}</span>
+                  {idx < 2 && <div className="h-[2px] w-8 bg-white/10 ml-4 hidden md:block" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-12 gap-12 items-start">
+            <div className="lg:col-span-8">
+              <div ref={stepRef} className="space-y-8">
+                {step === 1 && (
+                  <div className="glass-card p-8 md:p-12 rounded-[40px] border-white/5 bg-white/5">
+                    <div className="flex items-center gap-4 mb-10">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                        <MapPin className="w-7 h-7 text-blue-500" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-white tracking-tight uppercase">Datos de Entrega</h2>
+                        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mt-1">¿DÓNDE RECIBIRÁS TU PEDIDO?</p>
+                      </div>
                     </div>
 
-                    <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <h3 className="font-medium mb-4 flex items-center gap-2">
-                        <Truck className="w-5 h-5 text-corporate-blue" />
-                        Método de Envío
-                      </h3>
-                      <div className="space-y-3">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Nombre</label>
+                        <input name="firstName" type="text" placeholder="Ej. Juan" defaultValue={user?.firstName} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Apellido</label>
+                        <input name="lastName" type="text" placeholder="Ej. Pérez" defaultValue={user?.lastName} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Email de Contacto</label>
+                        <input name="email" type="email" placeholder="juan@email.com" defaultValue={user?.email} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Teléfono Móvil</label>
+                        <input name="phone" type="tel" placeholder="+56 9 1234 5678" defaultValue={user?.phone} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      
+                      <div className="md:col-span-2 pt-6">
+                        <div className="h-[1px] bg-white/5 mb-10" />
+                        <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+                          <span className="w-4 h-[2px] bg-blue-400" />
+                          DIRECCIÓN EXACTA
+                        </h3>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Calle / Avenida</label>
+                        <input name="street" type="text" placeholder="Av. Siempre Viva" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Número</label>
+                        <input name="number" type="text" placeholder="123" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Depto / Casa</label>
+                        <input name="apartment" type="text" placeholder="Opcional" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Comuna</label>
+                        <input name="commune" type="text" placeholder="Santiago" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Ciudad</label>
+                        <input name="city" type="text" placeholder="Región Metropolitana" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                      </div>
+                    </div>
+
+                    <div className="mt-12 pt-10 border-t border-white/5">
+                      <h3 className="text-2xl font-black text-white tracking-tight uppercase mb-8">Método de Envío</h3>
+                      <div className="grid gap-4">
                         {shippingMethods.map((method) => (
-                          <label key={method.id} className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                            selectedShipping === method.id ? 'border-corporate-blue bg-corporate-blue/5' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                          <label key={method.id} className={`group relative flex items-center justify-between p-6 border-2 rounded-[24px] cursor-pointer transition-all duration-300 ${
+                            selectedShipping === method.id ? 'border-blue-500 bg-blue-500/5' : 'border-white/5 bg-white/5 hover:border-white/20'
                           }`}>
-                            <div className="flex items-center gap-3">
-                              <input type="radio" name="shipping" value={method.id} checked={selectedShipping === method.id} onChange={() => setSelectedShipping(method.id)} className="w-4 h-4 text-corporate-blue" />
+                            <div className="flex items-center gap-5">
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedShipping === method.id ? 'border-blue-500 bg-blue-500' : 'border-white/20'}`}>
+                                {selectedShipping === method.id && <div className="w-2 h-2 rounded-full bg-white" />}
+                              </div>
+                              <input type="radio" name="shipping" value={method.id} checked={selectedShipping === method.id} onChange={() => setSelectedShipping(method.id)} className="hidden" />
                               <div>
-                                <p className="font-medium">{method.name}</p>
-                                <p className="text-sm text-gray-500">{method.description}</p>
+                                <p className="font-black text-white uppercase text-sm tracking-widest">{method.name}</p>
+                                <p className="text-xs text-gray-500 font-bold uppercase mt-1">{method.description}</p>
                               </div>
                             </div>
-                            <span className="font-bold">{method.price === 0 ? 'Gratis' : formatPrice(method.price)}</span>
+                            <span className="font-black text-lg text-white">
+                              {method.price === 0 ? <span className="text-green-400">GRATIS</span> : formatPrice(method.price)}
+                            </span>
                           </label>
                         ))}
                       </div>
 
                       {selectedShipping === 'pickup' && (
-                        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl space-y-3">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="font-medium text-blue-800 dark:text-blue-300">
-                              {subtotal >= 40000 ? '✅ Armado GRATIS obtenido' : `Faltan ${formatPrice(40000 - subtotal)} para armado GRATIS`}
-                            </span>
-                            <span className="text-blue-600 dark:text-blue-400 font-bold">{Math.round(freePickingProgress)}%</span>
+                        <div className="mt-6 p-6 glass-card border-blue-500/20 bg-blue-500/5 rounded-3xl overflow-hidden relative">
+                          <div className="relative z-10">
+                            <div className="flex justify-between items-center mb-4">
+                              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                                {subtotal >= 40000 ? '✅ ARMADO PREMIUM INCLUIDO' : `FALTAN ${formatPrice(40000 - subtotal)} PARA ARMADO GRATIS`}
+                              </span>
+                              <span className="text-blue-400 font-black text-sm">{Math.round(freePickingProgress)}%</span>
+                            </div>
+                            <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden mb-4">
+                              <div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${freePickingProgress}%` }} />
+                            </div>
+                            <p className="text-[10px] font-bold text-gray-500 italic uppercase">
+                              * Nuestro equipo seleccionará personalmente tus productos con el máximo cuidado.
+                            </p>
                           </div>
-                          <div className="w-full h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${freePickingProgress}%` }} />
+                          <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Package className="w-24 h-24 text-blue-500" />
                           </div>
-                          <p className="text-xs text-blue-600 dark:text-blue-400 italic">
-                            * El servicio de armado ($2.000) nos permite elegir los mejores productos por ti y tenerlos listos en minutos.
-                          </p>
                         </div>
                       )}
                     </div>
 
-                    <Button onClick={() => setStep(2)} className="w-full bg-corporate-blue hover:bg-corporate-dark">
-                      Continuar al pago
+                    <Button 
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setStep(2);
+                      }} 
+                      className="w-full h-20 bg-white text-black hover:bg-gray-200 font-black text-lg uppercase tracking-widest rounded-3xl mt-12 shadow-2xl shadow-white/5 group"
+                    >
+                      Continuar al Pago
+                      <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-2 transition-transform" />
                     </Button>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                )}
 
-              {step === 2 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-corporate-blue" />
-                      Método de Pago
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-3">
+                {step === 2 && (
+                  <div className="glass-card p-8 md:p-12 rounded-[40px] border-white/5 bg-white/5">
+                    <div className="flex items-center gap-4 mb-10">
+                      <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                        <Wallet className="w-7 h-7 text-purple-500" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-white tracking-tight uppercase">Método de Pago</h2>
+                        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mt-1">SELECCIONA TU FORMA DE PAGO PREFERIDA</p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4">
                       {paymentMethods.map((method) => (
-                        <label key={method.id} className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                          selectedPayment === method.id ? 'border-corporate-blue bg-corporate-blue/5' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                        <label key={method.id} className={`group relative flex items-center gap-6 p-8 border-2 rounded-[32px] cursor-pointer transition-all duration-300 ${
+                          selectedPayment === method.id ? 'border-blue-500 bg-blue-500/5 shadow-lg shadow-blue-500/10' : 'border-white/5 bg-white/5 hover:border-white/20'
                         }`}>
-                          <input type="radio" name="payment" value={method.id} checked={selectedPayment === method.id} onChange={() => setSelectedPayment(method.id)} className="w-4 h-4 text-corporate-blue" />
-                          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                            <method.icon className="w-6 h-6 text-gray-600" />
+                          <input type="radio" name="payment" value={method.id} checked={selectedPayment === method.id} onChange={() => setSelectedPayment(method.id)} className="hidden" />
+                          
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
+                            selectedPayment === method.id ? 'bg-blue-500 text-white' : 'bg-white/5 text-gray-500 group-hover:bg-white/10'
+                          }`}>
+                            <method.icon className="w-8 h-8" />
                           </div>
+
                           <div className="flex-1">
-                            <p className="font-medium">{method.name}</p>
-                            <p className="text-sm text-gray-500">{method.description}</p>
+                            <p className="font-black text-white uppercase tracking-widest text-lg">{method.name}</p>
+                            <p className="text-xs text-gray-500 font-bold uppercase mt-1">{method.description}</p>
+                          </div>
+
+                          <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${selectedPayment === method.id ? 'border-blue-500 bg-blue-500' : 'border-white/10'}`}>
+                            {selectedPayment === method.id && <div className="w-2 h-2 rounded-full bg-white" />}
                           </div>
                         </label>
                       ))}
                     </div>
 
-                    <div className="flex gap-4">
-                      <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Volver
+                    <div className="flex flex-col md:flex-row gap-4 mt-12">
+                      <Button variant="ghost" onClick={() => setStep(1)} className="h-20 flex-1 border border-white/10 text-white hover:bg-white/5 font-black uppercase tracking-widest rounded-3xl">
+                        <ArrowLeft className="mr-3 w-5 h-5" />
+                        Volver a Datos
                       </Button>
-                      <Button onClick={() => setStep(3)} className="flex-1 bg-corporate-blue hover:bg-corporate-dark">
-                        Continuar
+                      <Button onClick={() => setStep(3)} className="h-20 flex-1 bg-white text-black hover:bg-gray-200 font-black uppercase tracking-widest rounded-3xl shadow-xl shadow-white/5">
+                        Confirmar Selección
+                        <ArrowRight className="ml-3 w-5 h-5" />
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                )}
 
-              {step === 3 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ShieldCheck className="w-5 h-5 text-corporate-blue" />
-                      Confirmar Pedido
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Productos</h3>
-                      <div className="space-y-3">
-                        {items.map((item: any) => (
-                          <div key={item.product.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-white dark:bg-gray-700 rounded-lg overflow-hidden">
-                                <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                {step === 3 && (
+                  <div className="glass-card p-8 md:p-12 rounded-[40px] border-white/5 bg-white/5">
+                    <div className="flex items-center gap-4 mb-10">
+                      <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                        <ShieldCheck className="w-7 h-7 text-green-500" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-white tracking-tight uppercase">Resumen Final</h2>
+                        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mt-1">ÚLTIMO PASO ANTES DE TU PEDIDO</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="glass-card p-8 rounded-3xl border-white/5 bg-white/2">
+                        <h3 className="text-xs font-black text-blue-400 uppercase tracking-[0.3em] mb-6">TUS PRODUCTOS</h3>
+                        <div className="space-y-4">
+                          {items.map((item: any) => (
+                            <div key={item.product.id} className="flex items-center justify-between group">
+                              <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-white/5 rounded-2xl overflow-hidden border border-white/10 group-hover:scale-105 transition-transform">
+                                  <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div>
+                                  <p className="font-black text-white text-sm uppercase tracking-tighter">{item.product.name}</p>
+                                  <p className="text-[10px] text-gray-500 font-black uppercase mt-1">CANTIDAD: {item.quantity}</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium text-sm">{item.product.name}</p>
-                                <p className="text-xs text-gray-500">Cantidad: {item.quantity}</p>
-                              </div>
+                              <span className="font-black text-white text-base">{formatPrice(item.product.price * item.quantity)}</span>
                             </div>
-                            <span className="font-medium">{formatPrice(item.product.price * item.quantity)}</span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="glass-card p-6 rounded-3xl border-white/5 bg-white/2">
+                          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">DESTINO</h3>
+                          <p className="text-sm font-black text-white uppercase">{shippingMethods.find(s => s.id === selectedShipping)?.name}</p>
+                          <p className="text-[10px] text-blue-400 font-bold uppercase mt-1">ENTREGA SEGURA</p>
+                        </div>
+                        <div className="glass-card p-6 rounded-3xl border-white/5 bg-white/2">
+                          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">PAGO</h3>
+                          <p className="text-sm font-black text-white uppercase">{paymentMethods.find(p => p.id === selectedPayment)?.name}</p>
+                          <p className="text-[10px] text-green-400 font-bold uppercase mt-1">TRANSACCIÓN PROTEGIDA</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 p-6 bg-green-500/10 border border-green-500/20 rounded-3xl">
+                        <Lock className="w-6 h-6 text-green-500 shrink-0" />
+                        <p className="text-xs font-bold text-green-400 uppercase tracking-widest leading-relaxed">
+                          TUS DATOS ESTÁN PROTEGIDOS POR ENCRIPTACIÓN DE GRADO BANCARIO AES-256.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col md:flex-row gap-4 mt-12">
+                        <Button variant="ghost" onClick={() => setStep(2)} className="h-20 flex-1 border border-white/10 text-white hover:bg-white/5 font-black uppercase tracking-widest rounded-3xl">
+                          <ArrowLeft className="mr-3 w-5 h-5" />
+                          Cambiar Pago
+                        </Button>
+                        <Button onClick={handleSubmit} disabled={isProcessing} className="h-20 flex-1 bg-blue-600 text-white hover:bg-blue-700 font-black uppercase tracking-widest rounded-3xl shadow-xl shadow-blue-600/20">
+                          {isProcessing ? (
+                            <span className="flex items-center gap-3">
+                              <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                              PROCESANDO...
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-3">
+                              CONFIRMAR Y PAGAR
+                              <ArrowRight className="w-5 h-5" />
+                            </span>
+                          )}
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div>
-                        <h3 className="font-medium mb-2">Envío / Retiro</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{shippingMethods.find(s => s.id === selectedShipping)?.name}</p>
-                        {selectedShipping === 'pickup' && <p className="text-xs text-blue-600">Servicio de Armado incluido</p>}
-                      </div>
-                      <div>
-                        <h3 className="font-medium mb-2">Pago</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{paymentMethods.find(p => p.id === selectedPayment)?.name}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <Lock className="w-5 h-5 text-green-600" />
-                      <span className="text-sm text-green-700 dark:text-green-400">Tu información está segura y encriptada</span>
-                    </div>
-
-                    <div className="flex gap-4">
-                      <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Volver
-                      </Button>
-                      <Button onClick={handleSubmit} disabled={isProcessing} className="flex-1 bg-corporate-blue hover:bg-corporate-dark">
-                        {isProcessing ? 'Procesando...' : 'Confirmar Pedido'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div>
-              <Card className="sticky top-32">
-                <CardHeader>
-                  <CardTitle>Resumen</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                      <span>{formatPrice(subtotal)}</span>
+            {/* Summary Sidebar */}
+            <div className="lg:col-span-4 sticky top-32">
+              <div className="glass-card p-8 rounded-[40px] border-white/5 bg-white/5 relative overflow-hidden group">
+                {/* Decorative mesh inside summary */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 opacity-50 pointer-events-none" />
+                
+                <div className="relative z-10">
+                  <h2 className="text-2xl font-black text-white tracking-tighter uppercase mb-8 flex items-center justify-between">
+                    Resumen
+                    <ShoppingBag className="w-6 h-6 text-blue-500" />
+                  </h2>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center group/item">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover/item:text-gray-300 transition-colors">Subtotal</span>
+                      <span className="font-black text-white">{formatPrice(subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">Envío</span>
-                      <span>{currentShippingPrice === 0 ? 'Gratis' : formatPrice(currentShippingPrice)}</span>
+                    <div className="flex justify-between items-center group/item">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover/item:text-gray-300 transition-colors">Costo de Envío</span>
+                      <span className="font-black text-white">{currentShippingPrice === 0 ? <span className="text-green-400">GRATIS</span> : formatPrice(currentShippingPrice)}</span>
                     </div>
                     {pickingFee > 0 && (
-                      <div className="flex justify-between text-sm text-blue-600">
-                        <span>Servicio de Armado</span>
-                        <span>{formatPrice(pickingFee)}</span>
+                      <div className="flex justify-between items-center group/item pt-2">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Servicio de Armado</span>
+                          <span className="text-[8px] font-bold text-gray-600 uppercase">EXPERIENCIA PREMIUM</span>
+                        </div>
+                        <span className="font-black text-blue-400">{formatPrice(pickingFee)}</span>
                       </div>
                     )}
-                  </div>
-                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between">
-                      <span className="font-bold">Total</span>
-                      <span className="text-xl font-bold text-corporate-blue dark:text-accent-yellow">
+
+                    <div className="h-[1px] bg-white/5 my-6" />
+
+                    <div className="flex justify-between items-end mb-8">
+                      <div>
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Total Final</span>
+                        <p className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mt-1">IVA INCLUIDO</p>
+                      </div>
+                      <span className="text-4xl font-black text-white tracking-tighter">
                         {formatPrice(subtotal + currentShippingPrice + pickingFee)}
                       </span>
                     </div>
-                  </div>
-                  {pointsToEarn > 0 && (
-                    <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                      <Award className="w-4 h-4 text-amber-500 shrink-0" />
-                      <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                        Ganarás <span className="font-black">{pointsToEarn} puntos</span> con esta compra
-                      </p>
+
+                    {pointsToEarn > 0 && (
+                      <div className="p-6 rounded-[24px] bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 relative overflow-hidden">
+                        <div className="relative z-10 flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+                            <Award className="w-6 h-6 text-black" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Fidelización</p>
+                            <p className="text-sm font-black text-white uppercase tracking-tighter mt-1">
+                              GANARÁS <span className="text-amber-500">{pointsToEarn} PUNTOS</span>
+                            </p>
+                          </div>
+                        </div>
+                        <Award className="absolute -bottom-4 -right-4 w-20 h-20 text-amber-500/10 rotate-12" />
+                      </div>
+                    )}
+
+                    <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
+                      <div className="flex items-center gap-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        <Check className="w-4 h-4 text-green-500" />
+                        Garantía de Satisfacción
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        <Check className="w-4 h-4 text-green-500" />
+                        Devoluciones sin Costo
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

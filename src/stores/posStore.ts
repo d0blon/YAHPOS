@@ -95,6 +95,7 @@ export interface OrderRecord {
   pointsToEarn: number;
   paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PUNTOS' | 'TRANSFERENCIA' | 'GETNET' | 'TUU' | 'SUMUP' | 'COMPRAQUI' | 'MERCADOPAGO' | string;
   timestamp: number;
+  date?: string;
   isOffline: boolean;
   discount?: number;
   pointsRedeemed?: number;

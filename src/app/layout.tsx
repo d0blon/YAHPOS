@@ -14,23 +14,25 @@ const outfit = Outfit({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#052e16",
+  themeColor: "#000000",
 };
 
 export const metadata: Metadata = {
-  title: "PatagoniaPOS | Venta Inteligente",
-  description: "Plataforma avanzada de punto de venta e e-commerce para negocios locales.",
+  title: "Austral Market | Experiencia Elite",
+  description: "Plataforma avanzada de e-commerce con una experiencia de usuario premium y sofisticada.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "PatagoniaPOS",
+    statusBarStyle: "black-translucent",
+    title: "Austral Market",
   },
 };
 
 import { SaaSProvider } from "@/providers/SaaSProvider";
 import { SessionSync } from "@/components/auth/SessionSync";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { EditorProvider } from "@/providers/EditorProvider";
+import { EditorToggle } from "@/components/editor/EditorToggle";
 
 export default function RootLayout({
   children,
@@ -39,16 +41,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} min-h-screen flex flex-col antialiased bg-background text-foreground`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} min-h-screen flex flex-col antialiased bg-background text-foreground relative`}>
+        <div className="noise-overlay" />
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >
           <SaaSProvider>
-            <SessionSync />
-            {children}
+            <EditorProvider>
+              <SessionSync />
+              {children}
+              <EditorToggle />
+            </EditorProvider>
           </SaaSProvider>
         </ThemeProvider>
         <Toaster position="bottom-right" richColors />

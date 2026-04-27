@@ -1,7 +1,10 @@
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import BottomNav from '@/components/layout/BottomNav'
 import { createClient } from '@/lib/supabase'
 import EcommerceUpgradePage from '@/components/saas/EcommerceUpgradePage'
+import ShopBackdrop from '@/components/layout/ShopBackdrop'
+import RouteTransition from '@/components/gsap/RouteTransition'
 
 /**
  * ShopLayout — Layout del ecommerce público
@@ -39,11 +42,14 @@ export default async function ShopLayout({
   // Plan Plus / Elite: mostrar el ecommerce completo
   return (
     <>
+      <ShopBackdrop />
+      <RouteTransition />
       <Header />
-      <main className="min-h-screen flex flex-col pt-20">
+      <main className="relative z-10 min-h-screen flex flex-col pt-0">
         {children}
       </main>
-      <Footer />
+      <BottomNav />
     </>
   )
 }
+

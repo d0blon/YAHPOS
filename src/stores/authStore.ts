@@ -183,19 +183,13 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'patagoniapos-auth',
       storage: createJSONStorage(() => localStorage),
-      // Deserialización segura: si el dato guardado está corrupto o es un string
-      // plano (bug de versiones anteriores), lo ignora y parte de estado limpio
-      deserialize: (str: string) => {
-        try {
-          const parsed = JSON.parse(str)
-          // Validar que el estado tiene la forma correcta
-          if (typeof parsed?.state?.user === 'string') {
-            // Datos corruptos: user es un string JSON, no un objeto
-            return { state: { user: null, isAuthenticated: false, isLoading: false } }
-          }
-          return parsed
-        } catch {
-          return { state: { user: null, isAuthenticated: false, isLoading: false } }
+      // Validar que el estado rehidratado tiene la forma correcta.
+      // Si el user guardado es un string (bug de versiones anteriores), lo limpiamos.
+      onRehydrateStorage: () => (state) => {
+        if (state && typeof (state as any).user === 'string') {
+          state.user = null
+          state.isAuthenticated = false
+          state.isLoading = false
         }
       },
     }

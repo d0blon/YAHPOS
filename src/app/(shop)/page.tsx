@@ -1,10 +1,14 @@
-import Hero from '@/sections/Hero'
-import FeaturedProducts from '@/sections/FeaturedProducts'
-import Categories from '@/sections/Categories'
-import OffersBanner from '@/sections/OffersBanner'
+import Footer from '@/components/layout/Footer'
+import WhatsAppButton from '@/components/layout/WhatsAppButton'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import { Store, MapPin, Gift, ArrowRight } from 'lucide-react'
+import HeroSlide from '@/sections/v2/HeroSlide'
+import OffersSlide from '@/sections/v2/OffersSlide'
+import BestSellersSlide from '@/sections/v2/BestSellersSlide'
+import PacksSlide from '@/sections/v2/PacksSlide'
+import PointsSlide from '@/sections/v2/PointsSlide'
+import DeliverySlide from '@/sections/v2/DeliverySlide'
 
 export const metadata = {
   title: 'PatagoniaPOS - Smart Commerce & Online Store',
@@ -14,7 +18,7 @@ export const metadata = {
 export default async function Home() {
   const supabase = await createClient()
   const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
-  const tier = 'elite' // storeSettings?.tier || 'basico'
+  const tier: string = 'elite' // storeSettings?.tier || 'basico'
 
   if (tier === 'basico') {
     return (
@@ -65,11 +69,43 @@ export default async function Home() {
 
   // Tienda Online para Plus y Élite
   return (
-    <>
-      <Hero />
-      <Categories />
-      <FeaturedProducts />
-      <OffersBanner />
-    </>
+    <div className="bg-black snap-y snap-mandatory h-[100dvh] pt-[80px] scroll-pt-[80px] overflow-y-auto overflow-x-hidden scroll-smooth custom-scrollbar">
+      {/* 1. Hero / Bienvenida */}
+      <div className="snap-start h-[calc(100dvh-80px)] w-full relative">
+        <HeroSlide />
+      </div>
+      
+      {/* 2. Ofertas Hoy */}
+      <div className="snap-start h-[calc(100dvh-80px)] w-full relative">
+        <OffersSlide />
+      </div>
+
+      {/* 3. Más Vendidos */}
+      <div className="snap-start h-[calc(100dvh-80px)] w-full relative">
+        <BestSellersSlide />
+      </div>
+
+      {/* 4. Combos y Packs */}
+      <div className="snap-start h-[calc(100dvh-80px)] w-full relative">
+        <PacksSlide />
+      </div>
+
+      {/* 5. Promoción Delivery */}
+      <div className="snap-start h-[calc(100dvh-80px)] w-full relative">
+        <DeliverySlide />
+      </div>
+
+      {/* 6. Club de Puntos */}
+      <div className="snap-start h-[calc(100dvh-80px)] w-full relative">
+        <PointsSlide />
+      </div>
+
+      {/* Footer */}
+      <div className="snap-start h-[calc(100dvh-80px)] w-full relative">
+        <Footer />
+      </div>
+      
+      <WhatsAppButton />
+    </div>
   )
 }

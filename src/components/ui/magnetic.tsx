@@ -51,5 +51,6 @@ export default function Magnetic({
     };
   }, [strength]);
 
-  return React.cloneElement(children, { ref: magnetic });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return React.cloneElement(children as any, { ref: magnetic });
 }

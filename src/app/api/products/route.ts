@@ -10,11 +10,17 @@ export async function GET(req: Request) {
     
     const supabaseAdmin = createAdminClient()
     
-    // Para el audit, buscaremos la primera tienda activa
-    const { data: firstStore } = await supabaseAdmin.from('stores').select('id').limit(1).single()
-    const storeId = firstStore?.id || '00000000-0000-0000-0000-000000000000'
+    // Obtener store_id desde store_settings (fuente correcta de verdad)
+    // NOTA DEV: Para probar features de distintos planes, cambiar el tier en
+    // Supabase Dashboard > Table Editor > store_settings directamente.
+    const { data: storeConf } = await supabaseAdmin
+      .from('store_settings')
+      .select('id, tier')
+      .limit(1)
+      .single()
+    const storeId = storeConf?.id || '00000000-0000-0000-0000-000000000000'
     
-    const profile = { store_id: storeId } // Mock profile
+    const profile = { store_id: storeId } // store_id real desde store_settings
 
     // const { data: profile } = await supabase
     //   .from('profiles')
@@ -37,8 +43,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    const products = data ?? []
+
+    // NOTA: La columna `category` en products ya almacena el slug directamente
+    // (ej: "alimentos", "bebidas"). No hay columna category_id en esta tabla.
     // Normalizar el schema de Supabase al formato que ya usa el front
-    const normalized = (data ?? []).map((p: any) => {
+    const normalized = products.map((p: any) => {
       // Si hay branchId, buscar el stock específico en la tabla inventory
       let currentStock = p.stock ?? 0
       if (branchId) {
@@ -46,14 +56,21 @@ export async function GET(req: Request) {
         currentStock = branchInv ? branchInv.stock : 0
       }
 
+      // La columna `category` ya es el slug ("alimentos", "bebidas", etc.)
+      const categorySlug = (p.category ?? '').toLowerCase()
+      const categoryName = categorySlug
+        ? categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1)
+        : 'Sin categoría'
+
       return {
         id: String(p.id),
         name: p.name,
         description: p.description ?? '',
         price: p.price,
         image: p.image ?? '',
-        category: p.category ?? 'Sin categoría',
-        categoryId: String(p.category_id ?? ''),
+        category: categoryName,
+        categorySlug: categorySlug,
+        categoryId: categorySlug,
         stock: currentStock,
         lowStockThreshold: 5,
         sku: p.sku ?? '',

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { 
   Settings, Store, Monitor, CreditCard, FileText, Palette,
   LayoutDashboard, Package, ShoppingCart, Users, TrendingUp,

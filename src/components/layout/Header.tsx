@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation';
 import {
   ShoppingCart, 
@@ -19,7 +19,10 @@ import { Badge } from '@/components/ui/badge'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
-import { useTheme } from 'next-themes'
+import { useTheme } from '@/providers/ThemeProvider'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { ensureGsapRegistered } from '@/lib/gsap'
 
 // Eliminado useTheme local que causaba conflictos
 
@@ -35,6 +38,7 @@ const navLinks = [
 import { useSaaS } from '@/providers/SaaSProvider'
 
 export default function Header() {
+  ensureGsapRegistered()
   const { config } = useSaaS()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -44,6 +48,8 @@ export default function Header() {
   const { user, isAuthenticated, logout } = useAuthStore()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
+
 
   // En Plan Plus/Elite el header muestra la marca del negocio cliente
   // En Plan Básico siempre PatagoniaPOS (no tienen ecommerce público)
@@ -60,223 +66,95 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Entrance animation (fast, premium)
+  useGSAP(() => {
+    if (!mounted) return
+    const header = headerRef.current
+    if (!header) return
+    const row = header.querySelector('.header-row')
+    const logo = header.querySelector('.header-logo')
+    const search = header.querySelector('.header-search')
+    const actions = header.querySelector('.header-actions')
+
+    const parts = [logo, search, actions].filter(Boolean) as Element[]
+    gsap.set(header, { y: -10, autoAlpha: 0 })
+    gsap.set(parts, { y: 10, autoAlpha: 0 })
+
+    const tl = gsap.timeline()
+    tl.to(header, { y: 0, autoAlpha: 1, duration: 0.35, ease: 'power2.out' })
+      .to(parts, { y: 0, autoAlpha: 1, duration: 0.5, ease: 'power3.out', stagger: 0.08 }, 0.05)
+
+    return () => tl.kill()
+  }, [mounted])
+
   if (!mounted) return null
 
   return (
-    <header className={cn(
-      "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-      "bg-white dark:bg-gray-900 shadow-sm border-b border-gray-100 dark:border-gray-800",
-      isScrolled && "shadow-md"
-    )}>
-      {/* Top Bar */}
-      <div className={cn(
-        "hidden md:block transition-all duration-300 overflow-hidden",
-        isScrolled || pathname.startsWith('/admin') ? "h-0 opacity-0" : "h-10 opacity-100"
-      )}>
-        <div className="bg-corporate-blue text-white text-sm">
-          <div className="container mx-auto px-4 h-10 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <span className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                Castro, Chiloé, Chile
-              </span>
-              <span className="flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                +56 9 1234 5678
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>Envío gratis en compras sobre $30.000</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Header */}
-      <div className={cn(
-        "transition-all duration-300",
-        isScrolled ? "py-2" : "py-4"
-      )}>
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo — cambia según plan */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="relative">
-                <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300 overflow-hidden",
-                  hasEcommerce && config.store_logo ? "bg-corporate-blue shadow-lg shadow-corporate-blue/20" : ""
-                )}>
-                  {hasEcommerce && config.store_logo ? (
-                    <img src={config.store_logo} alt={displayName} className="w-8 h-8 object-contain" />
-                  ) : (
-                    <img 
-                      src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
-                      alt="PatagoniaPOS" 
-                      className={cn(
-                        "w-full h-full object-contain",
-                        theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
-                      )} 
-                    />
-                  )}
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-yellow rounded-full border-2 border-white dark:border-gray-900 animate-pulse" />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">
-                  {displayName.includes('Patagonia') ? (
-                    <>Patagonia<span className="text-patagonia-600 italic">POS</span></>
-                  ) : (
-                    displayName
-                  )}
-                </h1>
-                <p className="text-[10px] font-bold text-corporate-blue uppercase tracking-widest leading-none mt-1">
-                  {hasEcommerce ? 'Smart Commerce' : 'Sistema de Ventas'}
-                </p>
-              </div>
-            </Link>
-
-            {/* Desktop Search */}
-            <div className="hidden lg:flex flex-1 max-w-xl mx-8">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  placeholder="Buscar productos..."
-                  className="w-full h-11 pl-12 pr-4 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50 focus:border-transparent transition-all duration-200"
-                />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-corporate-blue text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-corporate-dark transition-colors">
-                  Buscar
-                </button>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 md:gap-4">
-              {/* Theme Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="hidden md:flex"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-5 h-5" />
-                ) : (
-                  <Moon className="w-5 h-5" />
-                )}
-              </Button>
-
-              {/* Search Mobile */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-
-              {/* User */}
-              {isAuthenticated ? (
-                <UserDropdown />
-              ) : (
-                <Link href="/login">
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    <span className="hidden md:inline">Ingresar</span>
-                  </Button>
-                </Link>
-              )}
-
-              {/* Cart */}
-              <Link href="/carrito">
-                <Button variant="ghost" className="relative flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5" />
-                  <span className="hidden md:inline">Carrito</span>
-                  {totalItems > 0 && (
-                    <Badge 
-                      variant="default" 
-                      className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs bg-accent-yellow text-corporate-dark"
-                    >
-                      {totalItems}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
-
-              {/* Mobile Menu Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </Button>
-            </div>
-          </div>
-
-          {/* Mobile Search */}
-          {isSearchOpen && (
-            <div className="lg:hidden mt-4 pb-2 animate-slide-down">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Buscar productos..."
-                  className="w-full h-11 pl-12 pr-4 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/50"
-                  autoFocus
-                />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation - Hidden on admin pages */}
-      {!pathname.startsWith('/admin') && (
-      <nav className={cn(
-        "hidden md:block border-t border-gray-100 dark:border-gray-800 transition-all duration-300",
-        "bg-white dark:bg-gray-900"
-      )}>
-        <div className="container mx-auto px-4">
-          <ul className="flex items-center gap-1">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href}
-                  className={cn(
-                    "relative px-4 py-3 text-sm font-medium transition-colors hover:text-corporate-blue dark:hover:text-accent-yellow block",
-                    pathname === link.href 
-                      ? "text-corporate-blue dark:text-accent-yellow" 
-                      : "text-gray-700 dark:text-gray-300"
-                  )}
-                >
-                  {link.label}
-                  {pathname === link.href && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-corporate-blue dark:bg-accent-yellow rounded-full" />
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </nav>
+    <header 
+      ref={headerRef} 
+      className={cn(
+        "floating-header",
+        isScrolled && "header-scrolled"
       )}
+    >
+      {/* Main Header Container */}
+      <div className={cn(
+        "px-6 transition-all duration-500",
+        isScrolled ? "py-2" : "py-3"
+      )}>
+        <div className="flex items-center justify-between gap-6 header-row">
+          
+          {/* Logo Section */}
+          <Link href="/" className="flex items-center gap-3 group header-logo shrink-0">
+            <div className="relative">
+              <div className={cn(
+                "w-11 h-11 rounded-2xl flex items-center justify-center transform group-hover:rotate-12 transition-all duration-500 overflow-hidden",
+                hasEcommerce && config.store_logo 
+                  ? "bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl" 
+                  : "bg-primary shadow-xl shadow-primary/20"
+              )}>
+                {hasEcommerce && config.store_logo ? (
+                  <img src={config.store_logo} alt={displayName} className="w-8 h-8 object-contain" />
+                ) : (
+                  <img 
+                    src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
+                    alt="PatagoniaPOS" 
+                    className={cn(
+                      "w-full h-full object-contain p-1",
+                      theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
+                    )} 
+                  />
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+                {displayName.includes('Patagonia') ? (
+                  <>Patagonia<span className="text-primary italic">Market</span></>
+                ) : (
+                  displayName
+                )}
+              </h1>
+              <p className={cn(
+                "text-[9px] font-black text-primary uppercase tracking-[0.2em] leading-none transition-all duration-700",
+                isScrolled ? "opacity-0 translate-y-[-5px] h-0 mt-0" : "opacity-70 translate-y-0 h-auto mt-1.5"
+              )}>
+                {hasEcommerce ? 'Smart Commerce' : 'Retail System'}
+              </p>
+            </div>
+          </Link>
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[60px] bg-white dark:bg-gray-900 z-40 animate-slide-down">
-          <div className="p-4">
-            <ul className="space-y-2">
+          {/* Desktop Navigation - Integrated in Header */}
+          <nav className="hidden lg:block">
+            <ul className="flex items-center gap-1">
               {navLinks.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
                     className={cn(
-                      "block px-4 py-3 rounded-lg font-medium transition-colors",
+                      "px-4 py-2 text-sm font-semibold transition-all duration-300 rounded-full hover:bg-gray-100 dark:hover:bg-white/5",
                       pathname === link.href 
-                        ? "bg-corporate-blue text-white" 
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                        ? "text-primary dark:text-primary-foreground" 
+                        : "text-gray-600 dark:text-gray-400"
                     )}
                   >
                     {link.label}
@@ -284,20 +162,82 @@ export default function Header() {
                 </li>
               ))}
             </ul>
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Tema</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                >
-                  {theme === 'dark' ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
-                  {theme === 'dark' ? 'Claro' : 'Oscuro'}
-                </Button>
-              </div>
-            </div>
+          </nav>
+
+          {/* Search bar simplified */}
+          <div className="hidden md:flex flex-1 max-w-sm header-search relative group">
+             <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <Search className="w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+             </div>
+             <input
+                type="text"
+                placeholder="Explorar..."
+                className="w-full h-10 pl-11 pr-4 rounded-full border-none bg-gray-100/50 dark:bg-white/5 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm font-medium"
+             />
           </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1 md:gap-2 header-actions">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="rounded-full hover:bg-gray-100 dark:hover:bg-white/5"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-accent-yellow" /> : <Moon className="w-4 h-4 text-gray-600" />}
+            </Button>
+
+            <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1 hidden sm:block" />
+
+            {isAuthenticated ? (
+              <UserDropdown />
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="rounded-full font-bold text-xs uppercase tracking-wider">
+                  Acceder
+                </Button>
+              </Link>
+            )}
+
+            <Link href="/carrito">
+              <Button size="sm" className="relative rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-4">
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                <span className="font-bold">{totalItems}</span>
+              </Button>
+            </Link>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden rounded-full"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu - Enhanced */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-[110%] left-0 right-0 glass-card mx-2 p-6 rounded-[2rem] overflow-hidden animate-slide-up">
+          <ul className="space-y-1">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "block px-6 py-4 rounded-2xl font-bold text-lg transition-all",
+                    pathname === link.href 
+                      ? "bg-primary text-white" 
+                      : "hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </header>

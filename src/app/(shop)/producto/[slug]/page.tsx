@@ -1,181 +1,428 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useParams } from 'next/navigation';
-import { ShoppingCart, Heart, Share2, Star, Truck, ShieldCheck, RotateCcw, Minus, Plus, ChevronRight } from 'lucide-react'
+import React, { useState, useRef, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation';
+import { 
+  ShoppingCart, 
+  Heart, 
+  Share2, 
+  Star, 
+  Truck, 
+  ShieldCheck, 
+  RotateCcw, 
+  Minus, 
+  Plus, 
+  ChevronRight,
+  Info,
+  Package,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  ChevronLeft
+} from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { useCartStore } from '@/stores'
 import { formatPrice } from '@/lib/utils'
 import { toast } from 'sonner'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-
-const product = {
-  id: '1',
-  name: 'Leche Entera Colun 1 Litro',
-  slug: 'leche-entera-colun-1l',
-  description: 'Leche entera pasteurizada de alta calidad, fuente natural de calcio y proteínas.',
-  price: 1290,
-  originalPrice: 1590,
-  discount: 19,
-  image: 'https://placehold.co/600x600/003399/FFFFFF?text=Leche+Colun+1L',
-  images: ['https://placehold.co/600x600/003399/FFFFFF?text=Leche+Colun+1L', 'https://placehold.co/600x600/FFD100/000000?text=Leche+Colun+Back', 'https://placehold.co/600x600/ffffff/003399?text=Leche+Colun+Side'],
-  category: { id: '1', name: 'Lácteos', slug: 'lacteos', isActive: true, order: 1 },
-  categoryId: '1',
-  stock: 50,
-  lowStockThreshold: 10,
-  sku: 'LAC001',
-  barcode: '7802900123456',
-  weight: 1,
-  unit: 'unidad',
-  rating: 4.8,
-  reviewCount: 124,
-  isActive: true,
-  isFeatured: true,
-  nutritionalInfo: { calories: 64, protein: 3.2, carbohydrates: 4.8, fat: 3.5, servingSize: '100ml' },
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-}
-
-const relatedProducts = [
-  { id: '2', name: 'Leche Descremada Colun 1L', slug: 'leche-descremada-colun-1l', price: 1390, image: 'https://placehold.co/300x300/003399/FFFFFF?text=Leche+Descremada', category: { name: 'Lácteos' }, rating: 4.6 },
-  { id: '3', name: 'Yogurt Natural Colun 1L', slug: 'yogurt-natural-colun-1l', price: 2490, image: 'https://placehold.co/300x300/FFD100/000000?text=Yogurt+Natural', category: { name: 'Lácteos' }, rating: 4.7 },
-  { id: '4', name: 'Queso Gauda Lácteos 500g', slug: 'queso-gauda-lacteos-500g', price: 4490, image: 'https://placehold.co/300x300/FFD100/000000?text=Queso+Gauda', category: { name: 'Lácteos' }, rating: 4.5 },
-]
+import ShopBackdrop from '@/components/layout/ShopBackdrop'
+import ProductCard from '@/components/ProductCard'
+import { getProducts } from '@/lib/api'
+import type { Product } from '@/types'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { ensureGsapRegistered, toArray } from '@/lib/gsap'
 
 export default function ProductPage() {
+  ensureGsapRegistered()
   const { slug } = useParams()
+  const router = useRouter()
   const { addItem } = useCartStore()
+  
+  const [product, setProduct] = useState<Product | null>(null)
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
+  
+  const containerRef = useRef<HTMLDivElement>(null)
+  const imageContainerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    async function loadProduct() {
+      setLoading(true)
+      try {
+        const allProducts = await getProducts()
+        const found = allProducts.find(p => p.slug === slug)
+        if (found) {
+          setProduct(found)
+          // Simplified related: same category
+          const related = allProducts
+            .filter(p => {
+               const pCat = typeof p.category === 'string' ? p.category : p.category?.slug
+               const fCat = typeof found.category === 'string' ? found.category : found.category?.slug
+               return pCat === fCat && p.id !== found.id
+            })
+            .slice(0, 4)
+          setRelatedProducts(related)
+        } else {
+          // If not found, maybe show 404 or redirect
+          console.error("Product not found")
+        }
+      } catch (err) {
+        console.error("Error loading product:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (slug) loadProduct()
+  }, [slug])
+
+  useGSAP(() => {
+    if (loading || !product) return
+
+    const tl = gsap.timeline({ defaults: { ease: 'power4.out' } })
+
+    tl.from('.hero-reveal', {
+      y: 100,
+      opacity: 0,
+      duration: 1.2,
+      stagger: 0.15,
+      delay: 0.2
+    })
+    .from('.image-reveal', {
+      scale: 0.8,
+      opacity: 0,
+      duration: 1.5,
+    }, "-=1")
+    .from('.info-card', {
+      x: 30,
+      opacity: 0,
+      duration: 0.8,
+      stagger: 0.1,
+    }, "-=1")
+
+    // Floating effect for main image
+    gsap.to('.main-product-image', {
+      y: -15,
+      duration: 3,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1
+    })
+
+  }, { scope: containerRef, dependencies: [loading, product] })
 
   const handleAddToCart = () => {
+    if (!product) return
     addItem(product, quantity)
-    toast.success(`${product.name} agregado al carrito`)
+    toast.success(`${product.name} agregado`, {
+      description: `Se han añadido ${quantity} unidades al carrito.`,
+      icon: <ShoppingCart className="w-4 h-4" />,
+      className: "glass-card border-blue-500/20"
+    })
   }
+
+  if (loading) {
+    return (
+      <>
+        <ShopBackdrop />
+        <Header />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-500">Cargando Experiencia...</p>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <h1 className="text-4xl font-black mb-4">PRODUCTO NO ENCONTRADO</h1>
+        <Button onClick={() => router.push('/')}>Volver al Inicio</Button>
+      </div>
+    )
+  }
+
+  const images = product.images?.length ? product.images : [product.image].filter(Boolean) as string[]
+  const categoryName = typeof product.category === 'string' ? product.category : product.category?.name || 'Producto'
+  const categorySlug = typeof product.category === 'string' 
+    ? (product.category as string).toLowerCase() 
+    : (product.category as any)?.slug || ''
 
   return (
     <>
+      <ShopBackdrop />
       <Header />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-32 pb-20">
-        <div className="container mx-auto px-4">
-          <nav className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-8">
-            <Link href="/" className="hover:text-corporate-blue">Inicio</Link>
-            <ChevronRight className="w-4 h-4" />
-            <Link href={`/categoria/${product.category.slug}`} className="hover:text-corporate-blue">{product.category.name}</Link>
-            <ChevronRight className="w-4 h-4" />
-            <span className="text-gray-900 dark:text-white font-medium">{product.name}</span>
-          </nav>
+      
+      {/* Scroll Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 z-[100] bg-white/5">
+        <div className="h-full bg-blue-500 w-0" id="scroll-progress" />
+      </div>
 
-          <div className="grid lg:grid-cols-2 gap-12">
-            <div className="space-y-4">
-              <div className="aspect-square bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
-                <img src={product.images[selectedImage]} alt={product.name} className="w-full h-full object-cover" />
+      <main ref={containerRef} className="min-h-screen pt-32 pb-20 relative z-10 overflow-hidden">
+        
+        {/* Background Decorative Category Title (Very Large, Subtle) */}
+        <div className="absolute top-40 right-[-5%] pointer-events-none select-none z-0 opacity-[0.03] rotate-90 origin-right">
+          <h2 className="text-[20rem] font-black uppercase tracking-tighter whitespace-nowrap leading-none">
+            {categoryName}
+          </h2>
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          {/* Top Navigation */}
+          <div className="flex items-center justify-between mb-12 hero-reveal">
+            <nav className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">
+              <Link href="/" className="hover:text-white transition-colors">INICIO</Link>
+              <ChevronRight className="w-3 h-3 text-gray-800" />
+              <Link href={`/categoria/${categorySlug}`} className="hover:text-white transition-colors">{categoryName}</Link>
+              <ChevronRight className="w-3 h-3 text-gray-800" />
+              <span className="text-blue-400">{product.name}</span>
+            </nav>
+
+            <Button variant="ghost" onClick={() => router.back()} className="rounded-full text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white">
+              <ChevronLeft className="w-4 h-4 mr-2" /> VOLVER
+            </Button>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-16 xl:gap-32 items-start">
+            
+            {/* Left Column: Visual Experience */}
+            <div className="space-y-8 sticky top-32">
+              <div ref={imageContainerRef} className="image-reveal relative aspect-square rounded-[4rem] overflow-hidden glass-card border border-white/10 group p-12">
+                {/* Decorative glow behind image */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.15),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                
+                <div className="main-product-image w-full h-full relative z-10 flex items-center justify-center">
+                  <img 
+                    src={images[selectedImage] || product.image} 
+                    alt={product.name} 
+                    className="w-full h-full object-contain drop-shadow-[0_40px_80px_rgba(0,0,0,0.6)] group-hover:scale-105 transition-transform duration-1000" 
+                  />
+                </div>
+
+                {/* Floating Tags */}
+                <div className="absolute top-10 left-10 flex flex-col gap-3 z-20">
+                  {product.discount && (
+                    <div className="bg-red-500 text-white font-black px-5 py-2 rounded-2xl text-xl shadow-2xl shadow-red-500/40">
+                      -{product.discount}%
+                    </div>
+                  )}
+                  <div className="bg-blue-600/20 backdrop-blur-md border border-blue-500/30 text-blue-400 font-black px-4 py-2 rounded-xl text-xs tracking-widest uppercase">
+                    SELECCIÓN ELITE
+                  </div>
+                </div>
+
+                <div className="absolute bottom-10 right-10 z-20">
+                   <div className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/40 group-hover:text-white transition-colors cursor-pointer hover:scale-110 transition-transform">
+                      <Plus className="w-8 h-8" />
+                   </div>
+                </div>
               </div>
-              <div className="flex gap-4">
-                {product.images.map((image, index) => (
-                  <button key={index} onClick={() => setSelectedImage(index)} className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImage === index ? 'border-corporate-blue' : 'border-transparent hover:border-gray-300'}`}>
-                    <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
+
+              {/* Thumbnails Strip */}
+              {images.length > 1 && (
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  {images.map((img, idx) => (
+                    <button 
+                      key={idx}
+                      onClick={() => setSelectedImage(idx)}
+                      className={`hero-reveal relative w-24 h-24 rounded-3xl overflow-hidden border-2 transition-all duration-500 shrink-0 ${selectedImage === idx ? 'border-blue-500 scale-105 bg-blue-500/10' : 'border-white/5 bg-white/5 hover:border-white/20'}`}
+                    >
+                      <img src={img} alt={`${product.name} ${idx}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <Badge variant="secondary">{product.category.name}</Badge>
-                  {product.discount && <Badge className="bg-red-500 text-white">-{product.discount}%</Badge>}
+            {/* Right Column: Narrative & Action */}
+            <div ref={contentRef} className="space-y-12">
+              <div className="space-y-6">
+                <div className="hero-reveal inline-flex items-center gap-3">
+                  <span className="w-12 h-[2px] bg-blue-500/40" />
+                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">{categoryName}</span>
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">{product.name}</h1>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-5 h-5 fill-accent-yellow text-accent-yellow" />
-                    <span className="font-medium">{product.rating}</span>
-                    <span className="text-gray-500">({product.reviewCount} reseñas)</span>
+                
+                <h1 className="hero-reveal text-5xl md:text-7xl font-black text-white tracking-tighter leading-[0.9] mb-8">
+                  {product.name}
+                </h1>
+
+                <div className="hero-reveal flex items-center gap-8">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Precio Elite</span>
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-5xl font-black text-white tracking-tighter">{formatPrice(product.price)}</span>
+                      {product.originalPrice && (
+                        <span className="text-2xl text-gray-600 font-bold line-through tracking-tighter italic">
+                          {formatPrice(product.originalPrice)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-gray-300">|</span>
-                  <span className="text-green-600 font-medium">En stock</span>
+                  <div className="h-12 w-px bg-white/10" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Valoración</span>
+                    <div className="flex items-center gap-2">
+                       <Star className="w-6 h-6 fill-blue-500 text-blue-500" />
+                       <span className="text-2xl font-black text-white">4.9</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold text-corporate-blue dark:text-white">{formatPrice(product.price)}</span>
-                {product.originalPrice && <span className="text-xl text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>}
+              <div className="hero-reveal">
+                <p className="text-xl text-gray-400 leading-relaxed font-medium max-w-xl">
+                  {product.description || "Un producto seleccionado cuidadosamente para garantizar la máxima calidad y satisfacción. Experiencia premium en cada detalle."}
+                </p>
               </div>
 
-              <p className="text-gray-600 dark:text-gray-400">{product.description}</p>
+              {/* Action Board */}
+              <div className="hero-reveal glass-card p-10 rounded-[3rem] border border-white/10 space-y-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                   <ShoppingCart className="w-32 h-32 text-blue-500" />
+                </div>
 
-              <div className="flex items-center gap-4">
-                <span className="font-medium">Cantidad:</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"><Minus className="w-4 h-4" /></button>
-                  <span className="w-12 text-center font-medium text-lg">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"><Plus className="w-4 h-4" /></button>
+                <div className="relative z-10 space-y-8">
+                   <div className="flex flex-col sm:flex-row gap-6">
+                      <div className="flex items-center gap-2 bg-black/40 p-2 rounded-[2rem] border border-white/5 w-fit">
+                        <button 
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                          className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center hover:bg-white/10 text-white transition-all active:scale-90"
+                        >
+                          <Minus className="w-6 h-6" />
+                        </button>
+                        <span className="w-16 text-center font-black text-3xl text-white tracking-tighter">{quantity}</span>
+                        <button 
+                          onClick={() => setQuantity(quantity + 1)} 
+                          className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center hover:bg-white/10 text-white transition-all active:scale-90"
+                        >
+                          <Plus className="w-6 h-6" />
+                        </button>
+                      </div>
+
+                      <Button 
+                        onClick={handleAddToCart}
+                        className="flex-1 h-[84px] bg-white text-black hover:bg-blue-50 transition-all rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm group"
+                      >
+                        <ShoppingCart className="w-5 h-5 mr-3 group-hover:rotate-[-10deg] transition-transform" />
+                        Agregar al Carrito
+                        <ArrowRight className="w-5 h-5 ml-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+                      </Button>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-4">
+                      <Button variant="outline" className="h-16 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[10px]">
+                        <Heart className="w-4 h-4 mr-2" /> Guardar Favorito
+                      </Button>
+                      <Button variant="outline" className="h-16 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[10px]">
+                        <Share2 className="w-4 h-4 mr-2" /> Compartir Producto
+                      </Button>
+                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <Button onClick={handleAddToCart} size="lg" className="flex-1 bg-corporate-blue hover:bg-corporate-dark text-white"><ShoppingCart className="w-5 h-5 mr-2" />Agregar al Carrito</Button>
-                <Button variant="outline" size="lg" className="w-14"><Heart className="w-5 h-5" /></Button>
-                <Button variant="outline" size="lg" className="w-14"><Share2 className="w-5 h-5" /></Button>
+              {/* Guarantees Grid */}
+              <div className="grid grid-cols-3 gap-6 hero-reveal">
+                 {[
+                   { icon: Truck, label: "Envío Prioritario", sub: "24-48 Horas" },
+                   { icon: ShieldCheck, label: "Garantía Total", sub: "Calidad Elite" },
+                   { icon: RotateCcw, label: "Devolución", sub: "30 Días" }
+                 ].map((item, i) => (
+                   <div key={i} className="info-card flex flex-col items-center text-center gap-3 group">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                        <item.icon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest">{item.label}</p>
+                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter mt-1">{item.sub}</p>
+                      </div>
+                   </div>
+                 ))}
               </div>
 
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-center"><Truck className="w-6 h-6 mx-auto mb-2 text-corporate-blue" /><p className="text-xs text-gray-600 dark:text-gray-400">Envío gratis +$30.000</p></div>
-                <div className="text-center"><ShieldCheck className="w-6 h-6 mx-auto mb-2 text-corporate-blue" /><p className="text-xs text-gray-600 dark:text-gray-400">Garantía de calidad</p></div>
-                <div className="text-center"><RotateCcw className="w-6 h-6 mx-auto mb-2 text-corporate-blue" /><p className="text-xs text-gray-600 dark:text-gray-400">Devolución 30 días</p></div>
-              </div>
-
-              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <p><span className="font-medium">SKU:</span> {product.sku}</p>
-                <p><span className="font-medium">Código de barras:</span> {product.barcode}</p>
-                <p><span className="font-medium">Peso:</span> {product.weight} {product.unit}</p>
+              {/* Specs / Meta */}
+              <div className="pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-3 gap-8 hero-reveal">
+                 <div>
+                    <span className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Código SKU</span>
+                    <span className="text-sm font-bold text-white tracking-widest">ELITE-{product.id.substring(0, 8).toUpperCase()}</span>
+                 </div>
+                 <div>
+                    <span className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Disponibilidad</span>
+                    <span className="flex items-center gap-2 text-sm font-bold text-green-400">
+                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                       EN STOCK
+                    </span>
+                 </div>
+                 <div>
+                    <span className="block text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Unidad</span>
+                    <span className="text-sm font-bold text-white">Venta por Unidad</span>
+                 </div>
               </div>
             </div>
           </div>
 
-          {product.nutritionalInfo && (
-            <div className="mt-16">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Información Nutricional</h2>
-              <Card>
-                <CardContent className="p-6">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Porción: {product.nutritionalInfo.servingSize}</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center"><p className="text-2xl font-bold text-corporate-blue">{product.nutritionalInfo.calories}</p><p className="text-sm text-gray-600">Calorías</p></div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center"><p className="text-2xl font-bold text-corporate-blue">{product.nutritionalInfo.protein}g</p><p className="text-sm text-gray-600">Proteínas</p></div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center"><p className="text-2xl font-bold text-corporate-blue">{product.nutritionalInfo.carbohydrates}g</p><p className="text-sm text-gray-600">Carbohidratos</p></div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center"><p className="text-2xl font-bold text-corporate-blue">{product.nutritionalInfo.fat}g</p><p className="text-sm text-gray-600">Grasas</p></div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Related Collections Section */}
+          {relatedProducts.length > 0 && (
+            <div className="mt-40 space-y-16">
+              <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                  <Badge variant="outline" className="border-blue-500/30 text-blue-400 font-black px-4 py-1 text-[10px] tracking-widest uppercase">
+                    Te puede interesar
+                  </Badge>
+                  <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter">Productos Relacionados</h2>
+                </div>
+                <Link href={`/categoria/${categorySlug}`}>
+                   <Button variant="ghost" className="text-blue-400 font-black uppercase tracking-widest text-xs hover:text-white">
+                      Explorar Todo <ChevronRight className="w-4 h-4 ml-2" />
+                   </Button>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                 {relatedProducts.map(p => (
+                   <ProductCard key={p.id} product={p} />
+                 ))}
+              </div>
             </div>
           )}
 
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Productos Relacionados</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {relatedProducts.map((related) => (
-                <Link key={related.id} href={`/producto/${related.slug}`} className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <div className="aspect-square overflow-hidden"><img src={related.image} alt={related.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></div>
-                  <div className="p-4">
-                    <p className="text-xs text-corporate-blue mb-1">{related.category.name}</p>
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-2 group-hover:text-corporate-blue transition-colors">{related.name}</h3>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-corporate-blue">{formatPrice(related.price)}</span>
-                      <div className="flex items-center gap-1"><Star className="w-4 h-4 fill-accent-yellow text-accent-yellow" /><span className="text-sm">{related.rating}</span></div>
-                    </div>
-                  </div>
+          {/* Luxury Banner */}
+          <div className="mt-40 rounded-[4rem] overflow-hidden relative h-[400px] group">
+             <img 
+               src="/premium_offer_bg_1777248447917.png" 
+               alt="Luxury Experience" 
+               className="w-full h-full object-cover transition-transform duration-[3s] group-hover:scale-110"
+             />
+             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent p-16 flex flex-col justify-center">
+                <h3 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-6 max-w-2xl leading-[0.9]">
+                   EXPERIMENTA LA <br />
+                   DIFERENCIA <span className="text-blue-500">ELITE</span>.
+                </h3>
+                <p className="text-xl text-white/70 max-w-md font-medium mb-10 leading-relaxed">
+                   En PatagoniaPOS elevamos el estándar de tus compras diarias con una selección inigualable.
+                </p>
+                <Link href="/">
+                   <Button className="w-fit h-16 px-12 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform">
+                      Descubrir Más
+                   </Button>
                 </Link>
-              ))}
-            </div>
+             </div>
           </div>
+
         </div>
       </main>
+
       <Footer />
     </>
   )
 }
+
+
