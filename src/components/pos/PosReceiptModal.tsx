@@ -23,6 +23,7 @@ interface PosReceiptModalProps {
     date?: string;
     paymentMethod: string;
     isOffline?: boolean;
+    siiSkipped?: boolean;
   } | null;
 }
 
@@ -88,7 +89,7 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
             <p className="text-xs">Av. Los Carrera 123, Castro, Los Lagos</p>
             <div className="mt-4 border-t border-dashed border-gray-300 pt-4">
               <p className="font-bold text-lg mb-1">
-                {orderData.isOffline ? 'PRE-FOLIO INTERNO' : 'BOLETA ELECTRÓNICA'}
+                {orderData.siiSkipped ? 'COMPROBANTE DE PAGO' : (orderData.isOffline ? 'PRE-FOLIO INTERNO' : 'BOLETA ELECTRÓNICA')}
               </p>
               <p className="text-xs">N°: {orderData.id}</p>
               <p className="text-xs">Fecha: {orderData.date ?? new Date().toLocaleString('es-CL')}</p>

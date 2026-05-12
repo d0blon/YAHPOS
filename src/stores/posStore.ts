@@ -39,6 +39,7 @@ export interface PosSettings {
   edenredEnabled?: boolean;
   region?: 'RM' | 'REGIONES';
   maxSeals?: number;
+  siiModel?: 'SII_ALWAYS' | 'SII_VOUCHER_SKIP';
   getnetIsBoleta?: boolean;
   sii?: {
     enabled: boolean;
@@ -118,6 +119,7 @@ export interface OrderRecord {
   isOffline: boolean;
   discount?: number;
   pointsRedeemed?: number;
+  siiSkipped?: boolean;
 }
 
 interface PosState extends PosCart {
@@ -223,6 +225,7 @@ export const usePosStore = create<PosState>()(
         edenredEnabled: false,
         region: 'REGIONES',
         maxSeals: 2,
+        siiModel: 'SII_ALWAYS',
         getnetIsBoleta: true,
         sii: {
           enabled: false

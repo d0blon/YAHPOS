@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { X, Shield, Lock, EyeOff, Trash2, Save, Info, Smartphone } from 'lucide-react'
+import { X, Shield, Lock, EyeOff, Save, Info, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePosStore, PosSettings } from '@/stores/posStore'
@@ -147,18 +147,23 @@ export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
               )}
             </div>
 
-            {/* Setting 4: Getnet Is Boleta */}
-            <div className="flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 hover:border-emerald-500/20 transition-all bg-card cursor-pointer" onClick={() => handleToggle('getnetIsBoleta')}>
+            {/* Setting 4: SII Emission Model */}
+            <div className="flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 hover:border-emerald-500/20 transition-all bg-card cursor-pointer" 
+              onClick={() => updateSettings({ siiModel: settings.siiModel === 'SII_ALWAYS' ? 'SII_VOUCHER_SKIP' : 'SII_ALWAYS' })}>
               <div className="flex justify-between items-start mb-3 sm:mb-4">
-                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all ${settings.getnetIsBoleta ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-                    <Smartphone className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all ${settings.siiModel === 'SII_VOUCHER_SKIP' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <Receipt className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full transition-all relative ${settings.getnetIsBoleta ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                  <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${settings.getnetIsBoleta ? 'right-1' : 'left-1'}`} />
+                <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full transition-all relative ${settings.siiModel === 'SII_VOUCHER_SKIP' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${settings.siiModel === 'SII_VOUCHER_SKIP' ? 'right-1' : 'left-1'}`} />
                 </div>
               </div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">Boleta en Getnet</h3>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-bold">Si está activo, el terminal Getnet emite la boleta y el POS no genera duplicada.</p>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">Modelo de Emisión</h3>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-bold">
+                {settings.siiModel === 'SII_VOUCHER_SKIP' 
+                  ? 'VOUCHER COMO BOLETA: No se emite boleta SII en pagos con tarjeta.' 
+                  : 'EMISIÓN SIEMPRE: Se emite boleta SII para todos los métodos de pago.'}
+              </p>
             </div>
           </div>
 

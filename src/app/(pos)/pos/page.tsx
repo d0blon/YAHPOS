@@ -610,7 +610,10 @@ export default function PosTerminal() {
         toast.info(msg);
         await new Promise(r => setTimeout(r, 1000));
       }
-      
+      // Determinar si se debe omitir la emisión SII
+      const isDigitalPayment = ['TERMINAL', 'TARJETA'].includes(paymentMethod);
+      const shouldSkipSii = isVoucherPayment || (settings.siiModel === 'SII_VOUCHER_SKIP' && isDigitalPayment);
+
       const orderData = {
         id: temporalId,
         items: [...items],
@@ -624,19 +627,14 @@ export default function PosTerminal() {
         date: new Date().toLocaleString('es-CL'),
         paymentMethod: paymentMethod === 'TERMINAL' ? `TERMINAL (${terminalType})` : paymentMethod,
         isOffline: !isOnline,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        siiSkipped: shouldSkipSii
       };
 
       // 2. Lógica SII (Offline-First)
       let folio = null;
       let tedXml = '';
       
-      // DETERMINAR SI SE DEBE GENERAR BOLETA SII
-      // 1. No se genera si es pago con voucher (Junaeb/Edenred/Pluxe) -> Tienen su propio sistema de impuestos
-      // 2. No se genera si se usa Getnet y la configuración indica que Getnet ya genera la boleta
-      const isGetnetBoleta = paymentMethod === 'TERMINAL' && terminalType === 'Getnet' && settings.getnetIsBoleta;
-      const shouldSkipSii = isVoucherPayment || isGetnetBoleta;
-
       if (!shouldSkipSii) {
         // Intentar consumir folio localmente si tenemos CAFs y folios en el pool
         folio = consumeFolio(dteType);

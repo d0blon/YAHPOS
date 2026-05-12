@@ -6,7 +6,7 @@ kanban-plugin: board
 
 ## 📋 BACKLOG
 
-- [ ] **[SII]** Modelo de Emisión SII
+- [x] **[SII]** Modelo de Emisión SII
 - [ ] **[Admin]** Rediseño Cierre Forzado
 - [ ] **[Admin]** Carga Certificado .pfx
 - [ ] **[Admin]** Branding Config
@@ -88,8 +88,8 @@ kanban-plugin: board
 
 ## 📄 Modelo Emisión SII
 
-- [ ] Selector Modelo 1/2
-- [ ] Recibo "COMPROBANTE DE PAGO"
+- [x] Selector SII_ALWAYS / SII_VOUCHER_SKIP
+- [x] Recibo "COMPROBANTE DE PAGO" al saltar SII
 
 
 

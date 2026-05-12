@@ -209,6 +209,7 @@ export interface StoreConfig {
     regions: ShippingRegion[]
   }
   isJunaebEnabled?: boolean
+  siiModel?: 'SII_ALWAYS' | 'SII_VOUCHER_SKIP'
   getnetIsBoleta?: boolean
 }
 
