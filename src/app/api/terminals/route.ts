@@ -55,28 +55,33 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('store_id')
-    .eq('id', user.id)
-    .single()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
+      .single()
 
-  const body = await req.json()
+    const body = await req.json()
 
-  const { data, error } = await supabase
-    .from('terminals')
-    .insert([{
-      name: body.name, 
-      description: body.description ?? '',
-      store_id: profile?.store_id
-    }])
-    .select()
-    .single()
+    const { data, error } = await supabase
+      .from('terminals')
+      .insert([{
+        name: body.name, 
+        description: body.description ?? '',
+        store_id: profile?.store_id
+      }])
+      .select()
+      .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data, { status: 201 })
+  } catch (err) {
+    console.error('[POST /api/terminals] Error:', err)
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  }
 }
