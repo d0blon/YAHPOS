@@ -10,15 +10,15 @@ kanban-plugin: board
 - [ ] **[Admin]** Rediseño Cierre Forzado
 - [ ] **[Admin]** Carga Certificado .pfx
 - [ ] **[Admin]** Branding Config
-- [ ] **[Stab]** API try/catch (14 rutas)
-- [ ] **[Stab]** Auth Checks en rutas
+- [x] **[Stab]** API try/catch (14 rutas)
+- [x] **[Stab]** Auth Checks en rutas
 - [ ] **[Design]** Refactor PaymentModal
-- [ ] **[Design]** UI Settings
+- [x] **[Design]** UI Settings
 
 
 ## 🏗️ EN PROGRESO
 
-- [ ] **[Stab]** Memory Leaks (verificar)
+- [x] **[Stab]** Memory Leaks (verificar)
 
 
 ## 🧐 REVISIÓN
@@ -73,8 +73,8 @@ kanban-plugin: board
 - [x] Memory Leaks fix
 - [x] SqlModal extraído
 - [x] ProductModal useState fix
-- [ ] 14 API routes try/catch
-- [ ] Auth checks
+- [x] 14 API routes try/catch
+- [x] Auth checks
 - [ ] Refactor PaymentModal
 
 

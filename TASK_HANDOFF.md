@@ -1,194 +1,103 @@
 ---
-status: pending
-goal: "Agregar try/catch y validación auth a rutas API críticas (~14 handlers) para evitar crashes silenciosos y acceso no autorizado"
-branch: null
-created: 2026-05-12T18:00:00-04:00
-updated: 2026-05-12T18:00:00-04:00
+status: done
+skill: frontend-design
+goal: "Rediseñar UI de PosSettingsModal con mejor jerarquía visual, grouping por categorías, y componentes shadcn/ui en lugar de toggles artesanales"
+branch: "task/design-ui-settings"
+created: 2026-05-12T20:30:00-04:00
+updated: 2026-05-12T20:30:00-04:00
 requires-plan: false
 depends-on: []
 ---
 
-# Handoff: API try/catch + Auth
+# Handoff: Rediseño UI Settings del POS
 
 ## Contexto
-El análisis de las 44 rutas API reveló:
-- **4 handlers** sin try/catch: cualquier error no manejado crashea la ruta
-- **9 handlers** sin verificación de sesión: cualquier llamada anónima puede operar
-- **3 handlers** sin filtro `store_id`: usuarios autenticados de una tienda pueden modificar datos de otra
+El `PosSettingsModal` actual (246 líneas) tiene todas las configuraciones en un scroll plano sin agrupar. Usa toggles artesanales (divs con posición absoluta) en vez del componente `Switch` de shadcn/ui que ya existe en el proyecto. La UI es funcional pero carece de jerarquía visual, íconos contextuales, y no aprovecha el sistema de diseño existente.
 
-Priorizamos las rutas de alto riesgo. Quedan excluidas rutas intencionalmente públicas (ping, health, verify-dns, webpay callbacks, products GET lookup).
+Objetivo: mantener la misma funcionalidad pero con mejor arquitectura visual, usando los patrones de `frontend-design` skill.
 
-Item Kanban: `📋 BACKLOG` > `[Stab] API try/catch (14 rutas)` y `[Stab] Auth Checks en rutas`
+Item Kanban: `📋 BACKLOG` > `[Design] UI Settings`
 
-## Estrategia
-**Un helper compartido** `src/lib/api-utils.ts` con:
-- `withAuth(handler)` — wrapper que verifica sesión, extrae `user`, `profile`, `store_id`. Retorna 401 si no auth.
-- `requireStoreAccess(storeId, profile)` — helper para verificar que el perfil pertenece a la tienda.
-- `apiError(message, status)` — error estándar.
+## Skill Requerida
+Este handoff usa `frontend-design`. Antes de implementar, carga la skill con `skill frontend-design`. La skill influye en las decisiones de diseño: tipografía, color, composición, motion.
 
-Cada ruta se refactoriza para usar estos helpers. Esto evita repetir el mismo patrón en 14 archivos.
-
-## Archivos a modificar (en orden)
-
-### Helper nuevo
-0. `src/lib/api-utils.ts` — Crear con `withAuth`, `requireStoreAccess`, `apiError`
-
-### Grupo A: Agregar try/catch (4 handlers)
-1. `src/app/api/orders/route.ts` — POST handler envolver en try/catch
-2. `src/app/api/products/lookup/route.ts` — GET handler envolver en try/catch (outer)
-3. `src/app/api/auth/sso/route.ts` — GET handler envolver en try/catch
-4. `src/app/api/terminals/route.ts` — POST handler envolver en try/catch
-
-### Grupo B: Agregar auth + store_id (alta prioridad — fuga de datos)
-5. `src/app/api/customers/route.ts` — GET/POST/DELETE: agregar `withAuth` y filtro store_id
-6. `src/app/api/customers/list/route.ts` — GET: agregar `withAuth` y filtro store_id
-7. `src/app/api/customers/verify/route.ts` — POST: agregar `withAuth` y filtro store_id
-8. `src/app/api/staff/route.ts` — GET/POST/PATCH/DELETE: agregar `withAuth` y filtro store_id
-9. `src/app/api/cash-movements/route.ts` — GET/POST: agregar `withAuth` y filtro store_id
-10. `src/app/api/orders/route.ts` — POST: reemplazar `userId` del body por sesión autenticada
-11. `src/app/api/orders/[id]/confirm-payment/route.ts` — POST: agregar `withAuth` y store_id
-12. `src/app/api/categories/route.ts` — GET: agregar filtro store_id (al menos)
-13. `src/app/api/sii/sync/route.ts` — POST: agregar `withAuth` y validar store_id
-
-### Grupo C: Agregar store_id a rutas existentes con auth (alcance multi-tienda)
-14. `src/app/api/products/[id]/route.ts` — GET/PATCH/DELETE: filtrar por store_id
-15. `src/app/api/terminals/[id]/route.ts` — PATCH/DELETE: filtrar por store_id
-16. `src/app/api/pos/draft/route.ts` — GET/POST: filtrar por store_id
+## Dirección de Diseño
+- **Tono**: Limpio, utilitario con personalidad — ni minimalista extremo ni maximalista
+- **Tipografía**: Usar `font-black` + `uppercase` + `tracking-widest` para títulos de sección (patrón existente en el proyecto)
+- **Color**: Mantener la paleta existente (patagonia-600, slate, accent-yellow) pero con mejor uso de color por categoría
+- **Motion**: Transiciones suaves en apertura/cierre de secciones, sin exceso
+- **Diferenciación**: Cada grupo de settings tiene un color de acento distinto y un icono representativo
 
 ## Especificación Técnica
 
-### Helper: `src/lib/api-utils.ts`
+### Archivos a modificar
+- `src/components/pos/PosSettingsModal.tsx` — rediseño completo del modal
 
-```ts
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+### Archivos a crear
+- (ninguno — usar componentes existentes: `Switch`, `Card`, `Input`, `Button` de shadcn/ui)
 
-export function apiError(message: string, status: number = 400) {
-  return NextResponse.json({ error: message }, { status })
-}
+### Archivos a NO modificar
+- `src/stores/posStore.ts` — la lógica de estado y persistencia NO cambia
+- `src/types/index.ts` — tipos no cambian
+- `src/app/(pos)/pos/page.tsx` — donde se monta el modal no cambia
 
-export async function withAuth() {
-  const supabase = await createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return { error: apiError('No autorizado', 401) }
+### Estructura nueva del modal
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('store_id, role')
-    .eq('id', user.id)
-    .single()
+El modal se organiza en **tarjetas agrupadas por categoría**, cada una con su propio color de acento:
 
-  if (!profile?.store_id) return { error: apiError('Perfil sin tienda', 403) }
+| Grupo | Settings | Acento |
+|-------|----------|--------|
+| **Caja** | blindClosureEnabled | amber/copper |
+| **Seguridad** | pinRequiredForDelete, supervisorPin | rose/red |
+| **Métodos de Pago** | junaebEnabled, maxSeals, region | emerald/green |
+| **SII / Facturación** | siiModel | violet/purple |
+| **Fidelización** | loyalty (accumulationRate, redemptionRate) | blue/sky |
+| **Comportamiento** | (settings misceláneas existentes que no encajen arriba) | slate/gray |
 
-  return { user, profile, supabase, storeId: profile.store_id }
-}
+### Componentes a usar
 
-export function requireStoreAccess(profile: { store_id: string | null }, targetStoreId: string) {
-  return profile.store_id === targetStoreId
-}
-```
+| Antes (artesanal) | Después (shadcn/ui) |
+|--------------------|---------------------|
+| `<div>` con posición absoluta para toggle | `<Switch>` de `@/components/ui/switch` |
+| `<div>` card sin estructura | `<Card>`, `<CardHeader>`, `<CardContent>` de `@/components/ui/card` |
+| `<Input>` plano | `<Input>` con label y descripción |
 
-Los 3 helpers cubren el 90% de los casos de uso. Para rutas especiales (sincronización entre stores, etc.), se puede usar `apiError` directamente.
+### Comportamiento esperado
 
-### Grupo A: try/catch — patrón estándar
+1. Al abrir el modal, se ven las 5-6 tarjetas de grupo en un grid responsivo (1 col en mobile, 2 en sm, 3 en lg)
+2. Cada tarjeta tiene: icono (lucide-react) → título del grupo → Switch/label según corresponda
+3. Los switches usan `checked={settings[key]}` `onCheckedChange={() => handleToggle(key)}`
+4. El supervisor PIN va dentro de la tarjeta "Seguridad" como un input expandible
+5. La región (RM/REGIONES) va dentro de "Métodos de Pago" como un select nativo estilizado
+6. `updateSettings({...})` se llama igual que antes — la capa de estado no cambia
 
-Cada handler se envuelve así:
-
-```ts
-export async function POST(request: Request) {
-  try {
-    // ... existing logic ...
-  } catch (error) {
-    console.error('[POST /api/...]', error)
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
-  }
-}
-```
-
-### Grupo B: auth — patrón estándar con withAuth
-
-```ts
-import { withAuth, apiError } from '@/lib/api-utils'
-
-export async function GET(request: Request) {
-  const auth = await withAuth()
-  if (auth.error) return auth.error
-
-  const { supabase, storeId } = auth
-  // ... usar storeId para filtrar queries ...
-}
-```
-
-#### Detalle para `customers/route.ts`
-- GET: filtrar `profiles` por `store_id` del auth
-- POST: asociar nuevo customer al `store_id` del auth
-- DELETE: verificar que el customer pertenece al store
-
-#### Detalle para `orders/route.ts` POST
-- Reemplazar `userId` del body por `auth.user.id`
-- Filtrar creación de orden por `store_id` del auth
-
-#### Detalle para `orders/[id]/confirm-payment/route.ts` POST
-- Verificar que la orden pertenece al `store_id` del auth
-- No permitir confirmar pagos de otras tiendas
-
-#### Detalle para `staff/route.ts`
-- Filtrar CRUD por `store_id` del auth
-- Solo admin/manager puede gestionar staff
-
-#### Detalle para `cash-movements/route.ts`
-- Filtrar por `store_id` del auth
-- Asociar movimientos al store del auth
-
-#### Detalle para `sii/sync/route.ts`
-- Reemplazar validación débil (`storeId` del body) por auth real
-- Verificar que el store_id del auth coincide
-
-### Grupo C: store_id — filtrar queries existentes
-
-```ts
-// ANTES en products/[id]/route.ts
-const { data: product } = await supabase
-  .from('products')
-  .select('*')
-  .eq('id', params.id)
-  .single()
-
-// DESPUÉS
-const { data: product } = await supabase
-  .from('products')
-  .select('*')
-  .eq('id', params.id)
-  .eq('store_id', storeId)  // <-- agregar filtro
-  .single()
-```
-
-Mismo patrón para `terminals/[id]` y `pos/draft`.
+### Dark mode
+- Todas las tarjetas deben verse bien en dark mode (usar `dark:` variants)
+- Los colores de acento deben funcionar en ambos modos
 
 ## Do Not
-- ❌ NO cambiar lógica de negocio existente — solo agregar try/catch y auth
-- ❌ NO modificar rutas intencionalmente públicas: ping, health, verify-dns, webpay
-- ❌ NO refactorizar el contenido de los handlers — solo envolver y agregar validaciones
-- ❌ NO tocar el motor SII, PaymentModal, ni archivos fuera de la lista
-- ❌ NO modificar la estructura de respuesta exitosa (solo manejo de errores cambia)
+- ❌ NO cambiar la lógica de `updateSettings`, `loadSettings`, ni ningún store
+- ❌ NO agregar ni quitar settings — solo rediseñar la UI existente
+- ❌ NO modificar `PosSidebar.tsx`, `pos/page.tsx`, ni `ManagerPinModal.tsx`
+- ❌ NO cambiar `PosSettings` interface en `posStore.ts`
+- ❌ NO refactorizar otras partes del POS
 
 ## Criterios de Aprobación
-- [ ] `src/lib/api-utils.ts` creado con `withAuth`, `requireStoreAccess`, `apiError`
-- [ ] Grupo A: 4 handlers con try/catch — error interno retorna 500 sin crash
-- [ ] Grupo B: 9 handlers con auth — llamada anónima retorna 401; datos filtrados por store
-- [ ] Grupo C: 3 handlers con filtro store_id — usuario no puede ver/modificar datos de otra tienda
-- [ ] `npm run lint` pasa
-- [ ] `npm run build` pasa
-- [ ] Rutas públicas (ping, health, etc.) siguen sin auth
+- [ ] Settings agrupados en 5-6 tarjetas por categoría con iconos
+- [ ] Cada grupo tiene un color de acento distintivo (amber, rose, emerald, violet, blue)
+- [ ] Usa `<Switch>` de shadcn/ui en vez de toggles artesanales
+- [ ] Grid responsivo: 1 col mobile, 2 col sm, 3 col lg
+- [ ] Dark mode funciona en todos los grupos
+- [ ] Supervisor PIN está dentro de tarjeta Seguridad (input expandible o visible siempre)
+- [ ] `npm run build` pasa sin errores
+- [ ] `npm run lint` pasa sin errores nuevos
 
 ## Next Action
-1. Crear `src/lib/api-utils.ts`
-2. Grupo A: try/catch en 4 handlers
-3. Grupo B: auth en 9 handlers (customer, staff, cash-movements, orders, categories, sii/sync)
-4. Grupo C: store_id en 3 handlers (products/[id], terminals/[id], pos/draft)
-5. Commit por grupo (3 commits chicos)
-6. `npm run lint` y `npm run build` después de cada commit
-7. Reportar resultados
+1. Cargar `skill frontend-design`
+2. Leer `src/components/pos/PosSettingsModal.tsx` completo
+3. Leer `src/components/ui/switch.tsx` para entender la API del Switch
+4. Leer `src/components/ui/card.tsx` para la API del Card
+5. Implementar rediseño con grupos, iconos, Switch
+6. Probar dark mode
+7. `npm run lint && npm run build`
+8. Report Back
