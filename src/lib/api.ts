@@ -44,6 +44,15 @@ export async function getProducts(branchId?: string): Promise<Product[]> {
   }
 }
 
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  try {
+    return await apiFetch(`/products?slug=${encodeURIComponent(slug)}`);
+  } catch (err) {
+    console.warn(`[getProductBySlug] Error al obtener producto con slug ${slug}:`, err);
+    return null;
+  }
+}
+
 export async function getBranches(): Promise<any[]> {
   try {
     return await apiFetch('/branches');
@@ -71,7 +80,7 @@ export async function createWebpayTransaction(data: any) {
 
 // ─── DTE / SII ────────────────────────────────────────────────────────────────
 export async function generateElectronicBoleta(data: any) {
-  return await apiFetch('/dte/boleta', {
+  return await apiFetch('/sii', {
     method: 'POST',
     body: JSON.stringify(data),
   });

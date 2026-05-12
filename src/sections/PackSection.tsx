@@ -116,7 +116,7 @@ export default function PackSection() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-500">PACKS</span>
               </motion.h2>
               <motion.p variants={headerVariants} className="text-xl text-gray-500 max-w-xl font-medium leading-relaxed">
-                Diseñamos combinaciones exclusivas para que ahorres más en tus productos favoritos. Calidad Patagonia garantizada.
+                Diseñamos combinaciones exclusivas para que ahorres más en tus productos favoritos. Calidad YAHPOS! garantizada.
               </motion.p>
           </div>
           <motion.div variants={headerVariants}>

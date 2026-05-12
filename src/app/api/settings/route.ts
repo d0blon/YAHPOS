@@ -1,202 +1,141 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
-
-// Default settings - fallback if table doesn't exist
-const DEFAULTS: Record<string, string> = {
-  // Tienda
-  store_name: 'AustralMarket',
-  store_slogan: 'Tu supermercado online',
-  store_address: 'Dirección 123',
-  store_city: 'Castro, Chiloé, Chile',
-  store_phone: '+56 9 1234 5678',
-  store_email: 'contacto@austral.cl',
-  store_website: 'http://localhost:3000',
-
-  // POS
-  pos_terminal_name: 'Caja 1',
-  pos_tax_rate: '19',
-  pos_currency: 'CLP',
-  pos_low_stock_threshold: '5',
-  pos_receipt_message: '¡Gracias por su compra!',
-  pos_payment_cash: 'true',
-  pos_payment_transbank: 'true',
-  pos_payment_getnet: 'false',
-  pos_payment_tuu: 'false',
-  pos_payment_sumup: 'false',
-  pos_payment_other_card: 'false',
-  pos_payment_transfer: 'true',
-
-  // Pagos Online (solo tienda online, NO para POS)
-  payment_flow_enabled: 'false',
-  payment_flow_api_key: '',
-  payment_flow_api_secret: '',
-  payment_webpay_enabled: 'false',
-  payment_webpay_commerce_code: '',
-  payment_free_shipping_min: '30000',
-
-  // SII - Boletas Electrónicas
-  sii_rut: '21012281-8',
-  sii_razon_social: 'Tu Supermercado',
-  sii_giro: 'Supermercado',
-  sii_actividad: '522030',
-  sii_direccion: 'Dirección 123',
-  sii_comuna: 'Santiago',
-  sii_certificate: '',
-  sii_certificate_password: '',
-  sii_caf_file: '',
-  sii_environment: 'certificacion',
-
-  // Apariencia
-  appearance_logo_url: '',
-  appearance_primary_color: '#1e3a6e',
-  appearance_secondary_color: '#f5c518',
-  appearance_dark_mode: 'false',
-  
-  // Fidelización
-  loyalty_enabled: 'true',
-  loyalty_min_redemption: '0',
-  loyalty_accumulation_rate: '100',
-  loyalty_redemption_rate: '1',
-  loyalty_require_id_verification: 'true',
-}
-
-// Group settings by prefix for structured response
-function groupSettings(flat: Record<string, string>) {
-  return {
-    store: {
-      name: flat.store_name,
-      slogan: flat.store_slogan,
-      address: flat.store_address,
-      city: flat.store_city,
-      phone: flat.store_phone,
-      email: flat.store_email,
-      website: flat.store_website,
-    },
-    pos: {
-      terminalName: flat.pos_terminal_name,
-      taxRate: Number(flat.pos_tax_rate),
-      currency: flat.pos_currency,
-      lowStockThreshold: Number(flat.pos_low_stock_threshold),
-      receiptMessage: flat.pos_receipt_message,
-      paymentCash: flat.pos_payment_cash === 'true',
-      paymentTransbank: flat.pos_payment_transbank === 'true',
-      paymentGetnet: flat.pos_payment_getnet === 'true',
-      paymentTuu: flat.pos_payment_tuu === 'true',
-      paymentSumup: flat.pos_payment_sumup === 'true',
-      paymentOtherCard: flat.pos_payment_other_card === 'true',
-      paymentTransfer: flat.pos_payment_transfer === 'true',
-    },
-    payments: {
-      flowEnabled: flat.payment_flow_enabled === 'true',
-      flowApiKey: flat.payment_flow_api_key,
-      flowApiSecret: flat.payment_flow_api_secret,
-      webpayEnabled: flat.payment_webpay_enabled === 'true',
-      webpayCommerceCode: flat.payment_webpay_commerce_code,
-      freeShippingMin: Number(flat.payment_free_shipping_min),
-    },
-    sii: {
-      rut: flat.sii_rut,
-      razonSocial: flat.sii_razon_social,
-      giro: flat.sii_giro,
-      actividad: flat.sii_actividad,
-      direccion: flat.sii_direccion,
-      comuna: flat.sii_comuna,
-      certificate: flat.sii_certificate,
-      certificatePassword: flat.sii_certificate_password,
-      cafFile: flat.sii_caf_file,
-      environment: flat.sii_environment,
-    },
-    appearance: {
-      logoUrl: flat.appearance_logo_url,
-      primaryColor: flat.appearance_primary_color,
-      secondaryColor: flat.appearance_secondary_color,
-      darkMode: flat.appearance_dark_mode === 'true',
-    },
-    loyalty: {
-      enabled: flat.loyalty_enabled === 'true',
-      minRedemption: Number(flat.loyalty_min_redemption),
-      accumulationRate: Number(flat.loyalty_accumulation_rate),
-      redemptionRate: Number(flat.loyalty_redemption_rate),
-      requireIdVerification: flat.loyalty_require_id_verification === 'true',
-    },
-  }
-}
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase';
 
 export async function GET() {
-  const supabase = await createClient()
-
   try {
-    // 1. Obtener usuario actual
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // 2. Obtener store_id del perfil
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('store_id')
       .eq('id', user.id)
-      .single()
+      .single();
 
-    if (!profile?.store_id) {
-      return NextResponse.json({ error: 'Usuario no asociado a una tienda' }, { status: 403 })
-    }
+    if (!profile?.store_id) return NextResponse.json({ error: 'No store' }, { status: 403 });
 
-    // 3. Obtener ajustes filtrados por store_id
-    const { data, error } = await supabase
+    // Obtener todas las configuraciones de la tabla settings
+    const { data: settingsData } = await supabase
       .from('settings')
       .select('key, value')
-      .eq('store_id', profile.store_id)
+      .eq('store_id', profile.store_id);
 
-    if (error) {
-      console.warn('[settings] Error fetching:', error.message)
-      return NextResponse.json({ settings: groupSettings(DEFAULTS), usingDefaults: true })
-    }
+    // Convertir array de {key, value} a un objeto plano
+    const flatSettings: Record<string, any> = {};
+    settingsData?.forEach(s => {
+      flatSettings[s.key] = s.value;
+    });
 
-    const flat = { ...DEFAULTS }
-    for (const row of data ?? []) {
-      flat[row.key] = row.value ?? flat[row.key]
-    }
+    // Estructurar los datos para el frontend
+    // Mapeamos los campos planos a la estructura que el AdminPanel espera
+    const structured = {
+      store: {
+        name: flatSettings.store_name || '',
+        slogan: flatSettings.store_slogan || '',
+        address: flatSettings.store_address || '',
+        city: flatSettings.store_city || '',
+        phone: flatSettings.store_phone || '',
+        email: flatSettings.store_email || '',
+        website: flatSettings.store_website || '',
+      },
+      pos: {
+        terminalName: flatSettings.pos_terminal_name || '',
+        taxRate: Number(flatSettings.pos_tax_rate || 19),
+        currency: flatSettings.pos_currency || 'CLP',
+        lowStockThreshold: Number(flatSettings.pos_low_stock_threshold || 5),
+        receiptMessage: flatSettings.receipt_message || '¡Gracias por su compra!',
+        paymentCash: flatSettings.pos_payment_cash === 'true',
+        paymentTransbank: flatSettings.pos_payment_transbank === 'true',
+        paymentGetnet: flatSettings.pos_payment_getnet === 'true',
+        paymentTuu: flatSettings.pos_payment_tuu === 'true',
+        paymentSumup: flatSettings.pos_payment_sumup === 'true',
+        paymentOtherCard: flatSettings.pos_payment_other_card === 'true',
+        paymentTransfer: flatSettings.pos_payment_transfer === 'true',
+      },
+      payments: {
+        flowEnabled: flatSettings.payment_flow_enabled === 'true',
+        flowApiKey: flatSettings.payment_flow_api_key || '',
+        flowApiSecret: flatSettings.payment_flow_api_secret || '',
+        webpayEnabled: flatSettings.payment_webpay_enabled === 'true',
+        webpayCommerceCode: flatSettings.payment_webpay_commerce_code || '',
+        freeShippingMin: Number(flatSettings.payment_free_shipping_min || 0),
+      },
+      loyalty: {
+        enabled: flatSettings.loyalty_enabled === 'true',
+        minRedemption: Number(flatSettings.loyalty_min_redemption || 0),
+        accumulationRate: Number(flatSettings.loyalty_accumulation_rate || 100),
+        redemptionRate: Number(flatSettings.loyalty_redemption_rate || 1),
+        requireIdVerification: flatSettings.loyalty_require_id_verification === 'true',
+        name: flatSettings.loyalty_name || 'Puntos',
+      },
+      appearance: {
+        logoUrl: flatSettings.appearance_logo_url || '',
+        primaryColor: flatSettings.appearance_primary_color || '#1e3a6e',
+        secondaryColor: flatSettings.appearance_secondary_color || '#f5c518',
+        darkMode: flatSettings.appearance_dark_mode === 'true',
+      },
+      design: {
+        heroImage: flatSettings.design_hero_image || '',
+        heroTitle: flatSettings.design_hero_title || '',
+        showPromotions: flatSettings.design_show_promotions === 'true',
+        productCardStyle: flatSettings.design_product_card_style || 'glass',
+        bannerType: flatSettings.design_banner_type || 'simple',
+      },
+      receipt: {
+        message: flatSettings.receipt_message || '¡Gracias por su compra!',
+        showLogo: flatSettings.receipt_show_logo !== 'false',
+        colorMode: flatSettings.receipt_color_mode || 'bw',
+        showPoweredBy: flatSettings.receipt_show_powered_by !== 'false',
+        poweredByText: flatSettings.receipt_powered_by_text || 'Powered by YAHPOS!.cl',
+      }
+    };
 
-    return NextResponse.json({ settings: groupSettings(flat), usingDefaults: false })
-  } catch (err: any) {
-    return NextResponse.json({ settings: groupSettings(DEFAULTS), usingDefaults: true })
+    return NextResponse.json({
+      settings: structured,
+      usingDefaults: !settingsData || settingsData.length === 0
+    });
+  } catch (error: any) {
+    console.error('[GET /api/settings] Error:', error)
+    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
   }
 }
 
 export async function PATCH(req: Request) {
-  const supabase = await createClient()
-
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     const { data: profile } = await supabase
       .from('profiles')
       .select('store_id')
       .eq('id', user.id)
-      .single()
+      .single();
 
-    if (!profile?.store_id) return NextResponse.json({ error: 'Sin tienda' }, { status: 403 })
+    if (!profile?.store_id) return NextResponse.json({ error: 'No store' }, { status: 403 });
 
-    const body = await req.json() as Record<string, string>
-
-    // Upsert cada par incluyendo el store_id
-    const rows = Object.entries(body).map(([key, value]) => ({
-      store_id: profile.store_id,
+    const body = await req.json();
+    
+    // El body viene como un objeto plano de settings (ej: { loyalty_enabled: 'true', ... })
+    // Lo convertimos a un formato que podamos upsertar en la tabla settings
+    const upsertData = Object.entries(body).map(([key, value]) => ({
       key,
       value: String(value),
-    }))
+      store_id: profile.store_id
+    }));
 
     const { error } = await supabase
       .from('settings')
-      .upsert(rows, { onConflict: 'store_id,key' })
+      .upsert(upsertData, { onConflict: 'key,store_id' });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('[PATCH /api/settings] Error:', error)
+    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
   }
 }

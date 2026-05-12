@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation';
 import {
@@ -51,10 +52,10 @@ export default function Header() {
   const headerRef = useRef<HTMLElement>(null)
 
 
-  // En Plan Plus/Elite el header muestra la marca del negocio cliente
-  // En Plan Básico siempre PatagoniaPOS (no tienen ecommerce público)
-  const hasEcommerce = config.tier === 'plus' || config.tier === 'elite'
-  const displayName = hasEcommerce ? config.store_name : 'PatagoniaPOS'
+  // En Plan Patagonia el header muestra la marca del negocio cliente (White Label)
+  // En Plan Básico siempre YAHPOS! (no tienen ecommerce público)
+  const hasEcommerce = (config.tier as string) === 'archipielago' || (config.tier as string) === 'patagonia'
+  const displayName = hasEcommerce ? config.store_name : 'YAHPOS!'
   const displayInitial = displayName.charAt(0).toUpperCase()
 
   useEffect(() => {
@@ -114,14 +115,21 @@ export default function Header() {
                   : "bg-primary shadow-xl shadow-primary/20"
               )}>
                 {hasEcommerce && config.store_logo ? (
-                  <img src={config.store_logo} alt={displayName} className="w-8 h-8 object-contain" />
+                  <Image 
+                    src={config.store_logo} 
+                    alt={displayName} 
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 object-contain" 
+                  />
                 ) : (
-                  <img 
-                    src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
-                    alt="PatagoniaPOS" 
+                  <Image 
+                    src={theme === 'dark' ? '/logos/yahpos_logo_master_dark.svg' : '/logos/yahpos_logo_master.svg'} 
+                    alt="YAHPOS!" 
+                    width={44}
+                    height={44}
                     className={cn(
                       "w-full h-full object-contain p-1",
-                      theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
                     )} 
                   />
                 )}
@@ -129,11 +137,7 @@ export default function Header() {
             </div>
             <div className="flex flex-col">
               <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
-                {displayName.includes('Patagonia') ? (
-                  <>Patagonia<span className="text-primary italic">Market</span></>
-                ) : (
-                  displayName
-                )}
+                {displayName}
               </h1>
               <p className={cn(
                 "text-[9px] font-black text-primary uppercase tracking-[0.2em] leading-none transition-all duration-700",

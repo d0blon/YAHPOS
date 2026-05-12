@@ -3,24 +3,49 @@ import WhatsAppButton from '@/components/layout/WhatsAppButton'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import { Store, MapPin, Gift, ArrowRight } from 'lucide-react'
-import HeroSlide from '@/sections/v2/HeroSlide'
-import OffersSlide from '@/sections/v2/OffersSlide'
-import BestSellersSlide from '@/sections/v2/BestSellersSlide'
-import PacksSlide from '@/sections/v2/PacksSlide'
-import PointsSlide from '@/sections/v2/PointsSlide'
-import DeliverySlide from '@/sections/v2/DeliverySlide'
+import HeroSlide from '@/sections/HeroSlide'
+import OffersSlide from '@/sections/OffersSlide'
+import BestSellersSlide from '@/sections/BestSellersSlide'
+import PacksSlide from '@/sections/PacksSlide'
+import PointsSlide from '@/sections/PointsSlide'
+import DeliverySlide from '@/sections/DeliverySlide'
+import PlatformLanding from '@/sections/PlatformLanding'
+
+import { headers } from 'next/headers'
 
 export const metadata = {
-  title: 'PatagoniaPOS - Smart Commerce & Online Store',
+  title: 'YAHPOS! - Smart Commerce & Online Store',
   description: 'Gestiona tu negocio y compra online con la plataforma líder en la Patagonia. Envíos a domicilio y POS integrado.',
 }
 
 export default async function Home() {
-  const supabase = await createClient()
-  const { data: storeSettings } = await supabase.from('store_settings').select('tier').single()
-  const tier: string = 'elite' // storeSettings?.tier || 'basico'
+  const headersList = await headers()
+  const storeId = headersList.get('x-store-id')
+  
+  let tier: string = 'austral'
+  
+  if (storeId) {
+    const supabase = await createClient()
+    const { data: storeData } = await supabase
+      .from('stores')
+      .select('tier')
+      .eq('id', storeId)
+      .single()
+    
+    if (storeData) {
+      tier = storeData.tier
+    }
+  } else {
+    // Si no hay storeId (ej. dominio raíz: localhost:3000 o yahpos.cl),
+    // mostramos la plataforma corporativa (landing/login)
+    tier = 'platform_landing'
+  }
 
-  if (tier === 'basico') {
+  if (tier === 'platform_landing') {
+    return <PlatformLanding />
+  }
+
+  if (tier === 'austral') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-50 to-white text-center">
         <div className="max-w-2xl w-full bg-white rounded-3xl shadow-xl p-8 sm:p-12 border border-gray-100 relative overflow-hidden">
@@ -33,7 +58,7 @@ export default async function Home() {
             </div>
             
             <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4 tracking-tight">
-              Bienvenido a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">PatagoniaPOS</span>
+              Bienvenido a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">YAHPOS!</span>
             </h1>
             
             <p className="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
@@ -49,7 +74,7 @@ export default async function Home() {
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left hover:shadow-md transition-shadow">
                 <Gift className="w-6 h-6 text-purple-500 mb-3" />
                 <h3 className="font-semibold text-gray-900 mb-1">Club de Puntos</h3>
-                <p className="text-sm text-gray-500">Acumula Puntos Patagonia con cada compra en caja dictando tu RUT.</p>
+                <p className="text-sm text-gray-500">Acumula YAHPOS! Puntos con cada compra en caja dictando tu RUT.</p>
               </div>
             </div>
 
@@ -67,7 +92,7 @@ export default async function Home() {
     )
   }
 
-  // Tienda Online para Plus y Élite
+  // Tienda Online para Archipiélago y Patagonia
   return (
     <div className="bg-black snap-y snap-mandatory h-[100dvh] pt-[80px] scroll-pt-[80px] overflow-y-auto overflow-x-hidden scroll-smooth custom-scrollbar">
       {/* 1. Hero / Bienvenida */}

@@ -12,43 +12,76 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-    // 2. Cargar configuración del SII (esto debería venir de DB, aquí usamos ENV por ahora)
-    const config = {
-      rutEmisor: process.env.SII_RUT_EMISOR || '',
-      razonSocial: process.env.SII_RAZON_SOCIAL || '',
-      giro: process.env.SII_GIRO || '',
-      direccion: process.env.SII_DIRECCION || '',
-      comuna: process.env.SII_COMUNA || '',
-      ciudad: process.env.SII_CIUDAD || '',
-      pfxPath: process.env.SII_CERT_PATH,
-      pfxPassword: process.env.SII_CERT_PASSWORD,
-      environment: (process.env.SII_ENVIRONMENT as any) || 'certification'
-    };
+    // 2. Obtener el store_id del perfil del usuario
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
+      .single();
 
-    const engine = new SiiEngine(config);
+    if (!profile?.store_id) {
+      return NextResponse.json({ error: 'Usuario no asociado a ninguna tienda' }, { status: 403 });
+    }
 
-    // 3. Obtener el próximo Folio (Lógica simplificada: aquí deberíamos consultar la tabla sii_folios)
-    // Por ahora usaremos un timestamp para que no se repita en pruebas
-    const nextFolio = Math.floor(Date.now() / 100000);
+    // 3. Inicializar el motor con la configuración de la tienda (desde sii_config)
+    const engine = new SiiEngine();
+    await engine.initForStore(profile.store_id);
 
-    // 4. Preparar Payload para el motor
+    // 4. Preparar Payload para el motor con lógica dinámica (39 vs 41)
+    let mntExe = 0;
+    let mntTotal = totals.total;
+    let hasAfecto = false;
+    let hasExempt = false;
+
+    items.forEach((item: any) => {
+      if (item.isExempt) {
+        mntExe += Math.round(item.price * item.quantity);
+        hasExempt = true;
+      } else {
+        hasAfecto = true;
+      }
+    });
+
+    // Decidir tipo de DTE
+    let tipoDte = type; // Fallback al recibido
+    if (!hasAfecto && hasExempt) {
+      tipoDte = 41; // Boleta Exenta si TODO es exento
+    } else {
+      tipoDte = 39; // Boleta si hay mezcla o solo afecto
+    }
+
+    let mntNeto = 0;
+    let iva = 0;
+
+    if (tipoDte === 39 && hasAfecto) {
+      const baseAfecta = mntTotal - mntExe;
+      mntNeto = Math.round(baseAfecta / 1.19);
+      iva = baseAfecta - mntNeto;
+    } else if (tipoDte === 41) {
+      mntExe = mntTotal; // En boleta exenta, el total es el exento
+    }
+
     const payload = {
       Encabezado: {
-        TipoDTE: type,
-        Folio: nextFolio,
+        TipoDTE: tipoDte as (39 | 41),
+        Folio: 0,
         FchEmis: new Date().toISOString().split('T')[0],
-        MntTotal: totals.total,
+        MntNeto: mntNeto > 0 ? mntNeto : undefined,
+        MntExe: mntExe > 0 ? mntExe : undefined,
+        IVA: iva > 0 ? iva : undefined,
+        MntTotal: mntTotal,
       },
       Detalles: items.map((item: any) => ({
         NmbItem: item.name,
         QtyItem: item.quantity,
         PrcItem: item.price,
-        MontoItem: item.price * item.quantity
+        MontoItem: item.price * item.quantity,
+        IndExe: item.isExempt ? 1 : undefined
       }))
     };
 
     // 5. Emitir y Firmar
-    const result = await engine.emitirBoleta(payload, user.id);
+    const result: any = await engine.emitirBoleta(payload, profile.store_id);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });
@@ -57,8 +90,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       folio: result.folio,
-      message: 'Boleta emitida y firmada correctamente',
-      trackId: 'SIMULADO-' + Date.now() // En producción aquí irá el TrackID real del SII
+      documentId: result.documentId,
+      message: 'Boleta emitida y firmada correctamente'
     });
 
   } catch (error: any) {

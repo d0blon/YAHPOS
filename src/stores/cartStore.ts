@@ -15,8 +15,8 @@ interface CartState extends Cart {
 }
 
 const calculateCartTotals = (items: CartItem[]): Omit<Cart, 'items'> => {
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const totalItems = items.reduce((sum, item) => { return sum + item.quantity }, 0)
+  const subtotal = items.reduce((sum, item) => { return sum + (item.product.price * item.quantity) }, 0)
   const discount = 0
   const shipping = subtotal > 30000 ? 0 : 3500
   const total = subtotal - discount + shipping

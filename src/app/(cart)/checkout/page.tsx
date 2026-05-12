@@ -33,6 +33,7 @@ import { createOrder, createWebpayTransaction } from '@/lib/api'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { ensureGsapRegistered } from '@/lib/gsap'
+import { CartItem } from '@/types'
 
 const paymentMethods = [
   { id: 'webpay', name: 'Webpay Plus', description: 'Crédito / Débito', icon: CreditCard, color: 'blue' },
@@ -113,7 +114,7 @@ export default function CheckoutPage() {
 
       const orderData = {
         userId: user?.id,
-        items: items.map((i: any) => ({
+        items: items.map((i: CartItem) => ({
           productId: i.product.id,
           quantity: i.quantity,
           price: i.product.price
@@ -407,7 +408,7 @@ export default function CheckoutPage() {
                       <div className="glass-card p-8 rounded-3xl border-white/5 bg-white/2">
                         <h3 className="text-xs font-black text-blue-400 uppercase tracking-[0.3em] mb-6">TUS PRODUCTOS</h3>
                         <div className="space-y-4">
-                          {items.map((item: any) => (
+                          {items.map((item: CartItem) => (
                             <div key={item.product.id} className="flex items-center justify-between group">
                               <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 bg-white/5 rounded-2xl overflow-hidden border border-white/10 group-hover:scale-105 transition-transform">

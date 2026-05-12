@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react';
+import Image from 'next/image';
 import { Printer, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPrice, cn } from '@/lib/utils';
@@ -31,8 +32,23 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
   
   if (!isOpen || !orderData) return null;
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (!orderData?.id || isTrainingMode) return;
+    try {
+      const response = await fetch(`/api/sii/documentos/${orderData.id}/pdf`);
+      if (!response.ok) throw new Error('Error al generar PDF');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+          URL.revokeObjectURL(url);
+        };
+      }
+    } catch (error) {
+      console.error('Error al imprimir boleta:', error);
+    }
   };
 
   return (
@@ -59,7 +75,13 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
           )}
 
           <div className="text-center mb-6 relative z-10">
-            <img src="/logos/logo-light.png" alt="Logo" className="h-16 mx-auto mb-2 object-contain mix-blend-multiply" />
+            <Image 
+              src="/logos/yahpos_logo_master.svg" 
+              alt="Logo" 
+              width={64} 
+              height={64} 
+              className="mx-auto mb-2 object-contain" 
+            />
             <h2 className="font-bold text-xl uppercase mb-1">{config.store_name}</h2>
             <p className="text-xs">RUT: 76.123.456-7</p>
             <p className="text-xs">Giro: Supermercado Retail</p>
@@ -139,7 +161,7 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
              )}
              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col items-center gap-1 opacity-40">
                <p className="text-[8px] font-black tracking-[0.3em] uppercase">Powered by</p>
-               <p className="text-[10px] font-black tracking-tighter">PatagoniaPOS © 2026</p>
+               <p className="text-[10px] font-black tracking-tighter">YAHPOS! © 2026</p>
             </div>
           </div>
         </div>

@@ -18,10 +18,10 @@ export default function About() {
         />
         <div className="relative container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter italic">
-            Patagonia<span className="text-accent-yellow">POS</span>
+            YAHPOS!<span className="text-accent-copper">!</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto font-medium">
-            Tu ecosistema de comercio inteligente desde 1995
+            Tu ecosistema de comercio inteligente desde el corazón del sur
           </p>
         </div>
       </div>
@@ -32,13 +32,13 @@ export default function About() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tighter">
-                Nuestra Historia en <span className="text-corporate-blue italic">PatagoniaPOS</span>
+                Nuestra Historia en <span className="text-corporate-blue italic">YAHPOS!</span>
               </h2>
               <div className="space-y-4 text-gray-600 dark:text-gray-300">
                 <p>
-                  PatagoniaPOS nació en 1995 como un supermercado familiar en Castro, Chiloé,
-                  con raíces profundas en la Patagonia chilena. Con el paso de los años, hemos
-                  evolucionado de Austral Market hacia una plataforma tecnológica integral para el comercio.
+                  YAHPOS! nació como una respuesta a las necesidades del comercio local en Castro, Chiloé,
+                  con raíces profundas en el sur de Chile. Con el paso de los años, hemos
+                  evolucionado hacia una plataforma tecnológica integral para el comercio moderno.
                 </p>
                 <p>
                   Nuestra filosofía siempre ha sido la misma: ofrecer productos de la más alta

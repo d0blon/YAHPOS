@@ -23,7 +23,11 @@ import { useAuthStore } from '@/stores/authStore'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { DesignWishlistModal } from './DesignWishlistModal'
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  onMenuClick?: () => void
+}
+
+export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const pathname = usePathname()
   const { user } = useAuthStore()
   const { config } = useSaaS()
@@ -61,8 +65,12 @@ export function AdminHeader() {
         
         {/* Left Side: Breadcrumbs & Context */}
         <div className="flex items-center gap-4 overflow-hidden">
-          {/* Mobile Menu Trigger (Optional if sidebar is hidden) */}
-          <Button variant="ghost" size="icon" className="lg:hidden shrink-0">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden shrink-0"
+            onClick={onMenuClick}
+          >
             <Menu className="w-5 h-5" />
           </Button>
 

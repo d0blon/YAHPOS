@@ -20,7 +20,9 @@ interface EditableTextProps {
  *   <EditableText field="hero.badge" value={content.hero.badge} className="..." />
  */
 export function EditableText({ field, value, className = '', as: Tag = 'span' }: EditableTextProps) {
-  const { isEditorMode, updateField } = useEditor()
+  const editor = useEditor()
+  const isEditorMode = editor?.isEditorMode ?? false
+  const updateField = editor?.updateField
   const [isFocused, setIsFocused] = useState(false)
 
   if (!isEditorMode) {
@@ -37,7 +39,7 @@ export function EditableText({ field, value, className = '', as: Tag = 'span' }:
       onBlur={(e) => {
         setIsFocused(false)
         const newVal = (e.currentTarget as HTMLElement).innerText.trim()
-        if (newVal !== value) updateField(field, newVal)
+        if (newVal !== value) updateField?.(field, newVal)
       }}
       onKeyDown={(e) => {
         // Confirm edit on Enter (single line fields)

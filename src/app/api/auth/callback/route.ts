@@ -1,10 +1,39 @@
 import { createClient } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
+import { DEVELOPER_EMAILS } from '@/lib/constants'
+
+/** Helper: redirige a session-sync en fromOrigin para setear cookies en el subdominio */
+async function redirectViaSessionSync(supabase: Awaited<ReturnType<typeof createClient>>, fromOrigin: string, next: string) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session) {
+    const fromUrl = new URL(fromOrigin)
+    const syncUrl = new URL(`${fromUrl.protocol}//${fromUrl.host}/api/auth/session-sync`)
+    syncUrl.searchParams.set('access_token', session.access_token)
+    syncUrl.searchParams.set('refresh_token', session.refresh_token)
+    syncUrl.searchParams.set('next', next)
+    console.log(`[Auth Callback] Redirigiendo vía session-sync a: ${fromOrigin}`)
+    return NextResponse.redirect(syncUrl.toString())
+  }
+  return NextResponse.redirect(`${fromOrigin}${next}`)
+}
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const next = requestUrl.searchParams.get('next') || '/admin'
+  const fromOrigin = requestUrl.searchParams.get('from_origin')
   const origin = requestUrl.origin
+  const host = request.headers.get('host') || ''
+
+  // Determinar si estamos en el dominio raíz
+  const isRootDomain = host === 'yahpos.cl' || host === 'localhost:3000' || host === '127.0.0.1:3000' || host === 'www.yahpos.cl'
+
+  // DEBUG: Log all cookies to diagnose PKCE code_verifier issue
+  const allCookies = request.cookies.getAll()
+  const codeVerifierCookie = allCookies.find(c => c.name.includes('code-verifier'))
+  console.log(`[Auth Callback] Cookies recibidas: ${allCookies.length}`)
+  console.log(`[Auth Callback] Cookie names: ${allCookies.map(c => c.name).join(', ')}`)
+  console.log(`[Auth Callback] code_verifier present: ${!!codeVerifierCookie}`)
 
   if (code) {
     const supabase = await createClient()
@@ -14,21 +43,87 @@ export async function GET(request: NextRequest) {
       
       if (error) {
         console.error('[Auth Callback] Error exchanging code:', error)
-        return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+        const errorRedirect = fromOrigin || origin
+        return NextResponse.redirect(`${errorRedirect}/login?error=auth_failed`)
       }
 
       const user = data.user
-      const hasProfile = user?.user_metadata?.first_name || user?.user_metadata?.full_name
-
+      
+      // 1. Verificar si el usuario tiene perfil básico
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, first_name, full_name')
+        .eq('id', user.id)
+        .single()
+      
+      const hasProfile = profile?.first_name || profile?.full_name || user.user_metadata?.full_name
+      
       if (!hasProfile) {
-        return NextResponse.redirect(`${origin}/cuenta/completar-perfil?from=google`)
+        const profileRedirect = fromOrigin || origin
+        return NextResponse.redirect(`${profileRedirect}/cuenta/completar-perfil?from=google`)
+      }
+
+      // 2. Determinar redirección basada en el rol y pertenencia a tiendas
+      const isDeveloper = user.email && DEVELOPER_EMAILS.includes(user.email.toLowerCase())
+      const role = isDeveloper ? 'developer' : (profile?.role || 'customer')
+      const isSuperUser = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(role.toLowerCase())
+
+      // 3. Lógica de Redirección Inteligente
+      if (isRootDomain) {
+        // Estamos en el root, necesitamos encontrar a qué tienda mandar al usuario
+        const { data: userStores } = await supabase
+          .from('user_stores')
+          .select('store_id, stores(subdomain, custom_domain)')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .limit(1)
+        
+        if (userStores && userStores.length > 0) {
+          const store = userStores[0].stores as any
+          const targetSubdomain = store.subdomain
+          const protocol = origin.startsWith('https') ? 'https' : 'http'
+          
+          let targetHost = store.custom_domain || (host.includes('localhost') 
+            ? `${targetSubdomain}.localhost:3000` 
+            : `${targetSubdomain}.yahpos.cl`)
+
+          console.log(`[Auth Callback] Redirigiendo de raíz a tienda: ${targetHost}`)
+          
+          // Obtener la sesión actual para sincronizarla con el subdominio
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (session) {
+            const syncUrl = new URL(`${protocol}://${targetHost}/api/auth/session-sync`)
+            syncUrl.searchParams.set('access_token', session.access_token)
+            syncUrl.searchParams.set('refresh_token', session.refresh_token)
+            syncUrl.searchParams.set('next', next)
+            return NextResponse.redirect(syncUrl.toString())
+          }
+
+          return NextResponse.redirect(`${protocol}://${targetHost}${next}`)
+        }
+
+        // Si es superusuario pero no tiene tienda (dev global), igual necesita session-sync
+        if (isSuperUser && fromOrigin) {
+          return redirectViaSessionSync(supabase, fromOrigin, next)
+        }
+      } else {
+        // Ya estamos en un subdominio, simplemente seguir el flujo
+        return NextResponse.redirect(`${origin}${next.startsWith('/') ? next : '/' + next}`)
       }
 
     } catch (err) {
       console.error('[Auth Callback] Unexpected error:', err)
-      return NextResponse.redirect(`${origin}/login?error=unexpected`)
+      const errorRedirect = fromOrigin || origin
+      return NextResponse.redirect(`${errorRedirect}/login?error=unexpected`)
     }
   }
 
-  return NextResponse.redirect(`${origin}/`)
+  // Fallback: si hay fromOrigin, siempre pasa por session-sync para tener cookies en el subdominio
+  if (fromOrigin) {
+    const supabase = await createClient()
+    return redirectViaSessionSync(supabase, fromOrigin, next)
+  }
+
+  return NextResponse.redirect(`${origin}${next.startsWith('/') ? next : '/'}`)
 }

@@ -12,10 +12,25 @@ export class SiiAuth {
   private environment: 'certification' | 'production';
   private cacheToken: SiiAuthResponse | null = null;
 
+  private isMock: boolean = false;
+
   constructor(pfxPath: string, password: string, environment: 'certification' | 'production' = 'certification') {
-    this.signer = new SiiSigner(pfxPath, password);
+    try {
+      this.signer = new SiiSigner(pfxPath, password);
+    } catch (e) {
+      // Si falla la inicialización del signer (ej: certificado mock), marcamos como mock
+      console.warn('⚠️ SiiAuth: No se pudo inicializar el signer real. Entrando en modo MOCK.');
+      this.isMock = true;
+      // Creamos un signer dummy para evitar errores de tipo si se llama accidentalmente
+      this.signer = null as any;
+    }
     this.environment = environment;
   }
+
+  public setMock(value: boolean) {
+    this.isMock = value;
+  }
+
 
   /**
    * Obtiene una semilla nueva del SII
@@ -44,7 +59,14 @@ export class SiiAuth {
    * Firma la semilla y obtiene el Token de Acceso
    */
   public async getToken(): Promise<string> {
+    // 0. Si estamos en modo mock, retornar un token de prueba
+    if (this.isMock) {
+      console.log('🧪 SiiAuth: Generando Token MOCK.');
+      return 'MOCK_TOKEN_' + Date.now();
+    }
+
     // 1. Revisar si tenemos un token en cache que todavía sea válido (menos de 15 min)
+
     const now = Date.now();
     if (this.cacheToken && (now - this.cacheToken.created_at < 15 * 60 * 1000)) {
       return this.cacheToken.token;

@@ -16,6 +16,7 @@ function FlowConfirmationContent() {
   const [orderId, setOrderId] = useState<number | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const validatePayment = async () => {
       try {
         // Soporta Flow (token) y Webpay (token_ws)
@@ -25,79 +26,83 @@ function FlowConfirmationContent() {
         // Obtener el order ID del localStorage
         const storedOrderId = localStorage.getItem('pendingOrderId');
         if (!storedOrderId) {
-          setStatus('error');
-          setMessage('No se encontró el ID del pedido');
+          if (isMounted) {
+            setStatus('error');
+            setMessage('No se encontró el ID del pedido');
+          }
           return;
         }
 
-        setOrderId(Number(storedOrderId));
+        if (isMounted) setOrderId(Number(storedOrderId));
 
         if (webpayToken) {
-          // Confirmar transacción Webpay (commit)
-          const commitRes = await apiFetch('/payments/webpay/commit', {
+          const commitData = await apiFetch('/payments/webpay/commit', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: webpayToken }),
+            body: JSON.stringify({ token_ws: webpayToken }),
           });
-          if (!commitRes.ok) {
-            const t = await commitRes.text();
-            throw new Error(`Error confirmando pago Webpay: ${t}`);
-          }
-          const commitData = await commitRes.json();
-          // Estado autorizado
-          if (commitData?.status === 'AUTHORIZED') {
-            const response = await apiFetch(`/orders/${storedOrderId}/confirm-payment`, {
-              method: 'POST',
-            });
-            if (!response.ok) {
-              throw new Error('No se pudo confirmar el pago en el servidor');
-            }
+
+          if (commitData?.success) {
             localStorage.removeItem('pendingOrderId');
-            setStatus('success');
-            setMessage('¡Pago confirmado exitosamente (Webpay)!');
-            setTimeout(() => navigate.push('/'), 3000);
+            if (isMounted) {
+              setStatus('success');
+              setMessage('¡Pago confirmado exitosamente (Webpay)!');
+              setTimeout(() => {
+                if (isMounted) navigate.push('/');
+              }, 3000);
+            }
+            return;
+          } else {
+            if (isMounted) {
+              setStatus('error');
+              setMessage(`Pago rechazado: ${commitData?.error || 'No autorizado'}`);
+            }
             return;
           }
-          setStatus('error');
-          setMessage(`Pago rechazado: ${commitData?.status ?? 'DESCONOCIDO'}`);
-          return;
         }
 
         if (flowOrder) {
-          // Validar estado del pago en Flow
           const paymentStatus = await getFlowPaymentStatus(flowOrder || '');
           if (paymentStatus === 'success') {
-            const response = await apiFetch(`/orders/${storedOrderId}/confirm-payment`, {
+            await apiFetch(`/orders/${storedOrderId}/confirm-payment`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
             });
-            if (!response.ok) throw new Error('No se pudo confirmar el pago en el servidor');
             localStorage.removeItem('pendingOrderId');
             localStorage.removeItem('pendingFlowOrder');
-            setStatus('success');
-            setMessage('¡Pago confirmado exitosamente!');
-            setTimeout(() => navigate.push('/'), 3000);
+            if (isMounted) {
+              setStatus('success');
+              setMessage('¡Pago confirmado exitosamente!');
+              setTimeout(() => {
+                if (isMounted) navigate.push('/');
+              }, 3000);
+            }
             return;
           }
-          setStatus('error');
-          setMessage(`Pago rechazado: ${paymentStatus}`);
+          if (isMounted) {
+            setStatus('error');
+            setMessage(`Pago rechazado: ${paymentStatus}`);
+          }
           return;
         }
 
-        setStatus('error');
-        setMessage('No se encontró token de pago (Webpay o Flow)');
+        if (isMounted) {
+          setStatus('error');
+          setMessage('No se encontró token de pago (Webpay o Flow)');
+        }
       } catch (error) {
         console.error('Error validando pago:', error);
-        setStatus('error');
-        setMessage(
+        if (isMounted) {
+          setStatus('error');
+          setMessage(
             error instanceof Error
                 ? error.message
                 : 'Error al validar el pago. Por favor, contáctanos.'
-        );
+          );
+        }
       }
     };
 
     validatePayment();
+    return () => { isMounted = false; };
   }, [searchParams, navigate]);
 
   return (

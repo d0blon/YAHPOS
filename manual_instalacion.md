@@ -1,11 +1,11 @@
-# 📖 Manual de Instalación: Nuevo Cliente PatagoniaPOS
+# 📖 Manual de Instalación: Nuevo Cliente YAHPOS!
 
 Este manual detalla los 5 pasos para dejar a un cliente operando en menos de 10 minutos.
 
 ### 1. Registro del Usuario
 - Ve a la sección de registro en la plataforma.
 - Registra el correo del dueño del negocio.
-- Asigna el **Tier** (Básico, Pro o Elite) según lo contratado.
+- Asigna el **Tier** (Básico, Plus o Elite) según lo contratado.
 
 ### 2. Configuración de Identidad
 - Sube el Logo del negocio (formato PNG transparente recomendado).

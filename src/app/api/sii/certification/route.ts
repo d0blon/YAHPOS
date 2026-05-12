@@ -10,63 +10,43 @@ const CERTIFICATION_CASES = [
     description: 'Venta normal con productos afectos a IVA.',
     tipo: 39,
     payload: {
-      Encabezado: {
-        TipoDTE: 39,
-        Folio: 1,
-        FchEmis: new Date().toISOString().split('T')[0],
-        MntTotal: 1190,
-      },
-      Detalles: [
-        {
-          NmbItem: 'Producto de Prueba Afecto',
-          QtyItem: 1,
-          PrcItem: 1000,
-          MontoItem: 1000,
-        }
-      ]
+      Encabezado: { TipoDTE: 39, Folio: 1, FchEmis: new Date().toISOString().split('T')[0], MntTotal: 1190 },
+      Detalles: [{ NmbItem: 'Producto de Prueba Afecto', QtyItem: 1, PrcItem: 1000, MontoItem: 1000 }]
     }
   },
   {
     id: 2,
     name: 'Boleta Exenta',
-    description: 'Venta de productos no afectos a IVA.',
+    description: 'Venta de productos no afectos a IVA (DTE 41).',
     tipo: 41,
     payload: {
-      Encabezado: {
-        TipoDTE: 41,
-        Folio: 1,
-        FchEmis: new Date().toISOString().split('T')[0],
-        MntTotal: 1000,
-      },
-      Detalles: [
-        {
-          NmbItem: 'Producto de Prueba Exento',
-          QtyItem: 1,
-          PrcItem: 1000,
-          MontoItem: 1000,
-        }
-      ]
+      Encabezado: { TipoDTE: 41, Folio: 1, FchEmis: new Date().toISOString().split('T')[0], MntTotal: 1000 },
+      Detalles: [{ NmbItem: 'Producto de Prueba Exento', QtyItem: 1, PrcItem: 1000, MontoItem: 1000, IndExe: 1 }]
     }
   },
   {
     id: 3,
-    name: 'Boleta con Descuento Global',
-    description: 'Venta con un descuento aplicado al total.',
+    name: 'Boleta con Varios Ítems',
+    description: 'Venta con múltiples líneas de detalle para validar sumatorias.',
     tipo: 39,
     payload: {
-      Encabezado: {
-        TipoDTE: 39,
-        Folio: 2,
-        FchEmis: new Date().toISOString().split('T')[0],
-        MntTotal: 952,
-      },
+      Encabezado: { TipoDTE: 39, Folio: 2, FchEmis: new Date().toISOString().split('T')[0], MntTotal: 5950 },
       Detalles: [
-        {
-          NmbItem: 'Producto Afecto con Descuento Global',
-          QtyItem: 1,
-          PrcItem: 1000,
-          MontoItem: 1000,
-        }
+        { NmbItem: 'Producto A', QtyItem: 2, PrcItem: 1000, MontoItem: 2000 },
+        { NmbItem: 'Producto B', QtyItem: 3, PrcItem: 1000, MontoItem: 3000 }
+      ]
+    }
+  },
+  {
+    id: 4,
+    name: 'Boleta Mixta (Afecto + Exento)',
+    description: 'Boleta afecta que incluye ítems exentos (DTE 39 con IndExe=1).',
+    tipo: 39,
+    payload: {
+      Encabezado: { TipoDTE: 39, Folio: 3, FchEmis: new Date().toISOString().split('T')[0], MntTotal: 2190 },
+      Detalles: [
+        { NmbItem: 'Ítem Afecto', QtyItem: 1, PrcItem: 1000, MontoItem: 1000 },
+        { NmbItem: 'Ítem Exento', QtyItem: 1, PrcItem: 1000, MontoItem: 1000, IndExe: 1 }
       ]
     }
   }
@@ -129,51 +109,48 @@ export async function POST(req: Request) {
     const caseDef = CERTIFICATION_CASES.find(c => c.id === caseId)
     if (!caseDef) return NextResponse.json({ error: 'Caso no encontrado' }, { status: 404 })
 
-    // 1. Get SII Settings for signing
-    const { data: settings } = await supabase
-      .from('settings')
-      .select('key, value')
-      .eq('store_id', profile.store_id)
-      .in('key', ['sii_rut', 'sii_razon_social', 'sii_giro', 'sii_direccion', 'sii_comuna', 'sii_certificate', 'sii_certificate_password'])
-
-    const sii = Object.fromEntries(settings?.map(s => [s.key, s.value]) || [])
+    // 1. Inicializar motor con configuración real de la tienda
+    const { SiiEngine } = await import('@/lib/sii/engine');
+    const engine = new SiiEngine();
     
-    if (!sii.sii_certificate || !sii.sii_certificate_password) {
-      return NextResponse.json({ error: 'Certificado digital no configurado' }, { status: 400 })
+    try {
+      await engine.initForStore(profile.store_id);
+    } catch (initErr: any) {
+      return NextResponse.json({ error: `SII no configurado: ${initErr.message}` }, { status: 400 });
     }
 
-    // 2. Generate and Sign XML
-    const config = {
-      rutEmisor: sii.sii_rut,
-      razonSocial: sii.sii_razon_social,
-      giro: sii.sii_giro,
-      direccion: sii.sii_direccion,
-      comuna: sii.sii_comuna,
-      ciudad: sii.sii_comuna, // Fallback
-      environment: 'certification' as const,
+    // 2. Emitir y Firmar Documento Real (obtiene folio de la DB)
+    const emissionResult = await engine.emitirBoleta(caseDef.payload as any, profile.store_id);
+    
+    if (!emissionResult.success) {
+      return NextResponse.json({ error: `Error en emisión: ${emissionResult.error}` }, { status: 500 });
     }
 
-    const xml = generateBoletaXml(caseDef.payload as any, config)
-    
-    // In a real scenario, we would sign here
-    // const signer = new SiiSigner(sii.sii_certificate, sii.sii_certificate_password)
-    // const signedXml = signer.signXml(xml, 'Documento')
-    
-    // For SIMULATION in development:
-    const signedXml = xml // Mock signed XML
-    const trackId = `SIM-${Math.random().toString(36).substring(7).toUpperCase()}`
+    // 3. Enviar al SII para obtener TrackID REAL
+    const sendResult: any = await engine.enviarBoletaAlSII(emissionResult.documentId, profile.store_id);
 
-    // 3. Update DB
+    if (!sendResult.success) {
+      return NextResponse.json({ 
+        error: `Error en envío al SII: ${sendResult.error}`,
+        documentId: emissionResult.documentId 
+      }, { status: 500 });
+    }
+
+    // 4. Actualizar Estado de Certificación
     await supabase.from('sii_certification_cases').upsert({
       store_id: profile.store_id,
       case_number: caseId,
-      status: 'accepted',
-      xml_sent: signedXml,
-      sii_track_id: trackId,
+      status: 'sent',
+      xml_sent: emissionResult.xml,
+      sii_track_id: sendResult.trackId,
       updated_at: new Date().toISOString()
-    }, { onConflict: 'store_id,case_number' })
+    }, { onConflict: 'store_id,case_number' });
 
-    return NextResponse.json({ success: true, trackId })
+    return NextResponse.json({ 
+      success: true, 
+      trackId: sendResult.trackId,
+      documentId: emissionResult.documentId
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

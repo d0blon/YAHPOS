@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   MapPin, Phone, Mail, Clock, CreditCard, Truck, ShieldCheck, 
   Headphones, Globe, Zap, Star, Crown, ArrowRight
@@ -12,20 +13,20 @@ import { useGSAP } from '@gsap/react'
 import { ensureGsapRegistered, toArray } from '@/lib/gsap'
 
 // ────────────────────────────────────────────────────
-// Footer Plan Plus / Elite
+// Footer Premium (Archipielago / Patagonia)
 // El negocio tiene su ecommerce público.
-// Footer completo + PatagoniaPOS siempre al final.
+// Footer completo + YAHPOS! siempre al final.
 // ────────────────────────────────────────────────────
-function FooterPlus({ storeName }: { storeName: string }) {
+function FooterPremium({ storeName }: { storeName: string }) {
   ensureGsapRegistered()
   const root = useRef<HTMLElement>(null)
   const footerLinks = {
     shop: [
-      { href: '/categoria/alimentos', label: 'Alimentos' },
-      { href: '/categoria/bebidas', label: 'Bebidas' },
-      { href: '/categoria/frescos', label: 'Frescos' },
-      { href: '/categoria/limpieza', label: 'Limpieza' },
-      { href: '/categoria/hogar', label: 'Hogar' },
+      { href: '/productos?categoria=alimentos', label: 'Alimentos' },
+      { href: '/productos?categoria=bebidas', label: 'Bebidas' },
+      { href: '/productos?categoria=frescos', label: 'Frescos' },
+      { href: '/productos?categoria=limpieza', label: 'Limpieza' },
+      { href: '/productos?categoria=hogar', label: 'Hogar' },
     ],
     company: [
       { href: '/nosotros', label: 'Sobre Nosotros' },
@@ -41,7 +42,7 @@ function FooterPlus({ storeName }: { storeName: string }) {
   }
 
   return (
-    <footer ref={root} className="bg-[#030712] text-white relative overflow-hidden pt-20 pb-10 md:pb-6 border-t border-white/5">
+    <footer ref={root} className="bg-background text-white relative overflow-hidden pt-20 pb-10 md:pb-6 border-t border-white/5">
       {/* Dynamic Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />
@@ -79,14 +80,20 @@ function FooterPlus({ storeName }: { storeName: string }) {
           {/* Brand & Social */}
           <div className="lg:col-span-4 footer-col">
             <Link href="/" className="inline-flex items-center gap-3 mb-8 group">
-              <div className="w-14 h-14 bg-white text-black rounded-2xl flex items-center justify-center font-black text-2xl group-hover:rotate-6 transition-transform duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                {storeName.charAt(0)}
+              <div className="w-14 h-14 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-center p-2 group-hover:rotate-6 transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                <Image 
+                  src="/logos/yahpos_logo_master_dark.svg" 
+                  alt="YAHPOS!" 
+                  width={40} 
+                  height={40} 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <h2 className="font-black text-2xl tracking-tighter uppercase leading-none mb-1">{storeName}</h2>
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full" />
-                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Premium Store</p>
+                  <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Premium Store</p>
                 </div>
               </div>
             </Link>
@@ -175,7 +182,7 @@ function FooterPlus({ storeName }: { storeName: string }) {
                 © 2026 {storeName} / Todos los derechos reservados
               </p>
               <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2 justify-center md:justify-start">
-                <Zap className="w-3 h-3" /> Powered by PatagoniaPOS Technology
+                <Zap className="w-3 h-3" /> Powered by YAHPOS! Technology
               </p>
             </div>
             
@@ -196,15 +203,15 @@ function FooterPlus({ storeName }: { storeName: string }) {
 
 
 // ────────────────────────────────────────────────────
-// Footer Plan Básico
+// Footer Plan Austral
 // Solo el dueño ve esto (no hay ecommerce público).
-// 100% publicidad PatagoniaPOS + CTA para subir de plan.
+// 100% publicidad YAHPOS! + CTA para subir de plan.
 // ────────────────────────────────────────────────────
-function FooterBasico() {
+function FooterAustral() {
   ensureGsapRegistered()
   const root = useRef<HTMLElement>(null)
   return (
-    <footer ref={root} className="bg-[#030712] text-white relative overflow-hidden py-20 border-t border-white/5">
+    <footer ref={root} className="bg-background text-white relative overflow-hidden py-20 border-t border-white/5">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[140px]" />
         <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[140px]" />
@@ -231,18 +238,18 @@ function FooterBasico() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 max-w-lg mx-auto">
             <div className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
               <Star className="w-8 h-8 text-yellow-400 mb-4 mx-auto group-hover:scale-110 transition-transform" />
-              <h3 className="font-bold text-lg mb-1">Plan Plus</h3>
+              <h3 className="font-bold text-lg mb-1">Plan Archipiélago</h3>
               <p className="text-sm text-gray-500">Ecommerce Completo</p>
             </div>
             <div className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
               <Crown className="w-8 h-8 text-purple-400 mb-4 mx-auto group-hover:scale-110 transition-transform" />
-              <h3 className="font-bold text-lg mb-1">Plan Élite</h3>
+              <h3 className="font-bold text-lg mb-1">Plan Patagonia</h3>
               <p className="text-sm text-gray-500">Multisucursal & IA</p>
             </div>
           </div>
 
           <a 
-            href="https://patagoniapos.cl" 
+            href="https://yahpos.cl" 
             className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all duration-500 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
           >
             Ver Planes & Precios <ArrowRight className="w-5 h-5" />
@@ -251,9 +258,17 @@ function FooterBasico() {
 
         <div className="mt-20 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-white/5 pt-10">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center font-black text-lg">P</div>
+            <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center p-1.5 shadow-lg shadow-primary/20">
+              <Image 
+                src="/logos/yahpos_logo_master_dark.svg" 
+                alt="YAHPOS!" 
+                width={28} 
+                height={28} 
+                className="w-full h-full object-contain invert brightness-0"
+              />
+            </div>
             <div>
-              <p className="font-black text-sm tracking-tighter uppercase leading-none">PatagoniaPOS</p>
+              <p className="font-black text-sm tracking-tighter uppercase leading-none">YAHPOS!</p>
               <p className="text-[10px] text-gray-500 uppercase tracking-widest">Advanced SaaS Platform</p>
             </div>
           </div>
@@ -261,7 +276,7 @@ function FooterBasico() {
           <div className="flex items-center gap-8">
             <Link href="/terminos" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Términos</Link>
             <Link href="/privacidad" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Privacidad</Link>
-            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">© 2026 PatagoniaPOS Tech</p>
+            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">© 2026 YAHPOS! Tech</p>
           </div>
         </div>
       </div>
@@ -319,9 +334,9 @@ function FooterFX({ scope }: { scope: HTMLElement | null }) {
 export default function Footer() {
   const { config } = useSaaS()
 
-  if (config.tier === 'basico') {
-    return <FooterBasico />
+  if (config.tier === 'austral') {
+    return <FooterAustral />
   }
-
-  return <FooterPlus storeName={config.store_name} />
+  
+  return <FooterPremium storeName={config.store_name} />
 }

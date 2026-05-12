@@ -15,7 +15,7 @@ export async function generateMasterKeyAction() {
     
     // Generar el URI standard otpauth://
     const otpauth = generateURI({
-      issuer: 'PatagoniaPOS',
+      issuer: 'YAHPOS!',
       label: 'Developer',
       secret: secret
     })

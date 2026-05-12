@@ -1,6 +1,6 @@
 # 🗺️ MAPA MAESTRO DE MISIONES PENDIENTES - PATAGONIAPOS
 
-Este documento consolida todas las características y misiones que hemos "guardado para después" o que están en estado de prototipo/mock. Es la hoja de ruta definitiva para llevar a PatagoniaPOS de un MVP estable a una plataforma comercial completa.
+Este documento consolida todas las características y misiones que hemos "guardado para después" o que están en estado de prototipo/mock. Es la hoja de ruta definitiva para llevar a YAHPOS! de un MVP estable a una plataforma comercial completa.
 
 ## 🏁 ESTADO DEL PROYECTO (Abril 2026)
 - **Fase Actual**: Autenticación Real + RBAC Admin + Motor SII Propio ✅ **ACTUALIZADO**
@@ -19,20 +19,20 @@ Este documento consolida todas las características y misiones que hemos "guarda
 
 ### ✅ Estrategia Comercial
 - **Landing Page de Ventas:** Creada en `/vender` con enfoque en Chiloé.
-- **Precios Definidos:** Básico (0.6 UF), Pro (1 UF), Elite (1.8 UF).
+- **Precios Definidos:** Austral (0.6 UF), Archipiélago (1 UF), Patagonia (1.8 UF).
 - **Manual de Onboarding:** Creado `manual_instalacion.md` para nuevos clientes.
 
 ---
 
 ## 📐 ARQUITECTURA DE TIERS (DECISIONES CLAVE)
 
-> Cada instalación de PatagoniaPOS es **independiente**. El `/admin/developer` de `tienda1.cl` solo configura `tienda1.cl`.
+> Cada instalación de YAHPOS! es **independiente**. El `/admin/developer` de `tienda1.cl` solo configura `tienda1.cl`.
 
 | Plan | Funciones incluidas |
 |------|---------------------|
-| **🔵 Básico** | POS offline, gestión de inventario, turnos de caja, CRM básico |
-| **⚡ Plus** | Todo Básico + Ecommerce activo, pedidos online, catálogo público, branding propio |
-| **👑 Élite** | Todo Plus + Picking Fees, logística avanzada, múltiples sucursales, API externa, IA |
+| **🔵 Austral** | POS offline, gestión de inventario, turnos de caja, CRM básico |
+| **⚡ Archipiélago** | Todo Austral + Ecommerce activo, pedidos online, catálogo público, branding propio |
+| **👑 Patagonia** | Todo Archipiélago + Picking Fees, logística avanzada, múltiples sucursales, API externa, IA |
 
 ---
 
@@ -47,7 +47,7 @@ Este documento consolida todas las características y misiones que hemos "guarda
 | `cajero` | Cajero / colaborador | ❌ | ✅ |
 | `customer` | Cliente final | ❌ | ❌ |
 
-### Matriz de permisos Admin (Plan Básico):
+### Matriz de permisos Admin (Plan Austral):
 | Sección | developer | admin | manager | cajero |
 |---------|-----------|-------|---------|--------|
 | Dashboard | ✅ | ✅ | ✅ | ❌ |
@@ -56,11 +56,11 @@ Este documento consolida todas las características y misiones que hemos "guarda
 | Personal | ✅ | ✅ | ❌ | ❌ |
 | Configuración | ✅ | ✅ | ❌ | ❌ |
 | Developer Mode (2FA) | ✅ | ❌ | ❌ | ❌ |
-| Pedidos Online | 🔒 Plan Plus | 🔒 | 🔒 | ❌ |
+| Pedidos Online | 🔒 Plan Archipiélago | 🔒 | 🔒 | ❌ |
 | Ir al POS | ✅ | ✅ | ✅ | ✅ |
 
 ### Capa 2 — Plan SaaS (¿Qué tiene contratado?):
-| Ruta | Básico | Plus | Élite |
+| Ruta | Austral | Archipiélago | Patagonia |
 |------|--------|------|-------|
 | `/pos` | ✅ | ✅ | ✅ |
 | `/admin/*` | ✅ | ✅ | ✅ |
@@ -143,9 +143,9 @@ Este documento consolida todas las características y misiones que hemos "guarda
 
 ## ⚔️ COMPARATIVA DE MERCADO (ARGUMENTOS DE VENTA)
 
-| Característica | PatagoniaPOS (Nosotros) | Bsale / Gigantes | Haulmer / Máquinas |
+| Característica | YAHPOS! (Nosotros) | Bsale / Gigantes | Haulmer / Máquinas |
 | :--- | :--- | :--- | :--- |
-| **Precio Mensual** | **$15.000 - $25.000** | $45.000+ | $19.990 + Comisiones |
+| **Precio Mensual** | **$15.000 - $35.000** | $45.000+ | $19.990 + Comisiones |
 | **Costo por Boleta** | **$0 (Motor Propio)** | Variable / Incluido | Cobran por documento |
 | **Soporte** | **Local (Chiloé / Directo)** | Tickets / Bots | Call Center genérico |
 | **E-commerce** | **Gratis (Base)** | Pago adicional alto | Muy limitado |
@@ -165,7 +165,7 @@ Es un archivo XML que el SII le entrega a cada negocio. Imaginalo como una "tira
 Es el "carnet de identidad" digital del dueño del negocio. Es un archivo que instalamos en nuestro servidor para que el sistema pueda firmar las boletas en tu nombre ante el SII de forma legal.
 
 ### 🤝 Handshake (Seed & Token)
-Es el saludo secreto entre PatagoniaPOS y el SII. 
+Es el saludo secreto entre YAHPOS! y el SII. 
 1. Pedimos una **Semilla (Seed)** al SII.
 2. La firmamos con tu certificado.
 3. El SII nos da un **Token** (una llave temporal).

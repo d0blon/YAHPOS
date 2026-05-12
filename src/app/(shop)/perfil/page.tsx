@@ -136,7 +136,7 @@ function ProfileContent() {
                         "flex items-center gap-1.5 py-1 px-3 rounded-full",
                         currentUser.role === 'admin' ? "bg-rose-50 dark:bg-rose-900/30" :
                         currentUser.role === 'developer' ? "bg-purple-50 dark:bg-purple-900/30" :
-                        currentUser.role === 'manager' ? "bg-blue-50 dark:bg-blue-900/30" :
+                        currentUser.role === 'owner' ? "bg-blue-50 dark:bg-blue-900/30" :
                         "bg-gray-50 dark:bg-gray-800/50"
                       )}>
                         {isSyncing ? (
@@ -146,7 +146,7 @@ function ProfileContent() {
                             "w-3.5 h-3.5",
                             currentUser.role === 'admin' ? "text-rose-500" :
                             currentUser.role === 'developer' ? "text-purple-500" :
-                            currentUser.role === 'manager' ? "text-blue-500" :
+                            currentUser.role === 'owner' ? "text-blue-500" :
                             "text-gray-500"
                           )} />
                         )}
@@ -154,13 +154,13 @@ function ProfileContent() {
                           "text-[10px] font-black uppercase tracking-wider",
                           currentUser.role === 'admin' ? "text-rose-600" :
                           currentUser.role === 'developer' ? "text-purple-600" :
-                          currentUser.role === 'manager' ? "text-blue-600" :
+                          currentUser.role === 'owner' ? "text-blue-600" :
                           "text-gray-600"
                         )}>
                           {isSyncing ? 'Sincronizando...' : (
                             currentUser.role === 'admin' ? 'Administrador' : 
                             currentUser.role === 'developer' ? 'Desarrollador' :
-                            currentUser.role === 'manager' ? 'Gerente' : 'Cliente'
+                            currentUser.role === 'owner' ? 'Dueño/Gerente' : 'Cliente'
                           )}
                         </span>
                       </div>
@@ -396,7 +396,7 @@ function ProfileContent() {
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-corporate-blue transition-colors">{product.name}</p>
                                 <p className="text-xl font-black text-rose-500 mt-1">${product.price.toLocaleString('es-CL')}</p>
-                                <Button size="sm" variant="ghost" className="mt-2 text-xs font-bold text-corporate-blue hover:bg-blue-50 rounded-full px-4" onClick={() => navigate.push(`/producto/${product.slug}`)}>
+                                <Button size="sm" variant="ghost" className="mt-2 text-xs font-bold text-corporate-blue hover:bg-blue-50 rounded-full px-4" onClick={() => navigate.push(`/producto/${product.slug || product.id}`)}>
                                   Ver Detalles
                                 </Button>
                               </div>

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { tx } from '@/lib/payments/transbank'
 
 export async function POST(req: Request) {
   try {
@@ -6,13 +7,23 @@ export async function POST(req: Request) {
 
     console.log(`[Webpay] Creando transacción para orden ${orderId} por $${amount}`)
 
-    // Simulación de respuesta de Transbank
-    // En producción aquí se usaría el SDK de Transbank
+    // El monto debe ser entero para Webpay Plus
+    const buyOrder = `ORD-${orderId}-${Math.floor(Math.random() * 1000)}`;
+    const sessionId = `SES-${Date.now()}`;
+    
+    const response = await tx.create(
+      buyOrder,
+      sessionId,
+      Math.round(amount),
+      returnUrl
+    );
+
     return NextResponse.json({
-      url: 'https://webpay3gint.transbank.cl/webpayserver/initTransaction',
-      token_ws: `mock_webpay_token_${Date.now()}`
+      url: response.url,
+      token: response.token
     })
   } catch (error: any) {
+    console.error('[Webpay Create Error]', error);
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

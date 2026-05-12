@@ -101,7 +101,7 @@ export function SalesHistoryModal({ isOpen, onClose, sales, onReprint }: SalesHi
 
         {/* Footer */}
         <div className="p-6 border-t border-slate-100 dark:border-slate-800 text-center bg-slate-50 dark:bg-slate-800/50">
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em]">Registro Histórico • Auditado por PatagoniaPOS</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em]">Registro Histórico • Auditado por YAHPOS!</p>
         </div>
       </div>
     </div>

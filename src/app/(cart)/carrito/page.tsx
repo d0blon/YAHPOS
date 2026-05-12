@@ -141,7 +141,7 @@ export default function CartPage() {
                     className="cart-item glass-card p-4 md:p-6 rounded-[32px] bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-500 flex flex-col md:flex-row gap-6 group"
                   >
                     {/* Image */}
-                    <Link href={`/producto/${item.product.slug}`} className="shrink-0">
+                    <Link href={`/producto/${item.product.slug || item.product.id}`} className="shrink-0">
                       <div className="w-full md:w-32 h-32 bg-white/5 rounded-2xl overflow-hidden relative group-hover:scale-105 transition-transform duration-500">
                         <img
                           src={item.product.image}
@@ -156,7 +156,7 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0 py-2">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <Link href={`/producto/${item.product.slug}`}>
+                          <Link href={`/producto/${item.product.slug || item.product.id}`}>
                             <h3 className="font-bold text-xl text-white group-hover:text-blue-400 transition-colors line-clamp-1">
                               {item.product.name}
                             </h3>

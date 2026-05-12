@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { X, Shield, Lock, EyeOff, Trash2, Save, Info } from 'lucide-react'
+import { X, Shield, Lock, EyeOff, Trash2, Save, Info, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePosStore, PosSettings } from '@/stores/posStore'
@@ -14,18 +14,26 @@ interface PosSettingsModalProps {
 
 export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
   const { settings, updateSettings, logEvent } = usePosStore()
+  const [isSaving, setIsSaving] = React.useState(false)
   const [newPin, setNewPin] = React.useState(settings.supervisorPin || '')
 
   if (!isOpen) return null
 
-  const handleToggle = (key: keyof PosSettings) => {
-    const newVal = !settings[key]
-    updateSettings({ [key]: newVal })
-    logEvent({ 
-      type: 'AUTH_SUCCESS', 
-      details: `Ajuste ${key} cambiado a ${newVal}` 
-    })
-    toast.success('Ajuste actualizado correctamente')
+  const handleToggle = async (key: keyof PosSettings) => {
+    setIsSaving(true)
+    try {
+      const newVal = !settings[key]
+      await updateSettings({ [key]: newVal })
+      logEvent({ 
+        type: 'AUTH_SUCCESS', 
+        details: `Ajuste ${key} cambiado a ${newVal}` 
+      })
+      toast.success('Ajuste actualizado correctamente')
+    } catch (error) {
+      toast.error('Error al actualizar ajuste')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,13 +41,32 @@ export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
     setNewPin(val)
   }
 
-  const savePin = () => {
+  const savePin = async () => {
     if (newPin.length < 4) {
       toast.error('El PIN debe tener al menos 4 dígitos')
       return
     }
-    updateSettings({ supervisorPin: newPin })
-    toast.success('PIN de Supervisor actualizado')
+    setIsSaving(true)
+    try {
+      await updateSettings({ supervisorPin: newPin })
+      toast.success('PIN de Supervisor actualizado')
+    } catch (error) {
+      toast.error('Error al actualizar PIN')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleLoyaltyChange = async (update: any) => {
+    setIsSaving(true)
+    try {
+      await updateSettings({ loyalty: { ...settings.loyalty!, ...update } })
+      toast.success('Programa de lealtad actualizado')
+    } catch (error) {
+      toast.error('Error al actualizar lealtad')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -65,7 +92,7 @@ export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 custom-scrollbar">
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Setting 1: Blind Closure */}
             <div className="flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 hover:border-patagonia-600/20 transition-all bg-card cursor-pointer" onClick={() => handleToggle('blindClosureEnabled')}>
               <div className="flex justify-between items-start mb-3 sm:mb-4">
@@ -93,6 +120,59 @@ export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
               <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">PIN de Borrado</h3>
               <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-bold">Solicitar PIN de manager para quitar productos.</p>
             </div>
+
+            {/* Setting 3: Junaeb / Edenred */}
+            <div className="flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 hover:border-rose-500/20 transition-all bg-card cursor-pointer" onClick={() => handleToggle('junaebEnabled')}>
+              <div className="flex justify-between items-start mb-3 sm:mb-4">
+                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all ${settings.junaebEnabled ? 'bg-rose-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <span className="font-black text-lg sm:text-xl">J</span>
+                </div>
+                <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full transition-all relative ${settings.junaebEnabled ? 'bg-rose-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${settings.junaebEnabled ? 'right-1' : 'left-1'}`} />
+                </div>
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">Pagos Junaeb</h3>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-bold">Habilitar validación de sellos y pago interno.</p>
+              
+              {settings.junaebEnabled && (
+                <div className="mt-4 pt-4 border-t border-rose-500/10 space-y-2 animate-in slide-in-from-top-2" onClick={(e) => e.stopPropagation()}>
+                   <label className="text-[9px] font-black text-rose-500 uppercase tracking-widest ml-1">Límite Máximo de Sellos</label>
+                   <Input 
+                     type="number" 
+                     value={settings.maxSeals || 2} 
+                     onChange={(e) => updateSettings({ maxSeals: parseInt(e.target.value) })}
+                     className="h-10 rounded-xl border-rose-200 dark:border-rose-900 dark:bg-slate-950 font-bold text-sm"
+                   />
+                </div>
+              )}
+            </div>
+
+            {/* Setting 4: Getnet Is Boleta */}
+            <div className="flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 hover:border-emerald-500/20 transition-all bg-card cursor-pointer" onClick={() => handleToggle('getnetIsBoleta')}>
+              <div className="flex justify-between items-start mb-3 sm:mb-4">
+                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all ${settings.getnetIsBoleta ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <Smartphone className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full transition-all relative ${settings.getnetIsBoleta ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  <div className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${settings.getnetIsBoleta ? 'right-1' : 'left-1'}`} />
+                </div>
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">Boleta en Getnet</h3>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-bold">Si está activo, el terminal Getnet emite la boleta y el POS no genera duplicada.</p>
+            </div>
+          </div>
+
+          {/* Region Selector */}
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 bg-card">
+            <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Región de operación</label>
+            <select 
+              value={settings.region || 'REGIONES'}
+              onChange={(e) => updateSettings({ region: e.target.value as 'RM' | 'REGIONES' })}
+              className="mt-2 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-sm bg-white dark:bg-slate-900 dark:text-white px-4 focus:ring-2 focus:ring-patagonia-600/20 focus:border-patagonia-600 transition-all"
+            >
+              <option value="RM">Región Metropolitana</option>
+              <option value="REGIONES">Regiones</option>
+            </select>
           </div>
 
           {/* Loyalty Settings */}

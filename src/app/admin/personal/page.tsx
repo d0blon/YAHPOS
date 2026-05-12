@@ -1,9 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
-import AdminSidebar from '@/components/admin/AdminSidebar'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { HardHat, Store, Package, ShoppingCart, Beef, Search, Clock, ShieldAlert, Plus, Trash2, X } from 'lucide-react'
@@ -167,210 +164,191 @@ export default function PersonalDashboard() {
   const activeStaffCount = staff.filter(s => s.current_area && s.current_area !== 'Ausente' && s.current_area !== 'Inactivo').length
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-20 mesh-bg">
-        <div className="container mx-auto px-4 animate-fade-in">
-          <div className="flex gap-8">
-            <AdminSidebar activePath="/admin/personal" />
-
-            <div className="flex-1 space-y-8">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                  <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-                    Gestión de <span className="text-corporate-blue">Personal</span>
-                  </h1>
-                  <p className="text-gray-500 text-sm font-medium">Asignación y monitoreo de áreas de trabajo en vivo</p>
-                </div>
-                
-                <div className="flex items-center gap-4 bg-white/50 dark:bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-white/20 dark:border-white/10 shadow-lg">
-                  <div className="px-6 py-2 text-center">
-                    <p className="text-3xl font-black text-emerald-600">{activeStaffCount}</p>
-                    <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Activos</p>
-                  </div>
-                  <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
-                  <div className="px-6 py-2 text-center">
-                    <p className="text-3xl font-black text-gray-400">{staff.length - activeStaffCount}</p>
-                    <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Ausentes</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Toolbar */}
-              <div className="flex flex-col md:flex-row gap-4 items-center bg-white/50 dark:bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl">
-                <div className="relative flex-1 w-full">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Buscar trabajador por nombre o RUT..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-900/50 border-none rounded-2xl text-lg font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-corporate-blue/50 transition-all"
-                  />
-                </div>
-                <Button 
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="w-full md:w-auto bg-corporate-blue hover:bg-corporate-blue/90 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-corporate-blue/20 flex items-center gap-2 transition-all hover:scale-105"
-                >
-                  <Plus className="w-4 h-4" />
-                  Nuevo Trabajador
-                </Button>
-              </div>
-
-              {/* Staff Grid */}
-              {isLoading ? (
-                <div className="flex items-center justify-center p-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-corporate-blue"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredStaff.map(worker => {
-                    const currentAreaConfig = AREAS.find(a => a.id === worker.current_area) || AREAS[6] // Index 6 is Ausente
-                    const AreaIcon = currentAreaConfig.icon
-                    const fullName = `${worker.first_name || ''} ${worker.last_name || ''}`.trim() || 'Sin Nombre'
-                    
-                    // Simple relative time display
-                    const isRecentlyUpdated = new Date().getTime() - new Date(worker.updated_at).getTime() < 3600000;
-
-                    return (
-                      <Card key={worker.id} className="overflow-hidden border-2 border-transparent hover:border-corporate-blue/20 transition-all duration-300 shadow-sm hover:shadow-xl group">
-                        <div className="p-5 flex items-start justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center font-bold text-gray-600 dark:text-gray-300 text-lg">
-                              {fullName.slice(0, 2).toUpperCase()}
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-gray-900 dark:text-white leading-tight">{fullName}</h3>
-                              <div className="mt-1">
-                                <select 
-                                  value={worker.role}
-                                  onChange={(e) => handleRoleChange(worker.id, e.target.value)}
-                                  className="text-[10px] font-bold uppercase tracking-widest text-corporate-blue bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded border-none focus:ring-1 focus:ring-corporate-blue/40"
-                                >
-                                  {ROLES.map(role => (
-                                    <option key={role.id} value={role.id}>{role.label}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            {isRecentlyUpdated && (
-                              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mt-1" title="Activo recientemente" />
-                            )}
-                            <button 
-                              onClick={() => handleRemoveStaff(worker.id)}
-                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              title="Eliminar trabajador"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="px-5 pb-5 pt-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Área Actual</label>
-                          <div className="relative">
-                            <select
-                              value={worker.current_area || 'Ausente'}
-                              onChange={(e) => handleAreaChange(worker.id, e.target.value)}
-                              className={cn(
-                                "w-full appearance-none px-4 py-3 pl-11 rounded-xl text-sm font-bold transition-all border-2 cursor-pointer focus:outline-none focus:ring-4 focus:ring-corporate-blue/20",
-                                currentAreaConfig.bg,
-                                currentAreaConfig.color
-                              )}
-                            >
-                              {AREAS.map(area => (
-                                <option key={area.id} value={area.id}>{area.id}</option>
-                              ))}
-                            </select>
-                            <AreaIcon className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", currentAreaConfig.color)} />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Add Staff Modal */}
-              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-3xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-black">Nuevo Trabajador</DialogTitle>
-                    <DialogDescription>
-                      Agrega un nuevo miembro al equipo. Si el RUT ya existe, se promoverá a personal.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleAddStaff} className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="rut">RUT</Label>
-                      <Input 
-                        id="rut" 
-                        placeholder="12.345.678-9" 
-                        value={newStaff.rut}
-                        onChange={e => setNewStaff({...newStaff, rut: e.target.value})}
-                        required
-                        className="rounded-xl"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="first_name">Nombre</Label>
-                        <Input 
-                          id="first_name" 
-                          placeholder="Juan" 
-                          value={newStaff.first_name}
-                          onChange={e => setNewStaff({...newStaff, first_name: e.target.value})}
-                          required
-                          className="rounded-xl"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="last_name">Apellido</Label>
-                        <Input 
-                          id="last_name" 
-                          placeholder="Pérez" 
-                          value={newStaff.last_name}
-                          onChange={e => setNewStaff({...newStaff, last_name: e.target.value})}
-                          className="rounded-xl"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Rol / Cargo</Label>
-                      <select 
-                        id="role"
-                        value={newStaff.role}
-                        onChange={e => setNewStaff({...newStaff, role: e.target.value})}
-                        className="w-full flex h-10 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      >
-                        {ROLES.map(role => (
-                          <option key={role.id} value={role.id}>{role.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <DialogFooter className="pt-4">
-                      <Button 
-                        type="submit" 
-                        disabled={isSubmitting}
-                        className="w-full bg-corporate-blue hover:bg-corporate-blue/90 text-white rounded-xl py-6 font-bold text-lg shadow-xl shadow-corporate-blue/20"
-                      >
-                        {isSubmitting ? 'Guardando...' : 'Crear Trabajador'}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-
-            </div>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-black tracking-tighter uppercase italic">
+            Gestión de <span className="text-blue-500">Personal</span>
+          </h1>
+          <p className="text-white/50 text-sm font-medium">Asignación y monitoreo de áreas de trabajo en vivo</p>
+        </div>
+        
+        <div className="flex items-center gap-4 bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl">
+          <div className="px-6 py-2 text-center">
+            <p className="text-3xl font-black text-emerald-500">{activeStaffCount}</p>
+            <p className="text-[10px] uppercase font-black tracking-widest text-white/40">Activos</p>
+          </div>
+          <div className="w-px h-10 bg-white/10"></div>
+          <div className="px-6 py-2 text-center">
+            <p className="text-3xl font-black text-white/30">{staff.length - activeStaffCount}</p>
+            <p className="text-[10px] uppercase font-black tracking-widest text-white/40">Ausentes</p>
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col md:flex-row gap-4 items-center bg-white/5 backdrop-blur-xl p-4 rounded-3xl border border-white/10 shadow-2xl">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+          <input 
+            type="text" 
+            placeholder="Buscar trabajador por nombre o RUT..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 bg-black/20 border border-white/5 rounded-2xl text-lg font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/20"
+          />
+        </div>
+        <Button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-blue-500/20 flex items-center gap-2 transition-all hover:scale-105 border-none"
+        >
+          <Plus className="w-4 h-4" />
+          Nuevo Trabajador
+        </Button>
+      </div>
+
+      {/* Staff Grid */}
+      {isLoading ? (
+        <div className="flex items-center justify-center p-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredStaff.map(worker => {
+            const currentAreaConfig = AREAS.find(a => a.id === worker.current_area) || AREAS[6]
+            const AreaIcon = currentAreaConfig.icon
+            const fullName = `${worker.first_name || ''} ${worker.last_name || ''}`.trim() || 'Sin Nombre'
+            const isRecentlyUpdated = new Date().getTime() - new Date(worker.updated_at).getTime() < 3600000;
+
+            return (
+              <Card key={worker.id} className="overflow-hidden border border-white/5 bg-white/5 backdrop-blur-xl hover:border-blue-500/30 transition-all duration-300 shadow-xl group rounded-3xl">
+                <div className="p-5 flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center font-bold text-white/70 text-lg border border-white/10">
+                      {fullName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white leading-tight">{fullName}</h3>
+                      <div className="mt-1">
+                        <select 
+                          value={worker.role}
+                          onChange={(e) => handleRoleChange(worker.id, e.target.value)}
+                          className="text-[10px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 focus:ring-1 focus:ring-blue-500/40"
+                        >
+                          {ROLES.map(role => (
+                            <option key={role.id} value={role.id}>{role.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    {isRecentlyUpdated && (
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mt-1" title="Activo recientemente" />
+                    )}
+                    <button 
+                      onClick={() => handleRemoveStaff(worker.id)}
+                      className="p-2 text-white/30 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Eliminar trabajador"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-5 pb-5 pt-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2 block">Área Actual</label>
+                  <div className="relative">
+                    <select
+                      value={worker.current_area || 'Ausente'}
+                      onChange={(e) => handleAreaChange(worker.id, e.target.value)}
+                      className={cn(
+                        "w-full appearance-none px-4 py-3 pl-11 rounded-2xl text-sm font-bold transition-all border border-white/5 cursor-pointer focus:outline-none focus:ring-4 focus:ring-blue-500/20",
+                        currentAreaConfig.id === 'Ausente' ? "bg-white/5 text-white/40" : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                      )}
+                    >
+                      {AREAS.map(area => (
+                        <option key={area.id} value={area.id} className="bg-gray-900 text-white">{area.id}</option>
+                      ))}
+                    </select>
+                    <AreaIcon className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", currentAreaConfig.id === 'Ausente' ? "text-white/30" : "text-blue-400")} />
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add Staff Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-3xl bg-[#0f0f12] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black">Nuevo Trabajador</DialogTitle>
+            <DialogDescription className="text-white/50">
+              Agrega un nuevo miembro al equipo. Si el RUT ya existe, se promoverá a personal.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddStaff} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rut" className="text-white/70">RUT</Label>
+              <Input 
+                id="rut" 
+                placeholder="12.345.678-9" 
+                value={newStaff.rut}
+                onChange={e => setNewStaff({...newStaff, rut: e.target.value})}
+                required
+                className="rounded-xl bg-white/5 border-white/10 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name" className="text-white/70">Nombre</Label>
+                <Input 
+                  id="first_name" 
+                  placeholder="Juan" 
+                  value={newStaff.first_name}
+                  onChange={e => setNewStaff({...newStaff, first_name: e.target.value})}
+                  required
+                  className="rounded-xl bg-white/5 border-white/10 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name" className="text-white/70">Apellido</Label>
+                <Input 
+                  id="last_name" 
+                  placeholder="Pérez" 
+                  value={newStaff.last_name}
+                  onChange={e => setNewStaff({...newStaff, last_name: e.target.value})}
+                  className="rounded-xl bg-white/5 border-white/10 text-white"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role" className="text-white/70">Rol / Cargo</Label>
+              <select 
+                id="role"
+                value={newStaff.role}
+                onChange={e => setNewStaff({...newStaff, role: e.target.value})}
+                className="w-full flex h-10 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500/50"
+              >
+                {ROLES.map(role => (
+                  <option key={role.id} value={role.id} className="bg-gray-900">{role.label}</option>
+                ))}
+              </select>
+            </div>
+            <DialogFooter className="pt-4">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-6 font-bold text-lg shadow-xl shadow-blue-500/20 border-none"
+              >
+                {isSubmitting ? 'Guardando...' : 'Crear Trabajador'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

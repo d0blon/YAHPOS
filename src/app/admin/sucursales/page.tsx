@@ -31,9 +31,6 @@ import {
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
-import AdminSidebar from '@/components/admin/AdminSidebar'
 import { SectionCard, SectionHeader } from '@/components/admin/SectionCard'
 
 interface Branch {
@@ -159,168 +156,159 @@ export default function SucursalesPage() {
 
   return (
     <>
-      <Header />
-      <main className="min-h-screen bg-[#0d001a] pt-24 pb-20 mesh-bg">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <AdminSidebar activePath="/admin/sucursales" />
+      <div className="flex-1 space-y-8 animate-fade-in">
+        {/* Header section with harmonized style */}
+        <SectionHeader 
+          title="Gestión de Sucursales"
+          subtitle="Administra tus puntos de venta físicos y centros de distribución estratégica"
+          icon={Building2}
+          actions={
+            <Button 
+              onClick={() => handleOpenModal()}
+              className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest shadow-xl shadow-corporate-blue/20 flex items-center gap-3 transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus className="w-6 h-6" />
+              Nueva Sucursal
+            </Button>
+          }
+        />
 
-            <div className="flex-1 space-y-8 animate-fade-in">
-              {/* Header section with harmonized style */}
-              <SectionHeader 
-                title="Gestión de Sucursales"
-                subtitle="Administra tus puntos de venta físicos y centros de distribución estratégica"
-                icon={Building2}
-                actions={
-                  <Button 
-                    onClick={() => handleOpenModal()}
-                    className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest shadow-xl shadow-corporate-blue/20 flex items-center gap-3 transition-all hover:scale-105 active:scale-95"
-                  >
-                    <Plus className="w-6 h-6" />
-                    Nueva Sucursal
-                  </Button>
-                }
-              />
-
-              {/* Stats Grid - Premium look */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { label: 'Total Locales', value: branches.length, icon: Store, color: 'text-corporate-blue', bg: 'bg-corporate-blue/10' },
-                  { label: 'Operativas', value: activeBranches, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                  { label: 'Regiones', value: regionsCount || 0, icon: Map, color: 'text-amber-500', bg: 'bg-amber-500/10' }
-                ].map((stat, i) => (
-                  <SectionCard key={i} className="p-6">
-                    <div className="flex items-center gap-5">
-                      <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110", stat.bg, stat.color)}>
-                        <stat.icon className="w-9 h-9" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{stat.label}</p>
-                        <h3 className="text-4xl font-black text-white tracking-tighter italic">{stat.value}</h3>
-                      </div>
-                    </div>
-                  </SectionCard>
-                ))}
+        {/* Stats Grid - Premium look */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { label: 'Total Locales', value: branches.length, icon: Store, color: 'text-corporate-blue', bg: 'bg-corporate-blue/10' },
+            { label: 'Operativas', value: activeBranches, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+            { label: 'Regiones', value: regionsCount || 0, icon: Map, color: 'text-amber-500', bg: 'bg-amber-500/10' }
+          ].map((stat, i) => (
+            <SectionCard key={i} className="p-6">
+              <div className="flex items-center gap-5">
+                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110", stat.bg, stat.color)}>
+                  <stat.icon className="w-9 h-9" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{stat.label}</p>
+                  <h3 className="text-4xl font-black text-white tracking-tighter italic">{stat.value}</h3>
+                </div>
               </div>
+            </SectionCard>
+          ))}
+        </div>
 
-              {/* Search Bar - Harmonized */}
-              <SectionCard className="p-2 border border-white/5 backdrop-blur-xl bg-white/5">
-                <div className="flex items-center gap-4 px-4">
-                  <Search className="w-6 h-6 text-gray-500" />
-                  <Input 
-                    placeholder="Filtrar por nombre, dirección o referencia..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 bg-transparent border-none text-lg font-medium text-white placeholder:text-gray-600 focus-visible:ring-0 h-14"
-                  />
-                  <div className="hidden md:flex items-center gap-2 px-4 border-l border-white/10">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Live Sincronizado</span>
-                  </div>
-                </div>
-              </SectionCard>
-
-              {/* Main Content Area */}
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-32 space-y-6">
-                  <div className="w-16 h-16 border-4 border-corporate-blue border-t-transparent rounded-full animate-spin"></div>
-                  <p className="font-black text-gray-500 uppercase tracking-widest text-sm animate-pulse">Sincronizando Nodos...</p>
-                </div>
-              ) : filteredBranches.length === 0 ? (
-                <SectionCard className="text-center py-32 border-dashed border-2 border-white/5">
-                  <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Building className="w-12 h-12 text-gray-700" />
-                  </div>
-                  <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Sin resultados</h3>
-                  <p className="text-gray-500 mt-2 font-medium">No se encontraron sucursales bajo estos criterios.</p>
-                  <Button 
-                    onClick={() => handleOpenModal()}
-                    variant="outline" 
-                    className="mt-8 rounded-2xl border-white/10 text-white hover:bg-white/5 px-8 h-12"
-                  >
-                    Registrar Nueva Unidad
-                  </Button>
-                </SectionCard>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {filteredBranches.map((branch) => (
-                    <div 
-                      key={branch.id} 
-                      className="group relative glass-card p-8 rounded-[2.5rem] border-none hover:translate-y-[-8px] transition-all duration-500"
-                    >
-                      <div className="flex justify-between items-start mb-10">
-                        <div className="w-16 h-16 rounded-3xl bg-corporate-blue/10 flex items-center justify-center text-corporate-blue group-hover:bg-corporate-blue group-hover:text-white transition-all duration-500 shadow-lg shadow-corporate-blue/5">
-                          <Store className="w-8 h-8" />
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge className={cn(
-                            "rounded-full px-4 py-1.5 font-black uppercase tracking-[0.15em] text-[10px] border-none",
-                            branch.is_active 
-                              ? "bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]" 
-                              : "bg-red-500/10 text-red-400"
-                          )}>
-                            {branch.is_active ? '● Activa' : '○ Inactiva'}
-                          </Badge>
-                          <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter font-mono">
-                            #ID_{branch.id.slice(0, 8)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white group-hover:text-corporate-blue transition-colors duration-300">
-                            {branch.name}
-                          </h3>
-                          <div className="flex items-start gap-2 mt-3 text-gray-400">
-                            <MapPin className="w-4 h-4 shrink-0 text-corporate-blue mt-0.5" />
-                            <p className="text-sm font-medium leading-relaxed italic">{branch.address}</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6 pt-8 border-t border-white/5">
-                          <div className="space-y-1.5">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Contacto</p>
-                            <div className="flex items-center gap-2 text-gray-300">
-                              <Phone className="w-4 h-4 text-corporate-blue" />
-                              <span className="text-sm font-black tracking-tight">{branch.phone || 'S/N'}</span>
-                            </div>
-                          </div>
-                          <div className="space-y-1.5 text-right">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Responsable</p>
-                            <div className="flex items-center justify-end gap-2 text-gray-300">
-                              <Users className="w-4 h-4 text-corporate-blue" />
-                              <span className="text-sm font-black truncate max-w-[120px]">{branch.manager_name || 'Pendiente'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-10 flex gap-3">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => handleOpenModal(branch)}
-                          className="flex-1 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px] border-white/5 bg-white/5 hover:bg-corporate-blue hover:text-white transition-all shadow-lg"
-                        >
-                          <Edit2 className="w-4 h-4 mr-2" />
-                          Editar
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => handleDelete(branch.id)}
-                          className="rounded-2xl h-12 w-12 p-0 font-black text-red-500 border-white/5 bg-white/5 hover:bg-red-500 hover:text-white transition-all shadow-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* Search Bar - Harmonized */}
+        <SectionCard className="p-2 border border-white/5 backdrop-blur-xl bg-white/5">
+          <div className="flex items-center gap-4 px-4">
+            <Search className="w-6 h-6 text-gray-500" />
+            <Input 
+              placeholder="Filtrar por nombre, dirección o referencia..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 bg-transparent border-none text-lg font-medium text-white placeholder:text-gray-600 focus-visible:ring-0 h-14"
+            />
+            <div className="hidden md:flex items-center gap-2 px-4 border-l border-white/10">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Live Sincronizado</span>
             </div>
           </div>
-        </div>
-      </main>
+        </SectionCard>
+
+        {/* Main Content Area */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-32 space-y-6">
+            <div className="w-16 h-16 border-4 border-corporate-blue border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-black text-gray-500 uppercase tracking-widest text-sm animate-pulse">Sincronizando Nodos...</p>
+          </div>
+        ) : filteredBranches.length === 0 ? (
+          <SectionCard className="text-center py-32 border-dashed border-2 border-white/5">
+            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Building className="w-12 h-12 text-gray-700" />
+            </div>
+            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Sin resultados</h3>
+            <p className="text-gray-500 mt-2 font-medium">No se encontraron sucursales bajo estos criterios.</p>
+            <Button 
+              onClick={() => handleOpenModal()}
+              variant="outline" 
+              className="mt-8 rounded-2xl border-white/10 text-white hover:bg-white/5 px-8 h-12"
+            >
+              Registrar Nueva Unidad
+            </Button>
+          </SectionCard>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {filteredBranches.map((branch) => (
+              <div 
+                key={branch.id} 
+                className="group relative glass-card p-8 rounded-[2.5rem] border-none hover:translate-y-[-8px] transition-all duration-500"
+              >
+                <div className="flex justify-between items-start mb-10">
+                  <div className="w-16 h-16 rounded-3xl bg-corporate-blue/10 flex items-center justify-center text-corporate-blue group-hover:bg-corporate-blue group-hover:text-white transition-all duration-500 shadow-lg shadow-corporate-blue/5">
+                    <Store className="w-8 h-8" />
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge className={cn(
+                      "rounded-full px-4 py-1.5 font-black uppercase tracking-[0.15em] text-[10px] border-none",
+                      branch.is_active 
+                        ? "bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]" 
+                        : "bg-red-500/10 text-red-400"
+                    )}>
+                      {branch.is_active ? '● Activa' : '○ Inactiva'}
+                    </Badge>
+                    <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter font-mono">
+                      #ID_{branch.id.slice(0, 8)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white group-hover:text-corporate-blue transition-colors duration-300">
+                      {branch.name}
+                    </h3>
+                    <div className="flex items-start gap-2 mt-3 text-gray-400">
+                      <MapPin className="w-4 h-4 shrink-0 text-corporate-blue mt-0.5" />
+                      <p className="text-sm font-medium leading-relaxed italic">{branch.address}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6 pt-8 border-t border-white/5">
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Contacto</p>
+                      <div className="flex items-center gap-2 text-gray-300">
+                        <Phone className="w-4 h-4 text-corporate-blue" />
+                        <span className="text-sm font-black tracking-tight">{branch.phone || 'S/N'}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 text-right">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Responsable</p>
+                      <div className="flex items-center justify-end gap-2 text-gray-300">
+                        <Users className="w-4 h-4 text-corporate-blue" />
+                        <span className="text-sm font-black truncate max-w-[120px]">{branch.manager_name || 'Pendiente'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleOpenModal(branch)}
+                    className="flex-1 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px] border-white/5 bg-white/5 hover:bg-corporate-blue hover:text-white transition-all shadow-lg"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleDelete(branch.id)}
+                    className="rounded-2xl h-12 w-12 p-0 font-black text-red-500 border-white/5 bg-white/5 hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Modal Sucursal - Premium Glassmorphism */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -344,7 +332,7 @@ export default function SucursalesPage() {
                   <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-corporate-blue transition-transform group-focus-within:scale-110" />
                   <Input 
                     id="name"
-                    placeholder="Ej: Austral Market Central"
+                    placeholder="Ej: YAHPOS! Central"
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     required
@@ -422,8 +410,6 @@ export default function SucursalesPage() {
           </form>
         </DialogContent>
       </Dialog>
-
-      <Footer />
     </>
   )
 }

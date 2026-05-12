@@ -1,9 +1,11 @@
 'use client'
 
 import React from 'react'
-import { Search, Wifi, WifiOff, ShieldAlert, BadgeCheck, Monitor, LogOut } from 'lucide-react'
+import { Search, Wifi, WifiOff, BadgeCheck, Monitor, LogOut, FileWarning } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { usePosStore } from '@/stores/posStore'
+import { useSiiStore } from '@/stores/siiStore'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface PosHeaderProps {
@@ -15,6 +17,8 @@ interface PosHeaderProps {
 export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderProps) {
   const { isTrainingMode, currentUser, cashSession, clearCashSession } = usePosStore()
   const pendingSyncOrders = usePosStore(state => state.pendingSyncOrders)
+  const offlineFolioPool = useSiiStore(state => state.offlineFolioPool)
+  const foliosDisponibles = useSiiStore(state => state.foliosDisponibles)
   const [isOnline, setIsOnline] = React.useState(true)
 
   React.useEffect(() => {
@@ -64,7 +68,23 @@ export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderPro
               </div>
             </div>
             <button
-              onClick={() => { if (confirm('¿Cerrar sesión de caja? Deberás declarar el fondo nuevamente.')) clearCashSession() }}
+              onClick={async () => {
+                if (!confirm('¿Cerrar sesión de caja? Se ejecutará cierre automático.')) return
+                const session = usePosStore.getState().cashSession
+                if (session?.id) {
+                  try {
+                    await fetch(`/api/cash-sessions/${session.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ closing_amount: 0, notes: 'Cierre rápido' })
+                    })
+                  } catch (err) {
+                    console.error('Error closing session API:', err)
+                  }
+                }
+                clearCashSession()
+                toast.success('Sesión cerrada correctamente')
+              }}
               className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-100"
               title="Cerrar caja"
             >
@@ -91,6 +111,37 @@ export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderPro
                </span>
              )}
           </div>
+        </div>
+        
+        {/* SII Folio Indicator */}
+        {!foliosDisponibles && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 animate-pulse">
+            <FileWarning className="w-4 h-4 text-amber-500" />
+            <div className="flex flex-col leading-none">
+              <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">
+                Sin Folios
+              </span>
+              <span className="text-[7px] font-bold text-amber-500 uppercase">
+                Boletas no emitibles
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          {Object.entries(offlineFolioPool).map(([tipo, pool]) => (
+            <div key={tipo} className={cn(
+              "flex flex-col items-center justify-center px-2 py-1 rounded-lg border text-[8px] font-black tracking-tighter transition-all",
+              pool.length === 0 
+                ? "bg-red-500 text-white border-red-600 animate-bounce" 
+                : pool.length < 10 
+                  ? "bg-amber-100 text-amber-700 border-amber-300 animate-pulse"
+                  : "bg-gray-50 text-gray-500 border-gray-100"
+            )}>
+              <span className="opacity-60 leading-none mb-0.5">DTE {tipo}</span>
+              <span className="text-[10px] leading-none">{pool.length}</span>
+            </div>
+          ))}
         </div>
 
         <button 

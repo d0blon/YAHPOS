@@ -2,6 +2,7 @@
 
 import { useEditor } from '@/providers/EditorProvider'
 import { Pencil, X, Save, RotateCcw, Check, Loader2 } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -10,12 +11,35 @@ import { createPortal } from 'react-dom'
  * para escapar del stacking context del contenedor snap-scroll con overflow-y-auto.
  */
 export function EditorToggle() {
-  const { isEditorMode, toggleEditorMode, saveChanges, isSaving, hasUnsavedChanges, discardChanges } = useEditor()
+  const editor = useEditor()
+  const pathname = usePathname()
+  const isEditorMode = editor?.isEditorMode ?? false
+  const toggleEditorMode = editor?.toggleEditorMode ?? (() => {})
+  const saveChanges = editor?.saveChanges ?? (async () => {})
+  const isSaving = editor?.isSaving ?? false
+  const hasUnsavedChanges = editor?.hasUnsavedChanges ?? false
+  const discardChanges = editor?.discardChanges ?? (() => {})
   const [showSaved, setShowSaved] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   // Portal solo se puede crear en el cliente
   useEffect(() => { setMounted(true) }, [])
+
+  // Excluir páginas que no son del ecommerce (admin, developer, auth, etc.)
+  const isLandingPage = typeof window !== 'undefined' && 
+                        (window.location.hostname === 'yahpos.cl' || 
+                         window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1') &&
+                        pathname === '/'
+
+  const isExcluded = isLandingPage ||
+                     pathname.startsWith('/admin') || 
+                     pathname.startsWith('/developer') || 
+                     pathname.startsWith('/auth') ||
+                     pathname === '/login' ||
+                     pathname === '/registro' ||
+                     pathname === '/recuperar-contrasena' ||
+                     pathname === '/completar-perfil'
 
   const handleSave = async () => {
     await saveChanges()
@@ -23,7 +47,7 @@ export function EditorToggle() {
     setTimeout(() => setShowSaved(false), 2000)
   }
 
-  if (!mounted) return null
+  if (!mounted || !editor || isExcluded) return null
 
   const ui = (
     <div

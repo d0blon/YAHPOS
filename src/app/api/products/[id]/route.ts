@@ -7,93 +7,131 @@ export async function GET(
   req: Request,
   { params }: { params: Params }
 ) {
-  const supabase = await createClient()
-  const { id } = await params
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
 
-  const { data, error } = await supabase
-    .from('products')
-    .select('*, inventory(*)')
-    .eq('id', id)
-    .single()
+    const { id } = await params
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, inventory(*)')
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  } catch (error: any) {
+    console.error('[GET /api/products/[id]] Error:', error)
+    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
   }
-
-  return NextResponse.json(data)
 }
 
 export async function PATCH(
   req: Request,
   { params }: { params: Params }
 ) {
-  const supabase = await createClient()
-  const { id } = await params
-  const body = await req.json()
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
 
-  // Only include columns that exist in the database
-  const updateData: any = {
-    name: body.name,
-    description: body.description,
-    price: body.price,
-    image: body.image,
-    category: body.category,
-    stock: body.stock,
-    unit: body.unit,
-  }
+    const { id } = await params
+    const body = await req.json()
 
-  // Remove undefined fields to avoid overwriting with null
-  Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])
+    // Only include columns that exist in the database
+    const updateData: any = {
+      name: body.name,
+      description: body.description,
+      price: body.price,
+      image: body.image,
+      category: body.category,
+      stock: body.stock,
+      unit: body.unit,
+      is_exempt: body.isExempt,
+      sku: body.sku,
+      barcode: body.barcode || body.sku,
+      nutritional_seals: body.nutritionalSeals,
+      is_realtime_tracked: body.isRealtimeTracked,
+    }
 
-  const { data: product, error: productError } = await supabase
-    .from('products')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single()
+    // Remove undefined fields to avoid overwriting with null
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])
 
-  if (productError) {
-    console.error('[PATCH /api/products] Supabase error:', productError.message)
-    return NextResponse.json({ error: productError.message }, { status: 500 })
-  }
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
 
-  // Si hay stock por sucursal, upsert en tabla inventory
-  if (body.branchStocks && Array.isArray(body.branchStocks)) {
-    for (const bs of body.branchStocks) {
-      const { error: invError } = await supabase
-        .from('inventory')
-        .upsert({
-          product_id: id,
-          branch_id: bs.branchId,
-          stock: bs.stock
-        }, {
-          onConflict: 'product_id, branch_id'
-        })
+    if (productError) {
+      console.error('[PATCH /api/products] Supabase error:', productError.message)
+      return NextResponse.json({ error: productError.message }, { status: 500 })
+    }
 
-      if (invError) {
-        console.error('[PATCH /api/products] Inventory upsert error:', invError.message)
+    // Si hay stock por sucursal, upsert en tabla inventory
+    if (body.branchStocks && Array.isArray(body.branchStocks)) {
+      for (const bs of body.branchStocks) {
+        const { error: invError } = await supabase
+          .from('inventory')
+          .upsert({
+            product_id: id,
+            branch_id: bs.branchId,
+            stock: bs.stock
+          }, {
+            onConflict: 'product_id, branch_id'
+          })
+
+        if (invError) {
+          console.error('[PATCH /api/products] Inventory upsert error:', invError.message)
+        }
       }
     }
-  }
 
-  return NextResponse.json(product)
+    return NextResponse.json(product)
+  } catch (error: any) {
+    console.error('[PATCH /api/products/[id]] Error:', error)
+    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+  }
 }
 
 export async function DELETE(
   req: Request,
   { params }: { params: Params }
 ) {
-  const supabase = await createClient()
-  const { id } = await params
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
 
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', id)
+    const { id } = await params
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ message: 'Producto eliminado correctamente' })
+  } catch (error: any) {
+    console.error('[DELETE /api/products/[id]] Error:', error)
+    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
   }
-
-  return NextResponse.json({ message: 'Producto eliminado correctamente' })
 }

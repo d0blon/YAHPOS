@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Users, Search, UserPlus, Mail, Phone, MapPin, 
   TrendingUp, Award, MoreHorizontal, Edit2, Trash2,
-  Loader2, AlertCircle, ChevronRight, Filter
+  Loader2, AlertCircle, ChevronRight, Filter, X
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -112,10 +112,13 @@ export default function AdminClientes() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                   <UserPlus className="w-6 h-6" />
-                  Registrar Nuevo Cliente
+                  {newCustomer.rut ? 'Actualizar Cliente' : 'Registrar Nuevo Cliente'}
                 </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => setIsAddModalOpen(false)} className="text-white hover:bg-white/20 rounded-full">
-                  <MoreHorizontal className="w-6 h-6" />
+                <Button variant="ghost" size="icon" onClick={() => {
+                  setIsAddModalOpen(false)
+                  setNewCustomer({ name: '', rut: '', email: '' })
+                }} className="text-white hover:bg-white/20 rounded-full">
+                  <X className="w-6 h-6" />
                 </Button>
               </div>
             </CardHeader>
@@ -127,6 +130,7 @@ export default function AdminClientes() {
                   className="h-12 bg-gray-50 border-none rounded-xl"
                   value={newCustomer.rut}
                   onChange={(e) => setNewCustomer({...newCustomer, rut: e.target.value})}
+                  disabled={!!customers.find(c => c.rut === newCustomer.rut && newCustomer.name === c.name)} // Simplified check
                 />
               </div>
               <div className="space-y-2">
@@ -153,7 +157,10 @@ export default function AdminClientes() {
                 <Button 
                   variant="ghost" 
                   className="flex-1 h-12 rounded-xl font-bold text-gray-500"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setIsAddModalOpen(false)
+                    setNewCustomer({ name: '', rut: '', email: '' })
+                  }}
                 >
                   Cancelar
                 </Button>
@@ -169,18 +176,18 @@ export default function AdminClientes() {
                         body: JSON.stringify(newCustomer)
                       })
                       if (!res.ok) throw new Error('Error al registrar')
-                      toast.success('Cliente registrado con éxito')
+                      toast.success(newCustomer.rut ? 'Cliente actualizado' : 'Cliente registrado')
                       setIsAddModalOpen(false)
                       setNewCustomer({ name: '', rut: '', email: '' })
                       fetchCustomers()
                     } catch (err) {
-                      toast.error('Hubo un error al registrar el cliente')
+                      toast.error('Hubo un error al procesar el cliente')
                     } finally {
                       setIsSaving(false)
                     }
                   }}
                 >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Confirmar Registro'}
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (newCustomer.rut ? 'Guardar Cambios' : 'Confirmar Registro')}
                 </Button>
               </div>
             </CardContent>
@@ -277,8 +284,40 @@ export default function AdminClientes() {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-corporate-blue"><Edit2 className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-gray-400 hover:text-corporate-blue"
+                          onClick={() => {
+                            setNewCustomer({
+                              name: customer.name,
+                              rut: customer.rut || '',
+                              email: customer.email || ''
+                            })
+                            setIsAddModalOpen(true)
+                          }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-gray-400 hover:text-red-500"
+                          onClick={async () => {
+                            if (confirm(`¿Estás seguro de eliminar a ${customer.name}?`)) {
+                              try {
+                                const res = await fetch(`/api/customers?id=${customer.id}`, { method: 'DELETE' })
+                                if (!res.ok) throw new Error('Error al eliminar')
+                                toast.success('Cliente eliminado')
+                                fetchCustomers()
+                              } catch (err) {
+                                toast.error('No se pudo eliminar el cliente')
+                              }
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="text-gray-300"><ChevronRight className="w-4 h-4" /></Button>
                       </div>
                     </td>

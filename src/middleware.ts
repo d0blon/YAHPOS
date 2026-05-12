@@ -1,11 +1,64 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { rateLimit } from '@/lib/ratelimit'
+
+import { DEVELOPER_EMAILS } from '@/lib/constants'
+import { Store } from './types'
 
 export default async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  const host = (request.headers.get('host') || '').toLowerCase()
+  const isRootDomain = host === 'yahpos.cl' || host === 'localhost:3000' || host === '127.0.0.1:3000' || host === 'www.yahpos.cl'
+  
+  const cookies = request.cookies.getAll()
+  // console.log(`[Middleware] Request: ${host}${path} | Cookies: ${cookies.length}`)
+  
+  // 0. Fail-safe para OAuth: Si llega un code al root (/) en lugar de /api/auth/callback
+  // Esto pasa si la configuración de Supabase Site URL apunta al root.
+  if (isRootDomain && path === '/' && request.nextUrl.searchParams.has('code')) {
+    console.log('[Middleware] Detectado OAuth code en root. Redirigiendo a callback centralizado...')
+    const callbackUrl = new URL('/api/auth/callback', request.url)
+    request.nextUrl.searchParams.forEach((value, key) => {
+      callbackUrl.searchParams.set(key, value)
+    })
+    return NextResponse.redirect(callbackUrl)
+  }
+  
+  let rateCheck
+
+  // 1. Detección de Dominio Raíz vs Tenant
+  const isPublicAsset = path.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js)$/) || path.startsWith('/_next') || path.startsWith('/data/')
+  
+  // Rutas que requieren pertenecer a una tienda (subdominio)
+  const isAdminRoute = path.startsWith('/admin')
+  const isPosRoute = path.startsWith('/pos') || path.startsWith('/vender')
+  const isAuthRoute = path.startsWith('/login') || path.startsWith('/register') || path.startsWith('/registro') || path.startsWith('/iniciar-sesion')
+  
+  // Bloqueo de seguridad: Si es dominio raíz, NO puede entrar a POS/Admin ni Login/Register
+  if (isRootDomain && (isPosRoute || isAdminRoute || isAuthRoute)) {
+    console.warn(`[Security] Bloqueo en raíz (${host}): acceso denegado a ${path}. Redirigiendo a Landing.`)
+    const protocol = host.includes('localhost') ? 'http' : 'https'
+    return NextResponse.redirect(new URL('/', `${protocol}://${host}`))
+  }
+
+  // Rutas que SIEMPRE son públicas (no requieren login ni tienda)
+  const isPublicRoute = 
+    path === '/' || 
+    path.startsWith('/login') || 
+    path.startsWith('/register') || 
+    path.startsWith('/developer/catalog') ||
+    path.startsWith('/api/auth/session-sync') ||
+    path.startsWith('/api/auth/callback')
+
+  if (isPublicAsset) return NextResponse.next()
+
+  const protectedRoutes = ['/perfil', '/carrito', '/checkout', '/mis-turnos']
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
+  const isAudit = request.nextUrl.searchParams.get('audit') === 'true'
+
+  // 2. Supabase Client Initialization
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -13,133 +66,156 @@ export default async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value, ...options })
+            response.cookies.set(name, value, { ...options, secure: false, sameSite: 'lax', path: '/' })
           })
         },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
+      },
+      cookieOptions: {
+        secure: false,
+        sameSite: 'lax',
+        path: '/',
       },
     }
   )
 
-  // Usamos getUser() que es más robusto para validaciones de servidor
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  // 3. Resolución de Tienda (Multi-Tenancy)
+  let storeData = null
+  if (!isRootDomain) {
+    let store = null;
+    
+    // Soporte para subdominios locales (.localhost:3000 o .localtest.me:3000)
+    if (host.endsWith('.localhost:3000')) {
+      const subdomain = host.split('.localhost:3000')[0]
+      const { data } = await supabase.from('stores').select('*').eq('subdomain', subdomain).maybeSingle()
+      store = data
+    } else if (host.endsWith('.localtest.me:3000')) {
+      const subdomain = host.split('.localtest.me:3000')[0]
+      const { data } = await supabase.from('stores').select('*').eq('subdomain', subdomain).maybeSingle()
+      store = data
+    } else {
+      // Producción: usar RPC para dominios personalizados o subdominios yahpos.cl
+      const { data } = await supabase.rpc('get_store_by_domain', { p_host: host }).maybeSingle()
+      store = data
+    }
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
-  const isPosRoute = request.nextUrl.pathname.startsWith('/pos')
-  const protectedRoutes = ['/perfil', '/carrito', '/checkout', '/mis-turnos']
-  const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
+    if (store) {
+      const s = store as unknown as Store
+      storeData = s
+      // Inyectar contexto de tienda en headers
+      response.headers.set('x-store-id', s.id)
+      response.headers.set('x-store-tier', s.tier)
+      response.headers.set('x-store-slug', s.slug)
+      response.headers.set('x-store-name', s.name)
+    } else {
+      // Si no hay tienda y no es el root, redirigir al landing o 404
+      console.warn(`[Proxy] Dominio no reconocido: ${host}. Redirigiendo a root.`)
+      return NextResponse.redirect(new URL('/', host.includes('localhost') ? 'http://localhost:3000' : 'https://yahpos.cl'))
+    }
+  }
 
-  const isAudit = request.nextUrl.searchParams.get('audit') === 'true'
+  // 4. Rate Limiting
+  const isUpstashConfigured = process.env.UPSTASH_REDIS_REST_URL && 
+                             process.env.UPSTASH_REDIS_REST_URL !== 'https://xxxxx.upstash.io';
 
-  // A. Si no hay usuario y la ruta es protegida -> LOGIN (Saltamos si isAudit)
-  if (!user && !isAudit && (isAdminRoute || isPosRoute || isProtectedRoute)) {
-    console.log(`[Proxy] No user found for protected route ${request.nextUrl.pathname}. Redirecting to /login`)
+  if (isUpstashConfigured) {
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+    if (path.startsWith('/login') || path.startsWith('/register')) {
+      rateCheck = await rateLimit.critical.limit(ip)
+    } else if (path.startsWith('/api/orders') || path.startsWith('/api/sii')) {
+      rateCheck = await rateLimit.operational.limit(ip)
+    }
+  }
+
+  if (rateCheck && !rateCheck.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
+  // 5. Auth & RBAC
+  let user = null
+  let authError = null
+  try {
+    const result = await supabase.auth.getUser()
+    user = result.data?.user ?? null
+    authError = result.error
+  } catch (err) {
+    console.error('[Middleware] Auth cookies corruptos, limpiando...', (err as Error).message)
+    // Limpiar todas las cookies sb-* que tengan formato viejo/incompatible
+    // para que el próximo request funcione sin issues
+    const authCookies = request.cookies.getAll().filter(c => c.name.startsWith('sb-'))
+    for (const cookie of authCookies) {
+      request.cookies.set(cookie.name, '')
+      response.cookies.set(cookie.name, '', { maxAge: 0, path: '/', secure: false, sameSite: 'lax' })
+    }
+  }
+  
+  if (authError) {
+    console.error('[Middleware] Auth Error:', authError.message)
+  }
+  
+  // Auth state successfully checked
+
+  if (!user && !isAudit && !isPublicRoute && (isAdminRoute || isPosRoute || isProtectedRoute || path.startsWith('/developer'))) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  // B. Si hay usuario, validamos roles para Admin y POS
-  if (user && (isAdminRoute || isPosRoute)) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    const role = profile?.role || 'customer'
-    const isSuperUser = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(role.toLowerCase())
-
-    if (isAdminRoute && !isSuperUser) {
-      console.warn(`[Proxy] Rol insuficiente [${role}] para ADMIN. Redirecting to /`)
-      return NextResponse.redirect(new URL('/?error=unauthorized_admin', request.url))
-    }
-
-    if (isPosRoute && !isSuperUser && role !== 'cajero') {
-      console.warn(`[Proxy] Rol insuficiente [${role}] para POS. Redirecting to /`)
-      return NextResponse.redirect(new URL('/?error=unauthorized_pos', request.url))
-    }
-
-    // Rutas exclusivas para el dueño técnico (Developer)
-    const isDevOnlyRoute = request.nextUrl.pathname.startsWith('/admin/developer')
-    if (isDevOnlyRoute && role !== 'developer') {
-      console.warn(`[Proxy] Intento de acceso a zona developer por ${role}`)
-      return NextResponse.redirect(new URL('/admin', request.url))
-    }
-
-    // Rutas restringidas para manager (solo admin/developer entran)
-    const adminOnlyRoutes = ['/admin/personal', '/admin/configuracion', '/admin/reportes']
-    const isAdminOnly = adminOnlyRoutes.some(r => request.nextUrl.pathname.startsWith(r))
-    if (isAdminOnly && role === 'manager') {
-      console.warn(`[Proxy] Ruta restringida para manager: ${request.nextUrl.pathname}`)
-      return NextResponse.redirect(new URL('/admin', request.url))
-    }
-  }
-
-  // C. Verificación de Plan SaaS (Bloqueo de E-commerce y Pedidos por tienda)
-  const isEcommerceRoute = request.nextUrl.pathname.startsWith('/productos') ||
-                           request.nextUrl.pathname.startsWith('/categoria') ||
-                           request.nextUrl.pathname.startsWith('/carrito') ||
-                           request.nextUrl.pathname.startsWith('/checkout')
-
-  if (isEcommerceRoute || request.nextUrl.pathname.startsWith('/admin/pedidos')) {
-    const { data: profile } = await supabase.from('profiles').select('store_id').eq('id', user?.id).single()
+    redirectUrl.searchParams.set('redirect', path)
     
-    if (profile?.store_id) {
-      const { data: storeSettings } = await supabase
-        .from('store_settings')
-        .select('tier')
-        .eq('store_id', profile.store_id)
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+    
+    // IMPORTANTE: Traspasar cookies (posible refresh de token) al redirect
+    response.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie)
+    })
+    
+    return redirectResponse
+  }
+
+  if (user && (isAdminRoute || isPosRoute)) {
+    // Verificar rol global para bypass de desarrollador
+    const isDeveloper = DEVELOPER_EMAILS.includes(user.email?.toLowerCase() || '')
+    
+    // Si estamos en un subdominio, verificar membresía
+    if (storeData) {
+      const { data: membership } = await supabase
+        .from('user_stores')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('store_id', storeData.id)
+        .eq('is_active', true)
         .single()
 
-      const tier = storeSettings?.tier || 'basico'
+      let userRole = membership?.role || 'customer'
+      if (isDeveloper) userRole = 'developer'
 
-      if (tier === 'basico') {
-        const target = isEcommerceRoute ? '/' : '/admin?error=upgrade_required'
-        return NextResponse.redirect(new URL(target, request.url))
+      const isSuperUser = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(userRole.toLowerCase())
+
+      // Validar acceso según ruta
+      if (isAdminRoute && !isSuperUser) {
+        return NextResponse.redirect(new URL('/?error=unauthorized_admin', request.url))
       }
+
+      if (isPosRoute && !isSuperUser && userRole !== 'cajero') {
+        return NextResponse.redirect(new URL('/?error=unauthorized_pos', request.url))
+      }
+    }
+
+    // Rutas exclusivas para Developer
+    if (path.startsWith('/developer') && !isPublicRoute && !isDeveloper) {
+      return NextResponse.redirect(new URL('/admin', request.url))
     }
   }
 
   return response
+
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 }

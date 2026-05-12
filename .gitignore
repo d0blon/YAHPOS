@@ -42,3 +42,26 @@ next-env.d.ts
 
 # cursor MCP tokens (contiene API keys privadas)
 .cursor/mcp.json
+
+# temp / debug files
+build_output.txt
+file_list.txt
+lint_results*.txt
+products_debug.json
+2026-*-*.md
+task.md
+
+# scratch / sandbox
+scratch/
+
+# test output
+/coverage
+/playwright-report/
+/test-results/
+
+# playwright
+playwright.config.ts
+
+# jest
+jest.config.ts
+jest.setup.ts

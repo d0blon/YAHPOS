@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS public.store_settings (
     id uuid PRIMARY KEY DEFAULT '00000000-0000-0000-0000-000000000000',
     tier text DEFAULT 'basico' CHECK (tier IN ('basico', 'plus', 'elite')),
-    store_name text DEFAULT 'PatagoniaPOS',
+    store_name text DEFAULT 'YAHPOS!',
     store_logo text,
     white_label_enabled boolean DEFAULT false,
     accent_color text DEFAULT '#003399',
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
 
 -- Insert initial settings if not exists
 INSERT INTO public.store_settings (id, tier, store_name)
-VALUES ('00000000-0000-0000-0000-000000000000', 'basico', 'PatagoniaPOS')
+VALUES ('00000000-0000-0000-0000-000000000000', 'basico', 'YAHPOS!')
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS

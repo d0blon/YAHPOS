@@ -32,7 +32,7 @@ export const SyncOverlay: React.FC<SyncOverlayProps> = ({ isVisible, status }) =
 
         <div className="space-y-2">
           <h2 className="text-2xl font-black text-foreground tracking-tighter uppercase">
-            Patagonia<span className="text-patagonia-600 italic">POS</span>
+            YAHPOS!<span className="text-patagonia-600 italic"></span>
           </h2>
           <p className="text-muted-foreground font-medium text-sm">
             {status === 'syncing' 

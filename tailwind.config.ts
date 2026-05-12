@@ -1,5 +1,7 @@
+import tailwindAnimate from "tailwindcss-animate";
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+const config = {
   darkMode: ["class"],
   content: [
     './pages/**/*.{ts,tsx}',
@@ -12,6 +14,12 @@ module.exports = {
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
+        tier: {
+          austral: "#B87333",
+          archipielago: "#C0C0C0",
+          patagonia: "#FFD700",
+          elite: "#E5E4E2",
+        },
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -36,7 +44,9 @@ module.exports = {
           foreground: "hsl(var(--accent-foreground))",
           yellow: "#FFD100",
           gold: "#E6BC00",
+          copper: "#B87333",
         },
+
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -45,13 +55,12 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // PatagoniaPOS Custom Colors
+        // YAHPOS! Custom Colors
         corporate: {
-          blue: "#003399",
-          dark: "#001a66",
-          darker: "#000d33",
+          blue: "#7700cc",
+          dark: "#3b0066",
+          darker: "#150024",
         },
-
         dark: {
           bg: "#1F2937",
         },
@@ -134,11 +143,14 @@ module.exports = {
         "scale-in": "scale-in 0.2s ease-out",
       },
       backgroundImage: {
-        "hero-gradient": "linear-gradient(135deg, #003399 0%, #001a66 50%, #000d33 100%)",
-        "mesh-gradient": "radial-gradient(circle at 20% 80%, rgba(0, 51, 153, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 209, 0, 0.1) 0%, transparent 50%)",
+        "hero-gradient": "linear-gradient(135deg, #7700cc 0%, #3b0066 50%, #150024 100%)",
+        "mesh-gradient": "radial-gradient(circle at 20% 80%, rgba(119, 0, 204, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(184, 115, 51, 0.1) 0%, transparent 50%)",
         "glass-gradient": "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
-}
+  plugins: [tailwindAnimate],
+};
+
+export default config;
+

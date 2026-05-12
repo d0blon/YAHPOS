@@ -40,14 +40,17 @@ export async function GET() {
         ...t,
         status: activeSession ? 'open' : 'closed',
         current_user_id: activeSession ? activeSession.user_id : null,
-        current_user_name: activeSession ? activeSession.cashier_name : null
+        current_user_name: activeSession ? activeSession.cashier_name : null,
+        // Forzamos current_user a null para evitar mostrar perfiles stale de la tabla terminals
+        current_user: null
       }
     })
 
     return NextResponse.json(terminalsWithStatus)
-  } catch (err: any) {
-    console.warn('[terminals] Error:', err.message)
-    return NextResponse.json([{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }])
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+    console.error('[api/terminals] Critical Error:', err)
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
 

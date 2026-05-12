@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.stores (
     slug text UNIQUE NOT NULL,
     tier text DEFAULT 'basico' CHECK (tier IN ('basico', 'plus', 'elite')),
     is_active boolean DEFAULT true,
-    owner_id uuid REFERENCES auth.users(id),
+    merchant_id uuid REFERENCES auth.users(id),
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );

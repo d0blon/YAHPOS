@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Save, Package, Tag, DollarSign, Archive, Barcode, Scale, Info, AlertCircle, Loader2, MapPin } from 'lucide-react'
+import { X, Save, Package, Tag, DollarSign, Archive, Barcode, Scale, Info, AlertCircle, Loader2, MapPin, Wand2 } from 'lucide-react'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { SqlModal } from '@/components/modals/SqlModal'
 
 interface ProductModalProps {
   isOpen: boolean
@@ -19,10 +20,13 @@ interface ProductModalProps {
 
 export default function ProductModal({ isOpen, onClose, product, onSaved }: ProductModalProps) {
   const [isSaving, setIsSaving] = useState(false)
+  const [showSqlModal, setShowSqlModal] = useState(false)
   const [categories, setCategories] = useState<any[]>([])
   const [branches, setBranches] = useState<any[]>([])
   const [branchStocks, setBranchStocks] = useState<{[key: string]: number}>({})
-  const { isFeatureEnabled } = useSaaS()
+  const [isSearchingBarcode, setIsSearchingBarcode] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)  // moved here
+  const { config, isFeatureEnabled } = useSaaS()
   const isMultiBranch = isFeatureEnabled('multi-branch')
   
   const [formData, setFormData] = useState({
@@ -37,7 +41,9 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
     unit: 'un',
     discount: 0,
     isActive: true,
-    isFeatured: false
+    isFeatured: false,
+    nutritionalSeals: 0,
+    isRealtimeTracked: false
   })
 
   // Cargar categorías y sucursales al abrir
@@ -80,7 +86,9 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         unit: product.unit || 'un',
         discount: product.discount || 0,
         isActive: product.isActive !== undefined ? product.isActive : true,
-        isFeatured: product.isFeatured || false
+        isFeatured: product.isFeatured || false,
+        nutritionalSeals: product.nutritional_seals || 0,
+        isRealtimeTracked: product.is_realtime_tracked || false
       })
 
       // Cargar stocks por sucursal si existen en el producto
@@ -104,11 +112,47 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         unit: 'un',
         discount: 0,
         isActive: true,
-        isFeatured: false
+        isFeatured: false,
+        nutritionalSeals: 0,
+        isRealtimeTracked: false
       })
       setBranchStocks({})
     }
   }, [product, isOpen])
+
+  // Autocompletado Mágico vía SKU/Barcode
+  useEffect(() => {
+    const code = formData.sku
+    if (!code || code.length < 8) return
+
+    const timer = setTimeout(async () => {
+      setIsSearchingBarcode(true)
+      try {
+        const res = await fetch(`/api/products/lookup?code=${code}`)
+        const data = await res.json()
+        
+        if (data.success && data.product) {
+          setFormData(prev => ({
+            ...prev,
+            name: prev.name || data.product.name || '',
+            category: prev.category || data.product.category || prev.category,
+            image: prev.image || data.product.image_url || '',
+            nutritionalSeals: data.product.nutritionalSeals ?? prev.nutritionalSeals,
+            barcode: prev.sku // Asegurar que barcode se llene si no existe
+          }))
+          toast.success('✨ Producto encontrado en catálogo global', {
+            description: `Se autocompletó: ${data.product.name}`
+          })
+        }
+      } catch (err) {
+        console.error('Error in lookup:', err)
+      } finally {
+        setIsSearchingBarcode(false)
+      }
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [formData.sku])
 
   if (!isOpen) return null
 
@@ -148,8 +192,44 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
     }
   }
 
+  // Descripción
+
+  const isElite = config?.tier === 'patagonia'
+
+  const generateWithAI = async () => {
+    if (!formData.name) {
+      toast.error('Ingresa el nombre del producto primero')
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const res = await fetch('/api/ai/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productName: formData.name,
+          productCategory: categories.find(c => c.id === formData.category)?.name || '',
+          attributes: formData.description, // Usar lo que ya hay como base si existe
+          tone: 'profesional'
+        })
+      })
+
+      if (!res.ok) throw new Error('Error al generar descripción')
+      
+      const data = await res.json()
+      setFormData(prev => ({ ...prev, description: data.description }))
+      toast.success('✨ Descripción generada con éxito')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <SqlModal show={showSqlModal} onClose={() => setShowSqlModal(false)} />
       <div className="bg-white dark:bg-gray-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
@@ -189,10 +269,35 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
               <Label className="flex items-center gap-2 text-sm font-bold">
                 <Barcode className="w-4 h-4 text-corporate-blue" /> SKU / Código de Barras
               </Label>
+              <div className="relative">
+                <Input 
+                  placeholder="Ej: 780123456789"
+                  value={formData.sku}
+                  onChange={e => setFormData({...formData, sku: e.target.value})}
+                  className="rounded-xl border-gray-200 h-11 pr-10"
+                />
+                {isSearchingBarcode && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 animate-spin text-corporate-blue" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sellos Nutricionales */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-bold">
+                <AlertCircle className="w-4 h-4 text-orange-500" /> Sellos Nutricionales (0-4)
+              </Label>
               <Input 
-                placeholder="Ej: 780123456789"
-                value={formData.sku}
-                onChange={e => setFormData({...formData, sku: e.target.value})}
+                type="number"
+                min="0"
+                max="4"
+                value={formData.nutritionalSeals}
+                onChange={e => {
+                  const val = Math.min(4, Math.max(0, Number(e.target.value)))
+                  setFormData({...formData, nutritionalSeals: val})
+                }}
                 className="rounded-xl border-gray-200 h-11"
               />
             </div>
@@ -341,7 +446,26 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
 
           {/* Descripción */}
           <div className="space-y-2">
-            <Label className="text-sm font-bold">Descripción</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-bold">Descripción</Label>
+              {isElite && (
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="sm"
+                  onClick={generateWithAI}
+                  disabled={isGenerating}
+                  className="text-xs font-black text-purple-600 hover:text-purple-700 hover:bg-purple-50 gap-2 h-8 px-3 rounded-lg border border-purple-100 animate-pulse-slow"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-3 h-3" />
+                  )}
+                  Generar con IA
+                </Button>
+              )}
+            </div>
             <Textarea 
               placeholder="Detalles del producto..."
               value={formData.description}
@@ -366,6 +490,16 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
                 onCheckedChange={checked => setFormData({...formData, isFeatured: !!checked})}
               />
               <Label htmlFor="isFeatured" className="text-sm font-bold cursor-pointer">Destacar en Catálogo</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="isRealtimeTracked" 
+                checked={formData.isRealtimeTracked}
+                onCheckedChange={checked => setFormData({...formData, isRealtimeTracked: !!checked})}
+              />
+              <Label htmlFor="isRealtimeTracked" className="text-sm font-bold cursor-pointer text-green-600">
+                Seguimiento en Tiempo Real
+              </Label>
             </div>
           </div>
 

@@ -1,0 +1,22 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 10
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 30
+      arrivalRate: 50
+      name: "Sustained load"
+scenarios:
+  - name: "Critical APIs"
+    flow:
+      - get:
+          url: "/api/products"
+      - get:
+          url: "/api/orders"
+      - post:
+          url: "/api/checkout"
+          json:
+            items:
+              - productId: "test"
+                quantity: 1

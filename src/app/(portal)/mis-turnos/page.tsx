@@ -7,12 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Briefcase, ChevronRight, History } from 'lucide-react'
 import { useAuthStore } from '@/stores'
-import { createClient } from '@supabase/supabase-js'
-
-// Setup client directly for simple GET
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+import { supabase } from '@/lib/supabase'
 
 export default function MisTurnosPage() {
   const { user, isAuthenticated } = useAuthStore()
@@ -168,7 +163,7 @@ export default function MisTurnosPage() {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500 text-sm font-medium">Rol del Sistema</span>
-                    <Badge variant="outline" className="capitalize">{user.role === 'manager' ? 'Encargado' : user.role === 'cashier' ? 'Cajero/Colaborador' : user.role}</Badge>
+                    <Badge variant="outline" className="capitalize">{user.role === 'admin' ? 'Encargado' : user.role === 'cashier' ? 'Cajero/Colaborador' : user.role}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500 text-sm font-medium">Puntos Austral</span>

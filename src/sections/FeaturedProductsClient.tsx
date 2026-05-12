@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import ProductCard from '@/components/ProductCard';
+import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';
 import { motion, Variants } from 'framer-motion';
 
@@ -81,7 +81,7 @@ export default function FeaturedProductsClient({ products }: FeaturedProductsCli
               </span>
             </h2>
             <p className="text-xl text-gray-500 dark:text-gray-400 font-medium max-w-lg leading-relaxed">
-              Descubre la excelencia en cada detalle. Curamos cada artículo para asegurar que recibas solo lo mejor de la Patagonia.
+              Descubre la excelencia en cada detalle. Curamos cada artículo para asegurar que recibas solo lo mejor de YAHPOS!.
             </p>
           </motion.div>
           

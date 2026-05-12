@@ -1,11 +1,6 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createBrowserClient, createServerClient as createSSRClient } from '@supabase/ssr'
 
-// ⚠️ NO importar 'next/headers' al nivel superior de este archivo.
-// Este módulo es importado tanto por código de servidor como de cliente.
-// La función createClient() usa import() dinámico para acceder a cookies
-// SOLO cuando se ejecuta en el servidor.
-
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
@@ -13,15 +8,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase: Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY en .env.local')
 }
 
-// 1. Client para el browser (usa cookies automáticamente via @supabase/ssr)
+/**
+ * 1. Client para el browser (Singleton)
+ * Se usa createBrowserClient para manejar cookies automáticamente en el cliente.
+ */
 export const supabase = typeof window !== 'undefined' 
   ? createBrowserClient(supabaseUrl, supabaseAnonKey)
   : createSupabaseClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: false }
     })
 
-// 2. Client para procesos pesados de servidor (Admin/Cron) que bypass RLS
-// Usa la SERVICE_ROLE_KEY. ¡NO USAR EN EL CLIENTE!
+/**
+ * 2. Client para procesos pesados de servidor (Admin/Cron) que bypass RLS.
+ * Solo usar en el servidor.
+ */
 export function createAdminClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? supabaseAnonKey
   return createSupabaseClient(supabaseUrl, serviceKey, {
@@ -31,30 +31,59 @@ export function createAdminClient() {
 
 /**
  * 3. Client para API Routes / Server Actions / Server Components.
- * Lee las cookies dinámicamente (import lazy) para no romper componentes cliente
- * que también importen este mismo módulo.
- * @returns Supabase Client con sesión de usuario vinculada a cookies.
+ * Esta función es ASÍNCRONA porque accede a cookies().
  */
 export async function createClient() {
-  // Import dinámico: solo se ejecuta en el servidor, nunca en el bundle del cliente
-  const { cookies } = await import('next/headers')
-  const cookieStore = await cookies()
+  // SEGURIDAD: Si se llama accidentalmente en el navegador, devolvemos el singleton síncronamente
+  if (typeof window !== 'undefined') {
+    return supabase;
+  }
 
-  return createSSRClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll()
+  try {
+    // Import dinámico de next/headers para evitar que se incluya en el bundle del cliente
+    const { cookies } = await import('next/headers')
+    
+    let cookieStore;
+    try {
+      cookieStore = await cookies()
+    } catch (e) {
+      // Si cookies() falla (fuera de request scope, ej: build), usamos cliente básico
+      return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+        auth: { persistSession: false }
+      })
+    }
+
+    return createSSRClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, {
+                ...options,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+              })
+            )
+          } catch {
+            // Ignorar errores de set en Server Components (Next.js limita esto)
+          }
+        },
       },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        } catch {
-          // El error se ignora si se llama desde un Server Component
-          // ya que el middleware maneja la actualización de tokens.
-        }
-      },
-    },
-  })
+      cookieOptions: {
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      }
+    })
+  } catch (err) {
+    console.error('createClient: Error al inicializar cliente SSR:', err)
+    return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false }
+    })
+  }
 }
+

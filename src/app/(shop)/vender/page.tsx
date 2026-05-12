@@ -14,7 +14,7 @@ export default function SalesLanding() {
                   Lanzamiento Especial Chiloé
                 </span>
                 <h1 className="text-5xl lg:text-6xl font-bold mb-6">
-                  Lleva tu negocio al <span className="text-blue-600">siguiente nivel</span> con PatagoniaPOS
+                  Lleva tu negocio al <span className="text-blue-600">siguiente nivel</span> con YAHPOS!
                 </h1>
                 <p className="text-xl text-slate-600 mb-10">
                   El sistema de ventas más rápido, moderno e independiente de la Patagonia. Boletas electrónicas ilimitadas sin pagar de más.
@@ -56,7 +56,7 @@ export default function SalesLanding() {
       <section className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center mb-20">
-            <h2 className="text-4xl font-bold mb-4">¿Por qué elegir PatagoniaPOS?</h2>
+            <h2 className="text-4xl font-bold mb-4">¿Por qué elegir YAHPOS!?</h2>
             <p className="text-slate-500">Diseñado para la realidad del comercio local, con o sin internet estable.</p>
           </div>
           <div className="flex flex-wrap -mx-4">

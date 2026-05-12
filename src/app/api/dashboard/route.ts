@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { DEVELOPER_EMAILS } from '@/lib/constants'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -15,7 +16,16 @@ export async function GET(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const storeId = profile?.store_id
+    let storeId = profile?.store_id
+    const isDev = user.email && DEVELOPER_EMAILS.includes(user.email.toLowerCase())
+
+    if (!storeId && isDev) {
+      // Fallback para desarrolladores: usar la primera tienda encontrada
+      const { data: firstStore } = await supabase.from('stores').select('id').limit(1).single()
+      storeId = firstStore?.id
+      console.log(`[Dashboard API] Developer bypass for ${user.email} using Store: ${storeId}`)
+    }
+
     if (!storeId) return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 })
 
     // 1. Obtener datos de pedidos para ingresos y conteo (Filtrado por store_id)

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, ArrowRight, Check, Fingerprint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,15 +97,21 @@ export default function Register() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">AM</span>
+            <div className="w-48 h-16 bg-white dark:bg-white/5 backdrop-blur-xl rounded-2xl flex items-center justify-center p-4 shadow-2xl border border-white/20 dark:border-white/10 mx-auto">
+              <Image 
+                src="/logos/yahpos_logo_master_512.png" 
+                alt="YAHPOS!" 
+                width={160} 
+                height={40} 
+                className="w-full h-full object-contain"
+              />
             </div>
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
             Crea tu cuenta
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Únete a Austral Market y comienza a acumular puntos
+          <p className="text-gray-600 dark:text-gray-400 font-medium">
+            Únete a YAHPOS! y potencia tu experiencia
           </p>
         </div>
 

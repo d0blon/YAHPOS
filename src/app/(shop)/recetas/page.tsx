@@ -51,13 +51,13 @@ export default function Recipes() {
           <div className="max-w-2xl mx-auto text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <ChefHat className="h-6 w-6" />
-              <span className="text-orange-100 font-bold uppercase tracking-widest">Recetas PatagoniaPOS</span>
+              <span className="text-orange-100 font-bold uppercase tracking-widest">Recetas YAHPOS!</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Cocina con los Mejores Productos
             </h1>
             <p className="text-xl text-orange-100 mb-8">
-              Descubre deliciosas recetas usando productos frescos de PatagoniaPOS
+              Descubre deliciosas recetas usando productos frescos de YAHPOS!
             </p>
             <div className="relative max-w-md mx-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -207,7 +207,7 @@ export default function Recipes() {
               ¿Tienes una receta para compartir?
             </h2>
             <p className="text-green-100 mb-6 max-w-xl mx-auto">
-              Envíanos tus recetas usando productos de PatagoniaPOS y podría ser
+              Envíanos tus recetas usando productos de YAHPOS! y podría ser
               publicada en nuestra web con tu nombre.
             </p>
             <Button variant="secondary" size="lg">

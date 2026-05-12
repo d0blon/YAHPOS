@@ -8,17 +8,17 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, TrendingUp,
   Save, CheckCircle, AlertCircle, Loader2, Eye, EyeOff,
   Banknote, Wifi, Receipt, Terminal, Award, HelpCircle, ShieldCheck, Key, X,
-  Image as ImageIcon, Maximize2, Info, Sparkles, ExternalLink
+  Image as ImageIcon, Maximize2, Info, Sparkles, ExternalLink,
+  Check, Zap, ArrowRight, Shield
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import SqlModal from '@/components/modals/SqlModal'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { AdminHeader } from '@/components/admin/AdminHeader'
-import AdminSidebar from '@/components/admin/AdminSidebar'
 import { useAuthStore } from '@/stores/authStore'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { cn } from '@/lib/utils'
@@ -27,13 +27,273 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 const TABS = [
   { id: 'store', label: 'Tienda', icon: Store },
+  { id: 'billing', label: 'Plan / Suscripción', icon: CreditCard },
   { id: 'pos', label: 'POS', icon: Monitor },
   { id: 'terminals', label: 'Terminales', icon: Terminal },
+  { id: 'receipts', label: 'Boleta / Recibo', icon: FileText },
   { id: 'payments', label: 'Pagos Online', icon: CreditCard },
+  { id: 'sii', label: 'Facturación SII', icon: Receipt },
   { id: 'loyalty', label: 'Fidelización', icon: Award },
   { id: 'appearance', label: 'Branding', icon: Palette },
   { id: 'design', label: 'Editor Visual', icon: Monitor },
 ]
+
+function ReceiptPreview({ settings, store, appearance }: { settings: any, store: any, appearance: any }) {
+  return (
+    <div className="bg-gray-100 dark:bg-black/40 p-8 rounded-3xl flex justify-center">
+      <div className="w-[300px] bg-white text-black p-6 shadow-2xl font-mono text-[10px] leading-relaxed relative overflow-hidden">
+        {/* Double border decoration - premium design */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-red-600" />
+        <div className="absolute top-2 left-0 w-full h-px bg-red-300" />
+        
+        <div className="text-center space-y-1 mb-4">
+          {/* Logo preview if available */}
+          {appearance?.logoUrl && (
+            <div className="flex justify-center mb-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={appearance.logoUrl} 
+                alt="Logo" 
+                className={`h-10 w-auto object-contain ${settings.colorMode === 'bw' ? 'grayscale' : ''}`}
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+            </div>
+          )}
+          <div className="text-[12px] font-bold uppercase tracking-tighter">{store.name || 'AustralMarket'}</div>
+          <div>{store.address || 'Calle Principal 123'}</div>
+          <div>{store.city || 'Castro, Chiloé'}</div>
+          <div>RUT: {store.rut || '76.123.456-7'}</div>
+        </div>
+
+        <div className="border-y border-dashed border-gray-300 py-2 my-2 space-y-1">
+          <div className="flex justify-between">
+            <span>BOLETA ELECTRÓNICA</span>
+            <span className="font-bold">N° 000123</span>
+          </div>
+          <div>FECHA: {new Date().toLocaleDateString()}</div>
+        </div>
+
+        <div className="space-y-1 mb-4">
+          <div className="flex justify-between font-bold border-b border-gray-100 pb-1">
+            <span>ITEM</span>
+            <span>TOTAL</span>
+          </div>
+          <div className="flex justify-between">
+            <span>1x Producto de Prueba</span>
+            <span>$10.000</span>
+          </div>
+          <div className="flex justify-between">
+            <span>2x Item Especial</span>
+            <span>$5.000</span>
+          </div>
+        </div>
+
+        <div className="border-t border-dashed border-gray-300 pt-2 space-y-1 text-right">
+          <div className="flex justify-between text-[12px] font-bold">
+            <span>TOTAL</span>
+            <span>$15.000</span>
+          </div>
+        </div>
+
+        {settings.showLoyalty && (
+          <div className="mt-4 p-2 border border-gray-200 rounded text-center bg-gray-50">
+            <div className="font-bold uppercase text-[8px]">{settings.loyaltyName || 'Puntos Patagonia'}</div>
+            <div className="text-[12px] font-bold text-red-600">+150 PTS</div>
+            <div className="text-[7px]">¡ESTÁS A 500 PTS DE TU PRÓXIMO REGALO!</div>
+          </div>
+        )}
+
+        <div className="mt-6 text-center space-y-2">
+          <div className="italic text-gray-600">"{settings.message || '¡Gracias por su compra!'}"</div>
+          
+          <div className="flex justify-center py-2">
+            <div className="w-20 h-20 border-2 border-red-600 flex items-center justify-center font-bold text-red-600 text-center p-1 leading-tight">
+              TIMBRE ELECTRÓNICO SII<br/>VER CONSULTE EN<br/>WWW.SII.CL
+            </div>
+          </div>
+
+          {settings.showPoweredBy && (
+            <div className="text-[7px] text-gray-400 mt-4 uppercase tracking-widest">
+              {settings.poweredByText || 'Powered by YAHPOS!.cl'}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SubscriptionTab() {
+  const { config, storeId, refreshConfig } = useSaaS()
+  const [tiers, setTiers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/subscriptions')
+      .then(res => res.json())
+      .then(data => {
+        setTiers(data.tiers || [])
+        setLoading(false)
+      })
+  }, [])
+
+  const handleUpdatePlan = async (tierId: string) => {
+    setUpdating(tierId)
+    try {
+      const res = await fetch('/api/subscriptions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier_id: tierId })
+      })
+      
+      if (res.ok) {
+        toast.success('Plan actualizado con éxito')
+        await refreshConfig()
+      } else {
+        toast.error('Error al actualizar el plan')
+      }
+    } catch (error) {
+      toast.error('Error de conexión')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-corporate-blue" />
+        <p className="text-sm font-medium text-gray-500 animate-pulse uppercase tracking-widest">Cargando planes...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Current Plan Summary */}
+      <div className="glass-card p-8 bg-gradient-to-br from-corporate-blue/5 via-transparent to-corporate-blue/10 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
+          <Shield className="w-48 h-48 text-corporate-blue" />
+        </div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Badge className="bg-corporate-blue text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                Tu Plan Actual
+              </Badge>
+              <span className="text-xs text-gray-400 font-bold uppercase tracking-tighter">ID: {storeId?.substring(0, 8)}...</span>
+            </div>
+            <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">
+              YAHPOS! <span className="text-corporate-blue">{config.tier}</span>
+            </h2>
+            <p className="text-gray-500 font-medium max-w-md leading-relaxed">
+              Disfruta de todas las herramientas necesarias para hacer crecer tu negocio con el respaldo de YAHPOS!.
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-end gap-2">
+            <div className="bg-white/80 dark:bg-white/5 backdrop-blur px-6 py-4 rounded-2xl border border-white/20 shadow-xl shadow-corporate-blue/5">
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Estado de cuenta</p>
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-black text-lg">
+                <CheckCircle className="w-5 h-5" />
+                <span>ACTIVA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tiers Grid */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {tiers.map((tier) => (
+          <div 
+            key={tier.id} 
+            className={cn(
+              "glass-card p-8 flex flex-col relative transition-all duration-500",
+              config.tier?.toLowerCase() === tier.name.toLowerCase() 
+                ? "ring-2 ring-corporate-blue border-transparent bg-corporate-blue/[0.02]" 
+                : "hover:translate-y-[-4px] hover:shadow-2xl hover:shadow-corporate-blue/10"
+            )}
+          >
+            {config.tier?.toLowerCase() === tier.name.toLowerCase() && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-corporate-blue text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-corporate-blue/30 flex items-center gap-2">
+                <Check className="w-3 h-3" />
+                Plan Activo
+              </div>
+            )}
+
+            <div className="mb-6">
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">{tier.name}</h3>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-corporate-blue">${tier.price_clp?.toLocaleString('es-CL')}</span>
+                <span className="text-xs text-gray-400 font-bold uppercase">/ mes</span>
+              </div>
+            </div>
+
+            <ul className="space-y-4 mb-8 flex-1">
+              <li className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <Check className="w-3 h-3 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Emisión de Boletas Electrónicas</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <Check className="w-3 h-3 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Inventario en Tiempo Real</span>
+              </li>
+              <li className={cn("flex items-start gap-3", !tier.has_loyalty && "opacity-40 grayscale")}>
+                <div className={cn("w-5 h-5 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0", tier.has_loyalty ? "bg-green-100 dark:bg-green-900/30" : "bg-gray-100 dark:bg-white/5")}>
+                  {tier.has_loyalty ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-gray-400" />}
+                </div>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Módulo de Fidelización (Puntos)</span>
+              </li>
+              <li className={cn("flex items-start gap-3", !tier.has_ai_assistant && "opacity-40 grayscale")}>
+                <div className={cn("w-5 h-5 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0", tier.has_ai_assistant ? "bg-green-100 dark:bg-green-900/30" : "bg-gray-100 dark:bg-white/5")}>
+                  {tier.has_ai_assistant ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-gray-400" />}
+                </div>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Asistente IA (Predictor Stock)</span>
+              </li>
+            </ul>
+
+            <Button
+              disabled={config.tier?.toLowerCase() === tier.name.toLowerCase() || updating !== null}
+              onClick={() => handleUpdatePlan(tier.id)}
+              className={cn(
+                "w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+                config.tier?.toLowerCase() === tier.name.toLowerCase()
+                  ? "bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed"
+                  : "bg-corporate-blue hover:bg-corporate-dark text-white shadow-xl shadow-corporate-blue/10"
+              )}
+            >
+              {updating === tier.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : config.tier?.toLowerCase() === tier.name.toLowerCase() ? (
+                'Plan Actual'
+              ) : (
+                'Cambiar a este Plan'
+              )}
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      {/* Security Notice */}
+      <div className="flex items-center gap-4 p-6 rounded-2xl border border-corporate-blue/10 bg-corporate-blue/[0.01]">
+        <div className="w-12 h-12 rounded-xl bg-corporate-blue/10 flex items-center justify-center flex-shrink-0">
+          <ShieldCheck className="w-6 h-6 text-corporate-blue" />
+        </div>
+        <div>
+          <h4 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white mb-1">Pagos Procesados de forma segura</h4>
+          <p className="text-xs text-gray-500 font-medium">Toda la facturación es procesada mediante Transbank/Webpay cumpliendo con los más altos estándares de seguridad PCI-DSS.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function SectionCard({ title, description, children, icon: Icon }: { title: string, description?: string, children: React.ReactNode, icon?: any }) {
   return (
@@ -122,6 +382,7 @@ function Toggle({ checked, onCheckedChange, label, description }: { checked: boo
   )
 }
 
+
 export default function AdminConfiguracion() {
   const [activeTab, setActiveTab] = useState('store')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
@@ -134,6 +395,7 @@ export default function AdminConfiguracion() {
   const [store, setStore] = useState({ name: '', slogan: '', address: '', city: '', phone: '', email: '', website: '' })
   const [pos, setPos] = useState({ 
     terminalName: '', taxRate: 19, currency: 'CLP', lowStockThreshold: 5, receiptMessage: '',
+    region: 'REGIONES' as string,
     paymentCash: true, 
     paymentTransbank: true,
     paymentGetnet: false,
@@ -143,7 +405,7 @@ export default function AdminConfiguracion() {
     paymentTransfer: true 
   })
   const [payments, setPayments] = useState({ flowEnabled: false, flowApiKey: '', flowApiSecret: '', webpayEnabled: false, webpayCommerceCode: '', freeShippingMin: 30000 })
-  const [loyalty, setLoyalty] = useState({ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true })
+  const [loyalty, setLoyalty] = useState({ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' })
   const [appearance, setAppearance] = useState({ logoUrl: '', primaryColor: '#1e3a6e', secondaryColor: '#f5c518', darkMode: false })
   const [design, setDesign] = useState({
     heroImage: '',
@@ -152,8 +414,27 @@ export default function AdminConfiguracion() {
     productCardStyle: 'glass',
     bannerType: 'simple'
   })
+  const [siiConfig, setSiiConfig] = useState({
+    rut_emisor: '',
+    razon_social: '',
+    giro: '',
+    direccion: '',
+    comuna: '',
+    ciudad: '',
+    environment: 'certification',
+    pfx_base64: '',
+    password: ''
+  })
   const [terminalsList, setTerminalsList] = useState<any[]>([])
   const [newTerminalName, setNewTerminalName] = useState('')
+  const [receiptSettings, setReceiptSettings] = useState({
+    message: '¡Gracias por su compra!',
+    colorMode: 'bw' as 'bw' | 'color',
+    showPoweredBy: true,
+    poweredByText: 'YAHPOS!.cl',
+    showLoyalty: true,
+    loyaltyName: 'Puntos Patagonia'
+  })
 
   const { user: authUser } = useAuthStore()
   const { config: saasConfig } = useSaaS()
@@ -161,7 +442,7 @@ export default function AdminConfiguracion() {
   // Control de Acceso: Dueño, Gerente o Desarrollador
   const role = authUser?.role || ''
   const hasFullAccess = ['admin', 'owner', 'manager', 'developer'].includes(role)
-  const isBasicPlan = saasConfig.tier === 'basico'
+  const isBasicPlan = saasConfig.tier === 'austral'
   const isDev = role === 'developer' || role === 'admin'
 
   useEffect(() => {
@@ -172,13 +453,36 @@ export default function AdminConfiguracion() {
           setStore(settings.store)
           setPos(settings.pos)
           setPayments(settings.payments)
-          setLoyalty(settings.loyalty || { enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true })
+          setLoyalty(settings.loyalty ? { ...{ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' }, ...settings.loyalty } : { enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' })
           setAppearance(settings.appearance)
+          setReceiptSettings(settings.receipt || {
+            message: '¡Gracias por su compra!',
+            colorMode: 'bw',
+            showPoweredBy: true,
+            poweredByText: 'YAHPOS!.cl',
+            showLoyalty: true,
+            loyaltyName: 'Puntos Patagonia'
+          })
           setUsingDefaults(usingDefaults)
         }
       })
       .catch(() => toast.error('No se pudo cargar la configuración'))
       .finally(() => setIsLoading(false))
+
+    // Fetch SII config
+    fetch('/api/sii/config')
+      .then(r => r.json())
+      .then(data => {
+        if (data.config) {
+          setSiiConfig(prev => ({
+            ...prev,
+            ...data.config,
+            pfx_base64: '', // No cargamos el certificado por seguridad
+            password: ''    // No cargamos el password por seguridad
+          }))
+        }
+      })
+      .catch(() => console.error('Error al cargar configuración SII'))
 
     // Fetch terminals
     fetch('/api/terminals')
@@ -195,6 +499,7 @@ export default function AdminConfiguracion() {
         store_city: store.city, store_phone: store.phone, store_email: store.email, store_website: store.website,
         pos_terminal_name: pos.terminalName, pos_tax_rate: String(pos.taxRate), pos_currency: pos.currency,
         pos_low_stock_threshold: String(pos.lowStockThreshold), pos_receipt_message: pos.receiptMessage,
+        pos_region: pos.region,
         pos_payment_cash: String(pos.paymentCash), 
         pos_payment_transbank: String(pos.paymentTransbank),
         pos_payment_getnet: String(pos.paymentGetnet),
@@ -210,8 +515,15 @@ export default function AdminConfiguracion() {
         loyalty_accumulation_rate: String(loyalty.accumulationRate),
         loyalty_redemption_rate: String(loyalty.redemptionRate),
         loyalty_require_id_verification: String(loyalty.requireIdVerification),
+        loyalty_name: loyalty.name || 'Puntos',
         appearance_logo_url: appearance.logoUrl, appearance_primary_color: appearance.primaryColor,
         appearance_secondary_color: appearance.secondaryColor, appearance_dark_mode: String(appearance.darkMode),
+        receipt_message: receiptSettings.message,
+        receipt_color_mode: receiptSettings.colorMode,
+        receipt_show_powered_by: String(receiptSettings.showPoweredBy),
+        receipt_powered_by_text: receiptSettings.poweredByText,
+        receipt_show_loyalty: String(receiptSettings.showLoyalty),
+        receipt_loyalty_name: receiptSettings.loyaltyName,
       }
 
       const res = await fetch('/api/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(flat) })
@@ -219,6 +531,20 @@ export default function AdminConfiguracion() {
         const err = await res.json()
         throw new Error(err.error || 'Error al guardar')
       }
+
+      // Save SII Config if we are on that tab or if it's dirty
+      if (activeTab === 'sii') {
+        const siiRes = await fetch('/api/sii/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(siiConfig)
+        })
+        if (!siiRes.ok) {
+          const err = await siiRes.json()
+          throw new Error(`Error SII: ${err.error}`)
+        }
+      }
+
       setSaveStatus('saved')
       toast.success('Configuración guardada correctamente')
       setTimeout(() => setSaveStatus('idle'), 3000)
@@ -227,7 +553,7 @@ export default function AdminConfiguracion() {
       toast.error(err.message)
       setTimeout(() => setSaveStatus('idle'), 3000)
     }
-  }, [store, pos, payments, appearance, loyalty])
+  }, [store, pos, payments, appearance, loyalty, receiptSettings, siiConfig, activeTab])
 
   if (isLoading) {
     return (
@@ -238,108 +564,10 @@ export default function AdminConfiguracion() {
     )
   }
 
-  // SQL Modal
-  const SqlModal = () => showSqlModal ? (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 pt-20 bg-black/60 backdrop-blur-sm" onClick={() => setShowSqlModal(false)}>
-      <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-3xl shadow-2xl p-8 space-y-4" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-black">Crear tabla en Supabase</h3>
-        <p className="text-sm text-gray-500">Copia y pega este SQL en <strong>Supabase Studio → SQL Editor</strong> y ejecuta (Run):</p>
-        <div className="relative">
-          <pre className="bg-gray-950 text-green-400 text-xs p-4 rounded-xl overflow-x-auto font-mono leading-relaxed">
-{`CREATE TABLE IF NOT EXISTS public.terminals (
-  id          SERIAL PRIMARY KEY,
-  name        TEXT NOT NULL,
-  description TEXT,
-  is_active   BOOLEAN DEFAULT true,
-  created_at  TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.cash_sessions (
-  id                    SERIAL PRIMARY KEY,
-  terminal_id           INTEGER REFERENCES public.terminals(id),
-  cashier_name          TEXT,
-  opened_at             TIMESTAMPTZ DEFAULT NOW(),
-  closed_at             TIMESTAMPTZ,
-  opening_amount        NUMERIC(12,0) NOT NULL,
-  closing_amount        NUMERIC(12,0),
-  total_cash_sales      NUMERIC(12,0) DEFAULT 0,
-  total_card_sales      NUMERIC(12,0) DEFAULT 0,
-  total_transfer_sales  NUMERIC(12,0) DEFAULT 0,
-  notes                 TEXT,
-  status                TEXT DEFAULT 'open'
-);
-
-ALTER TABLE public.terminals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cash_sessions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all" ON public.terminals FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON public.cash_sessions FOR ALL USING (true) WITH CHECK (true);
-
-CREATE TABLE IF NOT EXISTS public.settings (
-  key TEXT PRIMARY KEY,
-  value TEXT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all_settings" ON public.settings FOR ALL USING (true) WITH CHECK (true);
-
-INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal principal') ON CONFLICT DO NOTHING;`}
-          </pre>
-          <button
-            className="absolute top-3 right-3 bg-gray-800 text-white text-xs px-3 py-1 rounded-lg hover:bg-gray-700"
-            onClick={() => { 
-                const sql = `CREATE TABLE IF NOT EXISTS public.terminals (
-  id          SERIAL PRIMARY KEY,
-  name        TEXT NOT NULL,
-  description TEXT,
-  is_active   BOOLEAN DEFAULT true,
-  created_at  TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.cash_sessions (
-  id                    SERIAL PRIMARY KEY,
-  terminal_id           INTEGER REFERENCES public.terminals(id),
-  cashier_name          TEXT,
-  opened_at             TIMESTAMPTZ DEFAULT NOW(),
-  closed_at             TIMESTAMPTZ,
-  opening_amount        NUMERIC(12,0) NOT NULL,
-  closing_amount        NUMERIC(12,0),
-  total_cash_sales      NUMERIC(12,0) DEFAULT 0,
-  total_card_sales      NUMERIC(12,0) DEFAULT 0,
-  total_transfer_sales  NUMERIC(12,0) DEFAULT 0,
-  notes                 TEXT,
-  status                TEXT DEFAULT 'open'
-);
-
-ALTER TABLE public.terminals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cash_sessions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all" ON public.terminals FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all" ON public.cash_sessions FOR ALL USING (true) WITH CHECK (true);
-
-CREATE TABLE IF NOT EXISTS public.settings (
-  key TEXT PRIMARY KEY,
-  value TEXT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all_settings" ON public.settings FOR ALL USING (true) WITH CHECK (true);
-
-INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal principal') ON CONFLICT DO NOTHING;`;
-                navigator.clipboard.writeText(sql); 
-                toast.success('SQL copiado al portapapeles') 
-            }}
-          >
-            Copiar
-          </button>
-        </div>
-        <p className="text-xs text-gray-400">Después de ejecutarlo, regresa aquí y haz clic en <strong>Inicializar BD</strong> nuevamente.</p>
-        <Button onClick={() => setShowSqlModal(false)} className="w-full rounded-xl">Cerrar</Button>
-      </div>
-    </div>
-  ) : null
 
   return (
     <>
-      <SqlModal />
+      <SqlModal show={showSqlModal} onClose={() => setShowSqlModal(false)} />
       <div className="space-y-8">
         {/* Header section with Stats */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -438,6 +666,11 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                 </div>
               )}
 
+              {/* Tab: Plan / Suscripción */}
+              {activeTab === 'billing' && (
+                <SubscriptionTab />
+              )}
+
               {/* Tab: POS */}
               {activeTab === 'pos' && (
                 <div className={cn("space-y-4 relative", !hasFullAccess && "grayscale opacity-60 pointer-events-none select-none")}>
@@ -487,6 +720,21 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                         <Toggle checked={pos.paymentOtherCard} onCheckedChange={v => setPos({...pos, paymentOtherCard: v})} label="💳  Otro lector de tarjeta" />
                       </div>
                       <Toggle checked={pos.paymentTransfer} onCheckedChange={v => setPos({...pos, paymentTransfer: v})} label="📱  Transferencia bancaria (CuentaRUT, banco, etc.)" />
+                      
+                      <div className="col-span-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Región de operación</label>
+                        <select 
+                          value={pos.region || 'REGIONES'}
+                          onChange={(e) => setPos({...pos, region: e.target.value})}
+                          className="mt-2 w-full h-12 rounded-xl border bg-white dark:bg-slate-800 font-bold text-sm px-4 outline-none focus:ring-2 focus:ring-patagonia-600/20 transition-all"
+                        >
+                          <option value="REGIONES">PROVINCIAS / REGIONES (Sodexo/Edenred habilitado)</option>
+                          <option value="RM">SANTIAGO / RM (Sodexo/Edenred deshabilitado)</option>
+                        </select>
+                        <p className="text-[9px] text-gray-400 mt-2 italic font-medium">
+                          * Esta opción controla la visibilidad de métodos de pago institucionales específicos por zona geográfica.
+                        </p>
+                      </div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-xl border border-blue-200 dark:border-blue-800">
                       <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
@@ -600,6 +848,102 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                 </div>
               )}
 
+              {/* Tab: Boleta / Recibo */}
+              {activeTab === 'receipts' && (
+                <div className="grid lg:grid-cols-2 gap-8 items-start">
+                  <div className="space-y-6">
+                    <SectionCard title="Configuración del Recibo" description="Personaliza el diseño y mensaje de tus boletas térmicas (80mm).">
+                      <div className="space-y-4">
+                        <Field label="Mensaje de Agradecimiento">
+                          <Textarea 
+                            className="rounded-xl" 
+                            value={receiptSettings.message} 
+                            onChange={e => setReceiptSettings({...receiptSettings, message: e.target.value})} 
+                            placeholder="¡Gracias por su compra! Vuelva pronto." 
+                            rows={3} 
+                          />
+                        </Field>
+                        
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Modo de Color</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button 
+                              onClick={() => setReceiptSettings({...receiptSettings, colorMode: 'bw'})}
+                              className={cn(
+                                "p-4 rounded-2xl border text-left transition-all",
+                                receiptSettings.colorMode === 'bw' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                              )}
+                            >
+                              <div className="w-full h-8 bg-gray-300 dark:bg-gray-700 rounded mb-2" />
+                              <span className="text-[10px] font-black uppercase">Blanco y Negro (Estándar)</span>
+                            </button>
+                            <button 
+                              onClick={() => setReceiptSettings({...receiptSettings, colorMode: 'color'})}
+                              className={cn(
+                                "p-4 rounded-2xl border text-left transition-all",
+                                receiptSettings.colorMode === 'color' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                              )}
+                            >
+                              <div className="w-full h-8 bg-gradient-to-r from-red-500 via-blue-500 to-yellow-500 rounded mb-2" />
+                              <span className="text-[10px] font-black uppercase">Color (Logo y Detalles)</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <Toggle 
+                          checked={receiptSettings.showPoweredBy} 
+                          onCheckedChange={v => setReceiptSettings({...receiptSettings, showPoweredBy: v})} 
+                          label="Créditos en Footer" 
+                          description="Muestra un pequeño texto al final del recibo."
+                        />
+                        {receiptSettings.showPoweredBy && (
+                          <Field label="Texto del Footer">
+                            <Input 
+                              className="rounded-xl h-11" 
+                              value={receiptSettings.poweredByText} 
+                              onChange={e => setReceiptSettings({...receiptSettings, poweredByText: e.target.value})} 
+                              placeholder="Powered by YAHPOS!.cl" 
+                            />
+                          </Field>
+                        )}
+                      </div>
+                    </SectionCard>
+
+                    <SectionCard title="Lealtad en Recibo" description="Muestra el saldo de puntos y estrellas en la boleta.">
+                      <div className="space-y-4">
+                        <Toggle 
+                          checked={receiptSettings.showLoyalty} 
+                          onCheckedChange={v => setReceiptSettings({...receiptSettings, showLoyalty: v})} 
+                          label="Mostrar Puntos de Lealtad" 
+                          description="Los clientes podrán ver cuántos puntos ganaron en la compra."
+                        />
+                        {receiptSettings.showLoyalty && (
+                          <Field label="Nombre del Programa">
+                            <Input 
+                              className="rounded-xl h-11" 
+                              value={receiptSettings.loyaltyName} 
+                              onChange={e => setReceiptSettings({...receiptSettings, loyaltyName: e.target.value})} 
+                              placeholder="Puntos Patagonia" 
+                            />
+                          </Field>
+                        )}
+                      </div>
+                    </SectionCard>
+                  </div>
+
+                  <div className="sticky top-24 space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Vista Previa en Vivo</h3>
+                      <Badge variant="outline" className="text-[8px] font-bold border-corporate-blue/30 text-corporate-blue">80mm THERMAL</Badge>
+                    </div>
+                    <ReceiptPreview settings={receiptSettings} store={store} appearance={appearance} />
+                    <p className="text-[10px] text-center text-gray-400 font-medium italic">
+                      * El timbre TED real variará según el DTE emitido por el SII.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Tab: Pagos Online */}
               {activeTab === 'payments' && (
                 <div className="space-y-4">
@@ -642,6 +986,264 @@ INSERT INTO public.terminals (name, description) VALUES ('Caja 1', 'Terminal pri
                 </div>
               )}
 
+              {/* Tab: SII */}
+              {activeTab === 'sii' && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-corporate-blue/5 rounded-xl border border-corporate-blue/20 flex gap-4 items-center">
+                    <div className="w-12 h-12 bg-corporate-blue/10 rounded-xl flex items-center justify-center text-corporate-blue shrink-0">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-tighter text-corporate-blue">Integración SII Oficial</p>
+                      <p className="text-xs text-gray-500 font-medium">Configura los datos tributarios y el certificado digital para la emisión de boletas electrónicas.</p>
+                    </div>
+                  </div>
+
+                  <SectionCard title="Datos de la Empresa" description="Información legal registrada ante el SII.">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <Field label="RUT Emisor" hint="Ej: 76.123.456-7">
+                        <Input 
+                          className="rounded-xl h-11" 
+                          value={siiConfig.rut_emisor} 
+                          onChange={e => setSiiConfig({...siiConfig, rut_emisor: e.target.value})} 
+                          placeholder="76.123.456-7" 
+                        />
+                      </Field>
+                      <Field label="Razón Social">
+                        <Input 
+                          className="rounded-xl h-11" 
+                          value={siiConfig.razon_social} 
+                          onChange={e => setSiiConfig({...siiConfig, razon_social: e.target.value})} 
+                          placeholder="Mi Empresa SpA" 
+                        />
+                      </Field>
+                      <Field label="Giro / Actividad">
+                        <Input 
+                          className="rounded-xl h-11" 
+                          value={siiConfig.giro} 
+                          onChange={e => setSiiConfig({...siiConfig, giro: e.target.value})} 
+                          placeholder="Venta al por menor de abarrotes" 
+                        />
+                      </Field>
+                      <Field label="Dirección">
+                        <Input 
+                          className="rounded-xl h-11" 
+                          value={siiConfig.direccion} 
+                          onChange={e => setSiiConfig({...siiConfig, direccion: e.target.value})} 
+                          placeholder="Calle Principal 123" 
+                        />
+                      </Field>
+                      <Field label="Comuna">
+                        <Input 
+                          className="rounded-xl h-11" 
+                          value={siiConfig.comuna} 
+                          onChange={e => setSiiConfig({...siiConfig, comuna: e.target.value})} 
+                          placeholder="Castro" 
+                        />
+                      </Field>
+                      <Field label="Ciudad">
+                        <Input 
+                          className="rounded-xl h-11" 
+                          value={siiConfig.ciudad} 
+                          onChange={e => setSiiConfig({...siiConfig, ciudad: e.target.value})} 
+                          placeholder="Castro" 
+                        />
+                      </Field>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="Certificado Digital" description="Archivo .pfx y clave para firmar documentos electrónicos.">
+                    <div className="space-y-4">
+                      <Field label="Archivo de Certificado (.pfx / .p12)" hint="Se almacena de forma cifrada (AES-256)">
+                        <div className="flex gap-3">
+                          <Input 
+                            type="file" 
+                            accept=".pfx,.p12"
+                            className="rounded-xl h-11 flex-1 cursor-pointer pt-2" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  const base64 = event.target?.result as string;
+                                  // Quitar el prefijo "data:application/x-pkcs12;base64,"
+                                  const pureBase64 = base64.split(',')[1];
+                                  setSiiConfig({...siiConfig, pfx_base64: pureBase64});
+                                  toast.success('Certificado cargado correctamente');
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          {siiConfig.pfx_base64 && (
+                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none px-4 py-2 rounded-xl flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3" /> LISTO
+                            </Badge>
+                          )}
+                        </div>
+                      </Field>
+                      
+                      <Field label="Contraseña del Certificado">
+                        <SecretInput 
+                          value={siiConfig.password} 
+                          onChange={v => setSiiConfig({...siiConfig, password: v})} 
+                          placeholder="Clave del certificado digital" 
+                        />
+                      </Field>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="Entorno de Ejecución" description="Define si los documentos se envían al ambiente de pruebas o producción.">
+                    <div className="grid grid-cols-2 gap-4">
+                      <button 
+                        onClick={() => setSiiConfig({...siiConfig, environment: 'certification'})}
+                        className={cn(
+                          "p-4 rounded-2xl border text-left transition-all flex items-center gap-4",
+                          siiConfig.environment === 'certification' ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500/20" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                        )}
+                      >
+                        <div className={cn("w-3 h-3 rounded-full", siiConfig.environment === 'certification' ? "bg-amber-500" : "bg-gray-300")} />
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-widest">Certificación</p>
+                          <p className="text-[10px] text-gray-500">Ambiente de pruebas (maullin)</p>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => setSiiConfig({...siiConfig, environment: 'production'})}
+                        className={cn(
+                          "p-4 rounded-2xl border text-left transition-all flex items-center gap-4",
+                          siiConfig.environment === 'production' ? "border-red-500 bg-red-50 ring-1 ring-red-500/20" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                        )}
+                      >
+                        <div className={cn("w-3 h-3 rounded-full", siiConfig.environment === 'production' ? "bg-red-500 animate-pulse" : "bg-gray-300")} />
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-widest">Producción</p>
+                          <p className="text-[10px] text-gray-500">Documentos con validez legal (w1)</p>
+                        </div>
+                      </button>
+                    </div>
+                  </SectionCard>
+                </div>
+              )}
+
+              {/* Tab: Fidelización */}
+              {activeTab === 'loyalty' && (
+                <div className="space-y-6">
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/60 flex gap-4">
+                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center shrink-0">
+                      <Award className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-tighter text-amber-900 dark:text-amber-100">Programa de Fidelización</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 font-medium">
+                        Recompensa a tus clientes frecuentes con puntos por cada compra. Los puntos se calculan automáticamente al cerrar una venta en el POS.
+                      </p>
+                    </div>
+                  </div>
+
+                  <SectionCard title="Configuración General" description="Activa y personaliza el programa de lealtad." icon={Award}>
+                    <div className="space-y-4">
+                      <Toggle
+                        checked={loyalty.enabled}
+                        onCheckedChange={v => setLoyalty({...loyalty, enabled: v})}
+                        label="Activar Programa de Puntos"
+                        description="Los clientes acumulan puntos con cada compra realizada en el POS."
+                      />
+
+                      {loyalty.enabled && (
+                        <>
+                          <Field label="Nombre del Programa" hint="Ej: Puntos Patagonia, Estrellas, Millas">
+                            <Input
+                              className="rounded-xl h-11"
+                              value={loyalty.name}
+                              onChange={e => setLoyalty({...loyalty, name: e.target.value})}
+                              placeholder="Puntos Patagonia"
+                            />
+                          </Field>
+
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <Field
+                              label="Tasa de Acumulación"
+                              hint={`$${loyalty.accumulationRate} = 1 punto`}
+                            >
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">$</span>
+                                <Input
+                                  className="rounded-xl h-11 pl-7"
+                                  type="number"
+                                  min="1"
+                                  value={loyalty.accumulationRate}
+                                  onChange={e => setLoyalty({...loyalty, accumulationRate: Number(e.target.value)})}
+                                />
+                              </div>
+                              <p className="text-[10px] text-gray-400 px-1">Por cada ${loyalty.accumulationRate || 100} CLP gastados, el cliente gana 1 punto.</p>
+                            </Field>
+
+                            <Field
+                              label="Tasa de Canje"
+                              hint={`1 punto = $${loyalty.redemptionRate}`}
+                            >
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">$</span>
+                                <Input
+                                  className="rounded-xl h-11 pl-7"
+                                  type="number"
+                                  min="1"
+                                  value={loyalty.redemptionRate}
+                                  onChange={e => setLoyalty({...loyalty, redemptionRate: Number(e.target.value)})}
+                                />
+                              </div>
+                              <p className="text-[10px] text-gray-400 px-1">Cada punto vale ${loyalty.redemptionRate || 1} CLP al momento de canjear.</p>
+                            </Field>
+
+                            <Field label="Mínimo para Canje" hint="Puntos mínimos para poder canjear">
+                              <Input
+                                className="rounded-xl h-11"
+                                type="number"
+                                min="0"
+                                value={loyalty.minRedemption}
+                                onChange={e => setLoyalty({...loyalty, minRedemption: Number(e.target.value)})}
+                              />
+                            </Field>
+                          </div>
+
+                          <Toggle
+                            checked={loyalty.requireIdVerification}
+                            onCheckedChange={v => setLoyalty({...loyalty, requireIdVerification: v})}
+                            label="Requerir Verificación de Identidad"
+                            description="El cajero debe verificar el RUT del cliente para acumular o canjear puntos."
+                          />
+                        </>
+                      )}
+                    </div>
+                  </SectionCard>
+
+                  {loyalty.enabled && (
+                    <SectionCard title="Simulador de Puntos" description="Calcula cuántos puntos ganaría un cliente por una compra." icon={TrendingUp}>
+                      <div className="space-y-4">
+                        <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-2xl border border-amber-100 dark:border-amber-900/50">
+                          <div className="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                              <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Compra de</p>
+                              <p className="text-2xl font-black text-amber-700">$10.000</p>
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <div className="text-3xl">→</div>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">{loyalty.name || 'Puntos'} ganados</p>
+                              <p className="text-2xl font-black text-amber-600">{Math.floor(10000 / (loyalty.accumulationRate || 100))} pts</p>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-center text-gray-400 mt-4 font-medium">
+                            Estos puntos equivalen a ${Math.floor(10000 / (loyalty.accumulationRate || 100)) * (loyalty.redemptionRate || 1)} CLP en descuento
+                          </p>
+                        </div>
+                      </div>
+                    </SectionCard>
+                  )}
+                </div>
+              )}
 
               {/* Tab: Apariencia */}
               {activeTab === 'appearance' && (

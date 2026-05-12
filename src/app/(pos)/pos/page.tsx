@@ -1,17 +1,16 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { 
   Search, ShoppingCart, User, Plus, Minus, Trash2, MapPin,
-  CreditCard, Banknote, History, PauseCircle, PlayCircle, 
-  Loader2, Settings, ShieldAlert, LogOut, Terminal, AlertTriangle,
-  Award, PackageOpen, Monitor, DollarSign, Lock, ChevronRight, X, TrendingUp,
-  Sun, Moon, Wifi, WifiOff, Cloud, CloudOff, Store, LayoutDashboard, Zap, PlusCircle, Calculator, Archive, RefreshCw,
-  Smartphone, Tablet
+  Banknote, History, PauseCircle, PlusCircle, Calculator, Archive,
+  Loader2, Sun, Moon,
+  Award, PackageOpen, Monitor, DollarSign, ChevronRight, X,
+  Wifi, WifiOff, Store, RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { usePosStore } from '@/stores/posStore'
 import { formatPrice, cn } from '@/lib/utils'
 import { useTheme } from '@/providers/ThemeProvider'
@@ -27,16 +26,19 @@ import { PosSettingsModal } from '@/components/pos/PosSettingsModal'
 import { ManagerPinModal } from '@/components/pos/ManagerPinModal'
 import { CashOpeningModal } from '@/components/pos/CashOpeningModal'
 import CustomerModal from '@/components/pos/CustomerModal'
-import { Product, Branch } from '@/types'
+import { Product, Branch, User as AppUser } from '@/types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OrderRecord, CashMovement } from '@/stores/posStore'
 import { PosSidebar } from '@/components/pos/PosSidebar'
-import { PosHeader } from '@/components/pos/PosHeader'
 import { OfflineSyncManager } from '@/components/pos/OfflineSyncManager'
 import { CashMovementModal } from '@/components/pos/CashMovementModal'
 import { MovementReceiptModal } from '@/components/pos/MovementReceiptModal'
 import { PaymentModal } from '@/components/pos/PaymentModal'
 import { SyncOverlay } from '@/components/pos/SyncOverlay'
+import { useSiiStore } from '@/stores/siiStore'
+import { RealTimeStockBadge } from '@/components/pos/RealTimeStockBadge'
+import { QuickStockPanel } from '@/components/pos/QuickStockPanel'
+import { RemoteClosureListener } from '@/components/pos/RemoteClosureListener'
 
 // --- FLYING ITEM PARTICLE ---
 const FlyingItem = ({ x, y, onComplete }: { x: number, y: number, onComplete: () => void }) => {
@@ -129,6 +131,18 @@ const ProductCard = React.memo(({ p, onClick }: { p: Product, onClick: (p: Produ
     return '/pos/thumbnails/abarrotes.png';
   })();
 
+  const getStatusBadge = () => {
+    const categoryName = (typeof p.category === 'string' ? p.category : p.category?.name || '').toLowerCase();
+    
+    if (categoryName.includes('panadería')) return "¡Saliendo del horno!";
+    if (categoryName.includes('carnicería')) return "¡Cortes Frescos!";
+    if (categoryName.includes('comida preparada')) return "¡Recién Hecho!";
+    if (p.stock > 0 && p.stock < 5) return "¡Quedan pocos!";
+    return null;
+  };
+
+  const statusMsg = getStatusBadge();
+
   return (
     <button 
       onClick={(e) => onClick(p, e)}
@@ -137,27 +151,42 @@ const ProductCard = React.memo(({ p, onClick }: { p: Product, onClick: (p: Produ
     >
       <div className="w-full aspect-square bg-slate-50 dark:bg-slate-800/50 rounded-3xl mb-4 relative overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-800">
         {p.image && !imgError ? (
-          <img 
+          <Image 
             src={p.image} 
             alt={p.name} 
+            width={300}
+            height={300}
             onError={() => setImgError(true)}
             className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal group-hover:scale-110 transition-transform duration-700 ease-out" 
           />
         ) : (
-          <img 
+          <Image 
             src={categoryThumb} 
             alt={p.name}
+            width={300}
+            height={300}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100"
           />
         )}
         
-        <div className={cn(
-          "absolute top-3 left-3 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase z-10 backdrop-blur-md shadow-sm border",
-          isLowStock 
-            ? 'bg-rose-500 text-white border-rose-400' 
-            : 'bg-white/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700'
-        )}>
-          {p.stock} {p.unit}
+        <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+          <RealTimeStockBadge 
+            stock={p.stock} 
+            lowStockThreshold={p.lowStockThreshold} 
+            isRealtimeTracked={p.isRealtimeTracked}
+          />
+          
+          {statusMsg && (
+            <div className={cn(
+              "px-3 py-1 rounded-full text-[8px] font-black tracking-tighter uppercase backdrop-blur-md shadow-lg border animate-in slide-in-from-left-2",
+              statusMsg.includes('horno') ? 'bg-amber-500 text-white border-amber-400 animate-pulse' :
+              statusMsg.includes('frescos') ? 'bg-indigo-500 text-white border-indigo-400' :
+              statusMsg.includes('hecho') ? 'bg-emerald-500 text-white border-emerald-400' :
+              'bg-rose-500 text-white border-rose-400'
+            )}>
+              {statusMsg}
+            </div>
+          )}
         </div>
 
         {isWeighable && (
@@ -320,13 +349,9 @@ export default function PosTerminal() {
   }, [isSyncing, items.length]);
 
   // Determinar marca a mostrar
-  const displayName = config.white_label_enabled && config.tier === 'elite' 
+  const displayBrand = config.white_label_enabled && config.tier === 'patagonia' 
     ? config.store_name 
-    : 'PatagoniaPOS'
-  
-  const displayBrand = displayName.includes('Patagonia') 
-    ? <>Patagonia<span className="text-patagonia-600 italic">POS</span></>
-    : displayName
+    : 'YAHPOS!'
 
 
   const [search, setSearch] = useState('')
@@ -347,8 +372,8 @@ export default function PosTerminal() {
   const [pinAction, setPinAction] = useState<{ name: string, onConfirm: () => void } | null>(null)
   
   const [weightModalProduct, setWeightModalProduct] = useState<Product | null>(null)
+  const [isStockPanelOpen, setIsStockPanelOpen] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
   const [viewQuickAdd, setViewQuickAdd] = useState(false)
   const [flyingItems, setFlyingItems] = useState<{id: number, x: number, y: number}[]>([])
   const [isCartBouncing, setIsCartBouncing] = useState(false)
@@ -360,24 +385,31 @@ export default function PosTerminal() {
       return
     }
     
-    if (!isAuthenticated) {
-       router.push('/login?callback=/pos')
-       return
-    }
-
-    const allowedRoles = ['admin', 'manager', 'cashier', 'cajero', 'developer']
-    if (authUser && !allowedRoles.includes(authUser.role)) {
-       toast.error('No tienes permisos para acceder al POS')
-       router.push('/')
-       return
-    }
-
-    if (authUser && (!currentUser || currentUser.id !== authUser.id)) {
-       setCurrentUser(authUser)
+    // 1. Hidratación y Configuración de Usuario
+    if (authUser) {
+      if (!currentUser || currentUser.id !== authUser.id) {
+        setCurrentUser(authUser)
+      }
+    } else {
+      // Usuario Local/Invitado para modo sin login
+      if (!currentUser || currentUser.id !== 'local-cashier') {
+        setCurrentUser({
+          id: 'local-cashier',
+          email: 'pos@local',
+          firstName: 'Cajero',
+          lastName: 'Local',
+          role: 'cashier',
+          storeId: 'default',
+          tier: 'patagonia',
+          loyaltyPoints: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as any)
+      }
     }
 
     // Cargar sucursales si es Plan Élite
-    if (config.tier === 'elite') {
+    if (config.tier === 'patagonia') {
       getBranches().then(res => {
         setBranches(res)
         // Si solo hay una sucursal, seleccionarla automáticamente
@@ -545,27 +577,48 @@ export default function PosTerminal() {
     }
   }, [items, suspendedOrders, cashSession, isAuthenticated]);
 
-  const handleCheckout = async (paymentMethod: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'PUNTOS', receivedAmount?: number, terminalType?: string) => {
+  const handleCheckout = async (paymentMethod: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED', receivedAmount?: number, terminalType?: string) => {
     setIsProcessing(true);
     setIsPaymentModalOpen(false);
+    
+    const temporalId = `POS-${Date.now()}`;
+    const isOnline = navigator.onLine;
+    const { consumeFolio, activeCafs, addToQueue } = useSiiStore.getState();
+    const dteType = 39; // Boleta Electrónica por defecto
+    
     try {
+      // 0. Validación de Reglas de Negocio (JUNAEB / PLUXE / EDENRED)
+      const isVoucherPayment = paymentMethod === 'JUNAEB' || paymentMethod === 'PLUXE' || paymentMethod === 'EDENRED';
+      
+      if (isVoucherPayment) {
+        const maxSeals = settings.maxSeals ?? 2;
+        const prohibitedItems = items.filter(i => (i.product.nutritionalSeals || 0) > maxSeals);
+        
+        if (prohibitedItems.length > 0) {
+          toast.error(`Pago ${paymentMethod} Rechazado: ${prohibitedItems.length} productos exceden el límite de ${maxSeals} sellos.`, {
+            description: prohibitedItems.map(i => i.product.name).join(', '),
+            duration: 5000
+          });
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // 1. Preparar Pago / Simular Terminal
       if (paymentMethod === 'TARJETA' || paymentMethod === 'TERMINAL') {
         const msg = paymentMethod === 'TERMINAL' ? `Enviando monto a ${terminalType}...` : 'Procesando Pago con Tarjeta...';
         toast.info(msg);
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 1000));
       }
       
-      const isOnline = navigator.onLine;
-      const temporalId = `POS-${Date.now()}`;
-      
-      const orderProof = {
+      const orderData = {
         id: temporalId,
         items: [...items],
         subtotal,
         total: total,
         discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
-        pointsToEarn: pointsToEarn,
-        pointsRedeemed: pointsRedeemed,
+        pointsToEarn,
+        pointsRedeemed,
         customerRut,
         customerName,
         date: new Date().toLocaleString('es-CL'),
@@ -574,35 +627,106 @@ export default function PosTerminal() {
         timestamp: Date.now()
       };
 
+      // 2. Lógica SII (Offline-First)
+      let folio = null;
+      let tedXml = '';
+      
+      // DETERMINAR SI SE DEBE GENERAR BOLETA SII
+      // 1. No se genera si es pago con voucher (Junaeb/Edenred/Pluxe) -> Tienen su propio sistema de impuestos
+      // 2. No se genera si se usa Getnet y la configuración indica que Getnet ya genera la boleta
+      const isGetnetBoleta = paymentMethod === 'TERMINAL' && terminalType === 'Getnet' && settings.getnetIsBoleta;
+      const shouldSkipSii = isVoucherPayment || isGetnetBoleta;
+
+      if (!shouldSkipSii) {
+        // Intentar consumir folio localmente si tenemos CAFs y folios en el pool
+        folio = consumeFolio(dteType);
+        
+        if (folio) {
+          console.log(`[POS] Folio ${folio} consumido localmente para DTE ${dteType}`);
+          // Generar TED (Timbre Electrónico) localmente para el ticket
+          try {
+            const { SiiTedGenerator } = await import('@/lib/sii/ted');
+            const cafXml = activeCafs[dteType.toString()];
+            
+            if (cafXml) {
+              tedXml = await SiiTedGenerator.generateTed({
+                Encabezado: {
+                  RUTEmisor: config.tax_id || '76000000-1',
+                  TipoDTE: dteType,
+                  Folio: folio,
+                  FchEmis: new Date().toISOString().split('T')[0],
+                  RUTRecep: customerRut || '66666666-6',
+                  MntTotal: total,
+                  Detalles: items.map(i => ({ NmbItem: i.product.name }))
+                }
+              }, cafXml);
+              console.log('[POS] TED generado localmente ✅');
+            }
+          } catch (tedErr) {
+            console.warn('[POS] No se pudo generar TED localmente:', tedErr);
+          }
+        }
+
+        // Encolar para el SII Store (será subido por OfflineSyncManager)
+        addToQueue({
+          id: temporalId,
+          storeId: selectedBranchId || 'default',
+          payload: {
+            items: items.map(i => ({ 
+              name: i.product.name, 
+              quantity: i.quantity, 
+              price: i.product.price,
+              isExempt: i.product.isExempt
+            })),
+            totals: { total: total },
+            type: dteType,
+            folio: folio 
+          },
+          xml: tedXml ? `<DTE>${tedXml}</DTE>` : '' 
+        });
+      } else {
+        console.log(`[POS] Saltando cola SII: ${isVoucherPayment ? 'Pago Voucher' : 'Getnet Boleta Activo'}`);
+      }
+
+      // 3. Registrar Venta en Supabase o Cola Local
       if (!isTrainingMode) {
-        // Enviar a Supabase (api/orders handles reduction and points)
-        try {
-          const response = await fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: currentUser?.id || '1',
-              registerId: cashSession?.terminal_id,
-              total: total,
-              discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
-              paymentMethod: paymentMethod,
-              customerRut: customerRut,
-              pointsToEarn: pointsToEarn,
-              pointsRedeemed: pointsRedeemed,
-              branchId: selectedBranchId,
-              items: items.map(i => ({ productId: i.product.id, quantity: i.quantity, unitPrice: i.product.price }))
-            })
-          });
-          if (response.ok) toast.success('Venta Registrada ✅');
-          else throw new Error('Error API');
-        } catch (err) {
-          usePosStore.getState().queueOrderForSync(orderProof);
-          toast.warning('Venta guardada localmente (Offline) 📶');
+        if (isOnline) {
+          try {
+            const response = await fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: currentUser?.id || '1',
+                registerId: cashSession?.terminal_id,
+                total: total,
+                discount: orderData.discount,
+                paymentMethod: paymentMethod,
+                customerRut: customerRut,
+                pointsToEarn,
+                pointsRedeemed,
+                branchId: selectedBranchId,
+                items: items.map(i => ({ productId: i.product.id, quantity: i.quantity, unitPrice: i.product.price })),
+                offlineId: temporalId,
+                folio: folio // Enviamos el folio si lo generamos
+              })
+            });
+            if (response.ok) {
+              toast.success('Venta Registrada ✅');
+            } else throw new Error('API Error');
+          } catch (err) {
+            usePosStore.getState().queueOrderForSync(orderData);
+            toast.warning('Venta guardada localmente 📴');
+          }
+        } else {
+          usePosStore.getState().queueOrderForSync(orderData);
+          toast.warning('Venta guardada localmente (Modo Offline) 📴');
         }
       }
       
-      setReceiptData(orderProof);
-      addSale(orderProof);
+      // 4. Finalizar y Mostrar Recibo
+      const finalOrderRecord = { ...orderData, folio }; 
+      setReceiptData(finalOrderRecord);
+      addSale(finalOrderRecord);
       processCheckoutStock();
       clearPos();
       setPointsRedeemed(0);
@@ -610,12 +734,13 @@ export default function PosTerminal() {
       
       if (receivedAmount && receivedAmount > total) {
         toast.success(`Vuelto: ${formatPrice(receivedAmount - total)}`, {
-          duration: 10000,
-          position: 'top-center',
-          style: { background: '#10b981', color: '#fff', fontSize: '20px', fontWeight: 'bold' }
+          duration: 8000,
+          position: 'top-center'
         });
       }
+
     } catch (error) {
+      console.error('[Checkout Error]', error);
       toast.error('Error procesando el pago');
     } finally {
       setIsProcessing(false);
@@ -671,6 +796,12 @@ export default function PosTerminal() {
     <div className="h-screen bg-background flex overflow-hidden font-sans text-foreground">
       <SyncOverlay isVisible={isInitialLoading} status="syncing" />
       <OfflineSyncManager />
+      <RemoteClosureListener />
+
+      <QuickStockPanel 
+        isOpen={isStockPanelOpen}
+        onClose={() => setIsStockPanelOpen(false)}
+      />
 
       <CashOpeningModal 
         isOpen={!cashSession && isHydrated}
@@ -681,138 +812,28 @@ export default function PosTerminal() {
       
       {cashSession && (
         <>
-          {/* 1. LEFT NAVIGATION (Sidebar) */}
-      <div className={cn(
-        "bg-card flex flex-col items-center py-6 gap-6 border-r border-border shrink-0 z-30 shadow-2xl transition-all duration-300 relative",
-        isSidebarExpanded ? "w-64" : "w-22"
-      )}>
-      {/* Sidebar Toggle Button */}
-      <button 
-        onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-        className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-patagonia-600 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all z-[100] border-2 border-border"
-      >
-        <ChevronRight className={cn("w-5 h-5 transition-transform duration-300", isSidebarExpanded && "rotate-180")} />
-      </button>
-
-      <Link 
-        href="/"
-        className="w-14 h-14 bg-accent-yellow rounded-2xl flex items-center justify-center shadow-lg shadow-accent-yellow/20 active:scale-90 transition-all cursor-pointer group relative shrink-0"
-        title="Ver Tienda Online"
-      >
-        <Store className="w-7 h-7 text-foreground group-hover:scale-110 transition-transform" />
-      </Link>
-      
-      <div className="flex-1 flex flex-col gap-6 mt-4 w-full px-4">
-        <button 
-          onClick={handleDashboardNav}
-          className={cn(
-            "h-14 rounded-2xl bg-muted text-muted-foreground hover:bg-patagonia-600 hover:text-white flex items-center transition-all group shadow-lg cursor-pointer",
-            isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
-          )}
-          title="Panel de Admin"
-        >
-           <LayoutDashboard className="w-7 h-7 shrink-0 group-hover:scale-110 transition-transform" />
-           {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Panel de Admin</span>}
-        </button>
-
-        <button 
-          className={cn(
-            "h-14 rounded-2xl flex items-center transition-all group shadow-lg",
-            isTrainingMode ? "bg-amber-500 text-white shadow-amber-500/20" : "bg-muted text-muted-foreground hover:bg-amber-500 hover:shadow-amber-500/20 hover:text-white",
-            isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
-          )}
-          onClick={() => setTrainingMode(!isTrainingMode)}
-          title="Modo Entrenamiento"
-        >
-           <Zap className="w-7 h-7 shrink-0 group-hover:scale-110 transition-transform" />
-           {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Entrenar</span>}
-        </button>
-           <button 
-             onClick={() => setViewHistory(true)} 
-             className={cn(
-               "h-14 rounded-2xl text-muted-foreground hover:bg-patagonia-600 hover:shadow-lg hover:shadow-patagonia-600/20 hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
-               isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
-             )}
-           >
-             <History className="w-7 h-7 shrink-0"/>
-             {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Historial</span>}
-           </button>
-
-           <button 
-             onClick={() => setViewMovements(true)} 
-             className={cn(
-               "h-14 rounded-2xl text-muted-foreground hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-500/20 hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
-               isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
-             )}
-           >
-             <DollarSign className="w-7 h-7 shrink-0"/>
-             {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Caja</span>}
-           </button>
-
-           <button 
-             onClick={() => {
-               setPinAction({
-                 name: "Acceso a Ajustes",
-                 onConfirm: () => setViewSettings(true)
-               });
-             }}
-             className={cn(
-               "h-14 rounded-2xl text-muted-foreground hover:bg-slate-700 dark:hover:bg-slate-600 hover:shadow-lg hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 group overflow-hidden",
-               isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
-             )}
-           >
-             <Settings className="w-7 h-7 shrink-0"/>
-             {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Ajustes</span>}
-           </button>
-           
-           <div className="h-px bg-muted mx-auto my-2 w-full max-w-[40px]" />
-           
-           <button 
-             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-             className={cn(
-               "h-14 rounded-2xl text-amber-500 hover:bg-amber-500/10 flex items-center transition-all group overflow-hidden",
-               isSidebarExpanded ? "px-6 w-full gap-4" : "justify-center w-14 mx-auto"
-             )}
-           >
-              {theme === 'dark' ? <Moon className="w-7 h-7 shrink-0" /> : <Sun className="w-7 h-7 shrink-0" />}
-              {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Tema</span>}
-           </button>
-        </div>
-
-        <div className="w-full px-4 mt-auto">
-          <button 
-            onClick={() => setViewClosure(true)} 
-            className={cn(
-              "h-14 rounded-2xl bg-rose-500/10 text-rose-500 dark:text-rose-400 hover:bg-rose-500 hover:text-white flex items-center transition-all hover:scale-105 active:scale-95 mb-4 shadow-lg shadow-rose-500/10 overflow-hidden shrink-0 w-full",
-              isSidebarExpanded ? "px-6 gap-4" : "justify-center w-14 mx-auto"
-            )}
-          >
-            <Lock className="w-7 h-7 shrink-0"/>
-            {isSidebarExpanded && <span className="font-black uppercase tracking-widest text-xs whitespace-nowrap">Cerrar</span>}
-          </button>
-        </div>
-      </div>
+          <PosSidebar 
+            onShowHistory={() => setViewHistory(true)}
+            onShowClosure={() => setViewClosure(true)}
+            onShowSettings={() => setPinAction({
+              name: "Acceso a Ajustes",
+              onConfirm: () => setViewSettings(true)
+            })}
+            onShowMovements={() => setViewMovements(true)}
+            onShowStockPanel={() => setIsStockPanelOpen(true)}
+          />
 
       {/* 2. MAIN AREA */}
       <div className="flex-1 flex flex-col min-w-0 bg-background transition-colors duration-500 relative">
         {/* Header Section */}
         <header className="h-20 bg-card border-b border-border px-8 flex items-center justify-between shrink-0 shadow-sm z-10 transition-colors duration-500">
-           <div className="flex items-center gap-4">
-                  <img 
-                    src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
-                    alt="Logo" 
-                    className={cn(
-                      "h-12 w-auto object-contain",
-                      theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
-                    )} 
-                  />
-                  <div className="flex flex-col">
-                    <h1 className="text-xl font-black text-foreground tracking-tighter leading-none">
-                      Patagonia<span className="text-patagonia-600 italic">POS</span>
-                    </h1>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Smart Commerce</p>
-                  </div>
-                </div>
+           <Image 
+             src="/logos/yahpos_logo_master.svg" 
+             alt="YAHPOS!" 
+             width={140}
+             height={48}
+             className="h-12 w-auto object-contain"
+           />
 
            <div className="flex-1 max-w-lg mx-8">
              <div className="relative">
@@ -827,7 +848,7 @@ export default function PosTerminal() {
            </div>
 
            <div className="flex items-center gap-6">
-              {config.tier === 'elite' && (
+              {config.tier === 'patagonia' && (
                 <button 
                   onClick={() => setIsBranchModalOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-patagonia-600/10 text-patagonia-600 border border-patagonia-600/20 hover:bg-patagonia-600 hover:text-white transition-all group"
@@ -839,6 +860,14 @@ export default function PosTerminal() {
                 </button>
               )}
               <OfflineIndicator isSyncing={isSyncing} />
+
+              <button
+                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                 className="w-10 h-10 flex items-center justify-center rounded-xl bg-muted hover:bg-muted-foreground/10 transition-all border border-border"
+               >
+                 {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+               </button>
+
               <div className="text-right hidden sm:block">
                  <p className="text-xs font-black text-foreground leading-tight">{authUser?.firstName} {authUser?.lastName}</p>
                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{cashSession?.terminal_name || 'Caja Central'}</p>

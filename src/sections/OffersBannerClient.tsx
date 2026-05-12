@@ -89,7 +89,7 @@ export default function OffersBannerClient({ displayDiscount }: { displayDiscoun
               </p>
 
               <div className="flex flex-wrap items-center gap-8">
-                <Link href="/ofertas">
+                <Link href="/productos">
                   <Button className="h-20 px-12 rounded-[2rem] bg-white text-black font-black text-xl hover:scale-105 transition-all shadow-2xl shadow-white/5 group/btn">
                     EXPLORAR BODEGA
                     <ArrowRight className="w-6 h-6 ml-4 group-hover/btn:translate-x-3 transition-transform" />

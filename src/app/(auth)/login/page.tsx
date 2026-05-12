@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
 import { useSaaS } from '@/providers/SaaSProvider'
@@ -14,7 +14,10 @@ import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, isLoading, setAuthSession } = useAuthStore()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('redirect') || searchParams.get('next') || '/'
+  
+  const { login, isLoading, setAuthSession, user } = useAuthStore()
   const { theme } = useTheme()
   const { config } = useSaaS()
   const [email, setEmail] = useState('')
@@ -25,7 +28,41 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    // Protección adicional: Si por alguna razón llega aquí en el dominio raíz, echarlo.
+    const host = window.location.host
+    const isRoot = host === 'localhost:3000' || host === 'yahpos.cl' || host === 'www.yahpos.cl'
+    if (isRoot) {
+      console.warn('[Security] Bloqueo de UI: Login no permitido en raíz. Redirigiendo...')
+      router.replace('/')
+      return
+    }
+
+    // Auto-redirección si ya está logueado
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // Smart Redirection también en auto-redirección
+        const { data: { user: supaUser } } = await supabase.auth.getUser()
+        let role = 'customer'
+        if (supaUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', supaUser.id)
+            .single()
+          role = profile?.role || 'customer'
+        }
+        
+        const isAdmin = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(role.toLowerCase())
+        const targetPath = nextPath === '/' && isAdmin ? '/admin' : nextPath
+
+        console.log('[Auth] Usuario ya autenticado, redirigiendo a:', targetPath)
+        window.location.href = targetPath
+      }
+    }
+    checkSession()
+  }, [router, nextPath])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,83 +73,37 @@ export default function LoginPage() {
     try {
       await login(email, password)
       toast.success('¡Bienvenido de vuelta!')
-      router.push('/')
+      
+      // Smart Redirection: admin va a /admin, customer se queda en /
+      const role = useAuthStore.getState().user?.role
+      const isAdmin = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(role || '')
+      const targetPath = nextPath === '/' && isAdmin ? '/admin' : nextPath
+      
+      // Navegación completa (no router.push) para forzar envío de cookies de auth al middleware
+      window.location.href = targetPath
     } catch (error) {
       toast.error('Credenciales inválidas. Intenta nuevamente.')
     }
   }
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Si por alguna razón recibimos la sesión como string (corrupción de storage), la ignoramos o intentamos parsear
-      const currentSession = typeof session === 'string' ? JSON.parse(session) : session
-
-      if (event === 'SIGNED_IN' && currentSession?.user) {
-        // 1. Obtener datos básicos de metadata
-        const metadata = currentSession.user.user_metadata || {}
-        
-        // 2. Consultar el perfil REAL en la base de datos para obtener el rol correcto
-        const fetchRealProfile = async () => {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role, rut, first_name, last_name')
-              .eq('id', currentSession.user.id)
-              .single()
-
-            const appUser = {
-              id: currentSession.user.id,
-              email: currentSession.user.email || '',
-              firstName: profile?.first_name || metadata.first_name || metadata.full_name || 'Usuario',
-              lastName: profile?.last_name || metadata.last_name || '',
-              phone: metadata.phone || '',
-              role: profile?.role || metadata.role || 'customer',
-              rut: profile?.rut || metadata.rut || '',
-              loyaltyPoints: 0,
-              wishlist: [],
-              purchaseHistory: [],
-              addresses: [],
-              updatedAt: new Date().toISOString()
-            }
-
-            setAuthSession(appUser as any)
-
-            // Si es la primera vez que se loguea (le falta el RUT), forzar el completado
-            if (!profile?.rut && !metadata.rut) {
-              router.push('/completar-perfil?from=google')
-            } else {
-              toast.success('¡Autenticado exitosamente!')
-              router.push('/')
-            }
-          } catch (error) {
-            console.error('Error fetching profile:', error)
-            // Fallback al menos con el email
-            setAuthSession({ id: currentSession.user.id, email: currentSession.user.email, role: 'customer' } as any)
-            router.push('/')
-          }
-        }
-
-        fetchRealProfile()
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [router, setAuthSession])
 
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/login`,
-          queryParams: {
-            prompt: 'select_account',
-            access_type: 'offline',
-          },
-        },
-      })
-      if (error) throw error
+      const hostname = window.location.hostname
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost')
+      const rootOrigin = isLocalhost ? 'http://localhost:3000' : 'https://yahpos.cl'
+      
+      // En lugar de iniciar el login aquí (en el subdominio), redirigimos al dominio raíz
+      // para que el flujo de PKCE ocurra íntegramente en el dominio del callback.
+      const ssoUrl = new URL(`${rootOrigin}/api/auth/sso`)
+      ssoUrl.searchParams.set('from_origin', window.location.origin)
+      if (nextPath !== '/') {
+        ssoUrl.searchParams.set('next', nextPath)
+      }
+      
+      console.log(`[Auth] Redirigiendo a SSO Bridge: ${ssoUrl.toString()}`)
+      window.location.href = ssoUrl.toString()
     } catch (error) {
       toast.error('Error al conectar con Google. Intenta nuevamente.')
       setIsGoogleLoading(false)
@@ -136,7 +127,7 @@ export default function LoginPage() {
                   <div className="mb-6">
                     {mounted ? (
                       <img 
-                        src={theme === 'dark' ? '/logos/logo-dark.png' : '/logos/logo-light.png'} 
+                        src={theme === 'dark' ? '/logos/yahpos_logo_master_dark_512.png' : '/logos/yahpos_logo_master_512.png'} 
                         alt="Logo" 
                         className={cn(
                           "h-24 mx-auto object-contain",

@@ -11,12 +11,12 @@ interface PaymentModalProps {
   isOpen: boolean
   onClose: () => void
   total: number
-  onConfirm: (method: 'EFECTIVO' | 'TARJETA' | 'TERMINAL', receivedAmount?: number, terminalType?: string) => void
+  onConfirm: (method: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED', receivedAmount?: number, terminalType?: string) => void
 }
 
 export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModalProps) {
-  const { settings } = usePosStore();
-  const [method, setMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TERMINAL'>('EFECTIVO')
+  const { settings, items } = usePosStore();
+  const [method, setMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED'>('EFECTIVO')
   const [selectedTerminal, setSelectedTerminal] = useState('')
   const [isTerminalConfirmed, setIsTerminalConfirmed] = useState(false)
   const [receivedStr, setReceivedStr] = useState('')
@@ -39,15 +39,17 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
   });
 
   useEffect(() => {
-    if (isOpen) {
-      setMethod('EFECTIVO')
-      setReceivedStr('')
-      setIsTerminalConfirmed(false)
-      if (activeTerminalsList.length > 0) {
-        setSelectedTerminal(activeTerminalsList[0].id)
-      }
+    if (!isOpen) return;
+
+    // Usar un pequeño delay o simplemente asegurar que los estados se seteen juntos
+    // para evitar el error de lint "cascading renders" si aplica
+    setMethod('EFECTIVO')
+    setReceivedStr('')
+    setIsTerminalConfirmed(false)
+    if (activeTerminalsList.length > 0) {
+      setSelectedTerminal(activeTerminalsList[0].id)
     }
-  }, [isOpen])
+  }, [isOpen, activeTerminalsList.length])
 
   const addNumber = (num: string) => {
     if (receivedStr.length > 10) return
@@ -62,7 +64,16 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
     setReceivedStr(bill.toString())
   }
 
-  const canConfirm = method === 'EFECTIVO' ? receivedAmount >= total : (method === 'TERMINAL' ? (selectedTerminal !== '' && isTerminalConfirmed) : true)
+  const maxSeals = settings.maxSeals || 2
+  const invalidJunaebItems = items.filter(item => {
+    const seals = item.product.nutritionalSeals ?? 0
+    return seals > maxSeals
+  })
+  const isFoodPassValid = invalidJunaebItems.length === 0
+
+  const canConfirm = method === 'EFECTIVO' ? receivedAmount >= total : 
+                     method === 'TERMINAL' ? (selectedTerminal !== '' && isTerminalConfirmed) : 
+                     (method === 'JUNAEB' || method === 'PLUXE' || method === 'EDENRED') ? isFoodPassValid : true
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -118,6 +129,53 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
               <span className="font-black uppercase tracking-[0.2em] text-[10px]">Terminal</span>
               {method === 'TERMINAL' && <div className="absolute top-2 right-4 w-2 h-2 bg-white rounded-full animate-ping" />}
             </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              {settings.junaebEnabled && (
+                <button 
+                  onClick={() => setMethod('JUNAEB')}
+                  className={cn(
+                    "p-6 rounded-[2rem] border-2 flex flex-col items-center gap-3 transition-all duration-300 group relative overflow-hidden",
+                    method === 'JUNAEB' 
+                      ? "bg-rose-500 border-rose-500 text-white shadow-2xl shadow-rose-500/30 scale-[1.02]" 
+                      : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-rose-500/30"
+                  )}
+                >
+                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black text-xl transition-transform group-hover:scale-110", method === 'JUNAEB' ? "text-white" : "text-slate-300")}>J</div>
+                  <span className="font-black uppercase tracking-[0.1em] text-[8px]">Junaeb</span>
+                </button>
+              )}
+
+              {settings.pluxeEnabled && settings.region === 'REGIONES' && (
+                <button 
+                  onClick={() => setMethod('PLUXE')}
+                  className={cn(
+                    "p-6 rounded-[2rem] border-2 flex flex-col items-center gap-3 transition-all duration-300 group relative overflow-hidden",
+                    method === 'PLUXE' 
+                      ? "bg-indigo-500 border-indigo-500 text-white shadow-2xl shadow-indigo-500/30 scale-[1.02]" 
+                      : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-indigo-500/30"
+                  )}
+                >
+                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black text-xl transition-transform group-hover:scale-110", method === 'PLUXE' ? "text-white" : "text-slate-300")}>P</div>
+                  <span className="font-black uppercase tracking-[0.1em] text-[8px]">Pluxe</span>
+                </button>
+              )}
+
+              {settings.edenredEnabled && settings.region === 'REGIONES' && (
+                <button 
+                  onClick={() => setMethod('EDENRED')}
+                  className={cn(
+                    "p-6 rounded-[2rem] border-2 flex flex-col items-center gap-3 transition-all duration-300 group relative overflow-hidden",
+                    method === 'EDENRED' 
+                      ? "bg-orange-500 border-orange-500 text-white shadow-2xl shadow-orange-500/30 scale-[1.02]" 
+                      : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-orange-500/30"
+                  )}
+                >
+                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black text-xl transition-transform group-hover:scale-110", method === 'EDENRED' ? "text-white" : "text-slate-300")}>E</div>
+                  <span className="font-black uppercase tracking-[0.1em] text-[8px]">Edenred</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mt-8 p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm text-center">
@@ -207,7 +265,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                  <div className="w-3 h-3 bg-patagonia-600 rounded-full animate-bounce" />
               </div>
             </div>
-          ) : (
+          ) : method === 'TERMINAL' ? (
             <div className="flex-1 flex flex-col space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-[2.5rem] p-8 flex items-center justify-between">
                  <div>
@@ -259,14 +317,79 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                      <span className="text-[10px] font-black text-white uppercase tracking-widest">Esperando Confirmación de {selectedTerminal}...</span>
                      <button 
                        onClick={() => setIsTerminalConfirmed(false)}
-                       className="ml-auto text-[8px] text-slate-500 hover:text-white underline uppercase"
+              className="ml-auto text-[8px] text-slate-500 hover:text-white underline uppercase"
                      >
                        Cancelar
                      </button>
                   </div>
-                )}
+                 )}
             </div>
-          )}
+          ) : (method === 'JUNAEB' || method === 'PLUXE' || method === 'EDENRED') ? (
+            <div className="flex-1 flex flex-col space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+              <div className={cn(
+                "border rounded-[2.5rem] p-8 flex items-center justify-between",
+                method === 'JUNAEB' ? "bg-rose-500/10 border-rose-500/20" : 
+                method === 'PLUXE' ? "bg-indigo-500/10 border-indigo-500/20" : 
+                "bg-orange-500/10 border-orange-500/20"
+              )}>
+                 <div>
+                   <h3 className={cn("text-2xl font-black uppercase italic tracking-tighter", 
+                     method === 'JUNAEB' ? "text-rose-500" : 
+                     method === 'PLUXE' ? "text-indigo-500" : 
+                     "text-orange-500")}>
+                     {method === 'JUNAEB' ? 'Beca Junaeb' : 
+                      method === 'PLUXE' ? 'Ticket Pluxe / Sodexo' : 
+                      'Edenred Ticket'}
+                   </h3>
+                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Validación de productos permitidos</p>
+                 </div>
+                 <div className={cn("w-12 h-12 text-white rounded-xl flex items-center justify-center font-black text-2xl shadow-lg", 
+                   method === 'JUNAEB' ? "bg-rose-500" : 
+                   method === 'PLUXE' ? "bg-indigo-500" : 
+                   "bg-orange-500")}>
+                   {method.charAt(0)}
+                 </div>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                {!isFoodPassValid ? (
+                  <div className="space-y-6">
+                    <div className="w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <X className="w-12 h-12 text-red-500" />
+                    </div>
+                    <h4 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Carrito Inválido</h4>
+                    <p className="text-sm font-bold text-slate-500 max-w-md mx-auto">Existen {invalidJunaebItems.length} producto(s) con más de {maxSeals} sellos. La normativa prohíbe la compra de estos artículos.</p>
+                    
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-left border border-red-200 dark:border-red-900/50 max-h-48 overflow-y-auto w-full max-w-md mx-auto custom-scrollbar">
+                      <ul className="space-y-2">
+                        {invalidJunaebItems.map(item => (
+                          <li key={item.product.id} className="text-xs font-bold text-slate-600 dark:text-slate-300 flex justify-between">
+                            <span>{item.product.name}</span>
+                            <span className="text-red-500">{item.product.nutritionalSeals ?? 0} sellos</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4 relative">
+                      <div className="absolute inset-0 bg-emerald-100 dark:bg-emerald-900/30 rounded-full animate-ping" />
+                      <CheckCircle2 className="w-12 h-12 text-emerald-500 relative z-10" />
+                    </div>
+                    <h4 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Productos Válidos</h4>
+                    <p className="text-sm font-bold text-slate-500 max-w-md mx-auto">Todos los productos cumplen con la normativa. Procesa el pago en tu terminal físico y luego registra la venta aquí.</p>
+                    <p className={cn("text-xs font-bold max-w-md mx-auto p-3 rounded-xl border", 
+                      method === 'JUNAEB' ? "text-rose-500 bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-900/30" : 
+                      method === 'PLUXE' ? "text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-900/30" :
+                      "text-orange-500 bg-orange-50 dark:bg-orange-900/20 border-orange-100 dark:border-orange-900/30")}>
+                      Esta venta se registrará internamente y no generará documento en el SII, ya que el IVA se procesa mediante la aplicación del convenio.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-12 flex flex-col sm:flex-row gap-4">
             <Button 
@@ -284,6 +407,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                 method === 'EFECTIVO' 
                   ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/40 text-white" 
                   : method === 'TARJETA' ? "bg-patagonia-600 hover:bg-patagonia-700 shadow-patagonia-600/40 text-white"
+                  : method === 'EDENRED' ? "bg-orange-500 hover:bg-orange-600 shadow-orange-500/40 text-white"
                   : "bg-amber-500 hover:bg-amber-600 shadow-amber-500/40 text-white"
               )}
             >

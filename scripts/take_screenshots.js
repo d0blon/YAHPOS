@@ -20,7 +20,7 @@ async function run() {
       user: {
         id: "1",
         role: "developer",
-        email: "admin@patagoniapos.cl",
+        email: "admin@yahpos.cl",
         firstName: "Blaz",
         lastName: "Baez",
         phone: "+56912345678",

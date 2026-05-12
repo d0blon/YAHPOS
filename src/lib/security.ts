@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { verifySync } from 'otplib'
 
 /**
- * Utilidades de seguridad para PatagoniaPOS.
+ * Utilidades de seguridad para YAHPOS!.
  * Administra el cifrado del Secreto Maestro y la validación de Authy.
  */
 
@@ -36,7 +36,7 @@ export function decrypt(encryptedText: string, password: string): string {
     const iv = Buffer.from(ivRaw, 'hex')
     const encryptedData = textParts.join(':')
     
-    const salt = crypto.scryptSync(password, 'patagonia-salt', 32)
+    const salt = crypto.scryptSync(password, process.env.SECURITY_SALT || 'patagonia-salt', 32)
     const decipher = crypto.createDecipheriv(ALGORITHM, salt, iv)
     
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8')

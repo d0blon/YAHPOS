@@ -16,8 +16,6 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { AdminHeader } from '@/components/admin/AdminHeader'
-import AdminSidebar from '@/components/admin/AdminSidebar'
 import { SectionCard, SectionHeader } from '@/components/admin/SectionCard'
 import { cn } from '@/lib/utils'
 
@@ -113,28 +111,30 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      <SectionHeader 
-        title={<>Panel de <span className="text-corporate-blue">Control</span></>}
-        description="Vista general del rendimiento de tu negocio en tiempo real."
-        actions={
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => fetchDashboard(false)}
-              disabled={isRefreshing}
-              className="rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
-            <Button variant="outline" onClick={handleExport} className="rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10">
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
-        }
-      />
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tighter uppercase italic">
+            Dashboard <span className="text-corporate-blue">General</span>
+          </h1>
+          <p className="text-xs text-gray-500 font-medium mt-1">Rendimiento en tiempo real de tu negocio.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => fetchDashboard(false)}
+            disabled={isRefreshing}
+            className="rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10 h-9"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="text-[10px] font-black uppercase">Actualizar</span>
+          </Button>
+          <Button variant="outline" onClick={handleExport} className="rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10 h-9">
+            <Download className="w-3.5 h-3.5 mr-2" />
+            <span className="text-[10px] font-black uppercase">Exportar</span>
+          </Button>
+        </div>
+      </div>
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-20">

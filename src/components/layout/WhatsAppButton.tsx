@@ -3,7 +3,7 @@
 import { MessageCircle } from 'lucide-react';
 
 export default function WhatsAppButton() {
-  const phoneNumber = "56912345678"; // Placeholder
+  const phoneNumber = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "56912345678";
   const message = "Hola! Vengo desde el E-commerce y necesito ayuda.";
   const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
@@ -14,8 +14,8 @@ export default function WhatsAppButton() {
       rel="noopener noreferrer"
       className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[100] group"
     >
-      <div className="absolute inset-0 bg-emerald-500 blur-2xl opacity-40 group-hover:opacity-60 transition-opacity animate-pulse" />
-      <div className="relative w-16 h-16 md:w-20 md:h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-[0_20px_50px_rgba(16,185,129,0.3)] border border-white/20 transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-2 active:scale-95">
+      <div className="absolute inset-0 bg-amber-500 blur-2xl opacity-40 group-hover:opacity-60 transition-opacity animate-pulse" />
+      <div className="relative w-16 h-16 md:w-20 md:h-20 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-[0_20px_50px_rgba(245,158,11,0.3)] border border-white/20 transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-2 active:scale-95">
         <MessageCircle className="w-8 h-8 md:w-10 md:h-10 fill-current" />
         
         {/* Tooltip */}

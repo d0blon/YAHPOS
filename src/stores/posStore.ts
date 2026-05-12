@@ -3,7 +3,8 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware'
 import { get, set, del } from 'idb-keyval'
-import { Product, User, Branch } from '@/types'
+import { Product, User, Category } from '@/types'
+import { getStoreSettingsAction, updateStoreSettingsAction } from '@/app/developer/actions'
 
 export interface CashSession {
   id: number;
@@ -32,6 +33,15 @@ export interface PosSettings {
     tuu: boolean;
     sumup: boolean;
     transfer: boolean;
+  };
+  junaebEnabled?: boolean;
+  pluxeEnabled?: boolean;
+  edenredEnabled?: boolean;
+  region?: 'RM' | 'REGIONES';
+  maxSeals?: number;
+  getnetIsBoleta?: boolean;
+  sii?: {
+    enabled: boolean;
   };
 }
 
@@ -84,6 +94,15 @@ export interface SuspendedOrder {
   total: number;
 }
 
+export interface SiiDocument {
+  id: string;
+  type: string;
+  xml: string;
+  trackId?: string;
+  status: 'pending' | 'sent' | 'error';
+  createdAt: string;
+}
+
 export interface OrderRecord {
   id: string;
   items: PosItem[];
@@ -93,7 +112,7 @@ export interface OrderRecord {
   customerName?: string;
   customerPoints?: number;
   pointsToEarn: number;
-  paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PUNTOS' | 'TRANSFERENCIA' | 'GETNET' | 'TUU' | 'SUMUP' | 'COMPRAQUI' | 'MERCADOPAGO' | string;
+  paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PUNTOS' | 'TRANSFERENCIA' | 'GETNET' | 'TUU' | 'SUMUP' | 'COMPRAQUI' | 'MERCADOPAGO' | 'EDENRED' | string;
   timestamp: number;
   date?: string;
   isOffline: boolean;
@@ -106,6 +125,7 @@ interface PosState extends PosCart {
   suspendedOrders: SuspendedOrder[];
   salesHistory: OrderRecord[];
   pendingSyncOrders: OrderRecord[];
+  pendingSiiDocuments: SiiDocument[];
   cashMovements: CashMovement[];
   settings: PosSettings;
   currentUser: User | null;
@@ -125,8 +145,10 @@ interface PosState extends PosCart {
   clearCashMovements: () => void;
   queueOrderForSync: (sale: OrderRecord) => void;
   removeOrderFromQueue: (orderId: string) => void;
+  queueSiiDocument: (doc: SiiDocument) => void;
+  removeSiiDocumentFromQueue: (docId: string) => void;
   clearSalesHistory: () => void;
-  updateSettings: (settings: Partial<PosSettings>) => void;
+  updateSettings: (settings: Partial<PosSettings>) => Promise<void>;
   setCurrentUser: (user: User | null) => void;
   logEvent: (entry: Omit<AuditEntry, 'id' | 'timestamp' | 'user'>) => void;
   setTrainingMode: (active: boolean) => void;
@@ -145,11 +167,12 @@ interface PosState extends PosCart {
   isInitialLoading: boolean;
   selectedBranchId: string | null;
   setSelectedBranchId: (id: string | null) => void;
+  loadSettings: () => Promise<void>;
 }
 
 const calculatePosTotals = (items: PosItem[], pointsRedeemed = 0, settings?: PosSettings): Omit<PosCart, 'items' | 'customerRut' | 'customerName' | 'customerPoints'> => {
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const totalItems = items.reduce((sum, item) => { return sum + item.quantity }, 0)
+  const subtotal = items.reduce((sum, item) => { return sum + (item.product.price * item.quantity) }, 0)
   
   // Loyalty Logic
   const redemptionRate = settings?.loyalty?.redemptionRate || 1
@@ -181,31 +204,28 @@ export const usePosStore = create<PosState>()(
       suspendedOrders: [],
       salesHistory: [],
       pendingSyncOrders: [],
+      pendingSiiDocuments: [],
       cashMovements: [],
       auditLog: [],
-      currentUser: {
-        id: '1',
-        email: 'admin@australmarket.cl',
-        firstName: 'Admin',
-        lastName: 'Austral',
-        role: 'admin',
-        addresses: [],
-        loyaltyPoints: 0,
-        identityVerified: false,
-        wishlist: [],
-        purchaseHistory: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
+      currentUser: null,
       settings: {
         blindClosureEnabled: true,
         pinRequiredForDelete: true,
-        supervisorPin: '1234',
+        supervisorPin: '', // Dynamically loaded from DB
         loyaltyEnabled: true,
         loyalty: {
           accumulationRate: 0.01,
           redemptionRate: 1,
           redemptionMultiple: 100
+        },
+        junaebEnabled: false,
+        pluxeEnabled: false,
+        edenredEnabled: false,
+        region: 'REGIONES',
+        maxSeals: 2,
+        getnetIsBoleta: true,
+        sii: {
+          enabled: false
         }
       },
       isTrainingMode: false,
@@ -214,6 +234,36 @@ export const usePosStore = create<PosState>()(
 
       setSelectedBranchId: (id: string | null) => {
         set({ selectedBranchId: id });
+      },
+
+      loadSettings: async () => {
+        try {
+          const remoteSettings = await getStoreSettingsAction();
+          if (remoteSettings && remoteSettings.config) {
+            const config = remoteSettings.config as Partial<PosSettings>;
+            if (config) {
+              set((state) => ({
+                settings: {
+                  ...state.settings,
+                  supervisorPin: config.supervisorPin || '',
+                  // Load other settings if needed
+                  blindClosureEnabled: config.blindClosureEnabled ?? state.settings.blindClosureEnabled,
+                  pinRequiredForDelete: config.pinRequiredForDelete ?? state.settings.pinRequiredForDelete,
+                  loyaltyEnabled: config.loyaltyEnabled ?? state.settings.loyaltyEnabled,
+                  junaebEnabled: config.junaebEnabled ?? state.settings.junaebEnabled,
+                  pluxeEnabled: config.pluxeEnabled ?? state.settings.pluxeEnabled,
+                  edenredEnabled: config.edenredEnabled ?? state.settings.edenredEnabled,
+                  region: config.region ?? state.settings.region,
+                  maxSeals: config.maxSeals ?? state.settings.maxSeals,
+                  getnetIsBoleta: config.getnetIsBoleta ?? state.settings.getnetIsBoleta,
+                  sii: config.sii ?? state.settings.sii,
+                }
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('[POS STORE] Error loading settings:', error);
+        }
       },
       
       addItem: (product: Product, quantity = 1) => {
@@ -357,6 +407,20 @@ export const usePosStore = create<PosState>()(
           pendingSyncOrders: state.pendingSyncOrders.filter(o => o.id !== orderId)
         }));
       },
+
+      queueSiiDocument: (doc: SiiDocument) => {
+        const { isTrainingMode } = get();
+        if (isTrainingMode) return;
+        set((state) => ({
+          pendingSiiDocuments: [...state.pendingSiiDocuments, doc]
+        }));
+      },
+
+      removeSiiDocumentFromQueue: (docId: string) => {
+        set((state) => ({
+          pendingSiiDocuments: state.pendingSiiDocuments.filter(d => d.id !== docId)
+        }));
+      },
       
       clearSalesHistory: () => {
         set({ salesHistory: [] });
@@ -366,8 +430,21 @@ export const usePosStore = create<PosState>()(
         set({ isTrainingMode: active });
       },
       
-      updateSettings: (newSettings: Partial<PosSettings>) => {
-        set((state) => ({ settings: { ...state.settings, ...newSettings } }));
+      updateSettings: async (newSettings: Partial<PosSettings>) => {
+        const { settings } = get();
+        const updatedSettings = { ...settings, ...newSettings };
+        
+        // Update local state first for responsiveness
+        set({ settings: updatedSettings });
+
+        try {
+          const storeData = await getStoreSettingsAction();
+          if (storeData?.id) {
+            await updateStoreSettingsAction(storeData.id, updatedSettings);
+          }
+        } catch (error) {
+          console.error('[POS STORE] Error persisting settings:', error);
+        }
       },
       
       setCurrentUser: (user: User | null) => {
@@ -391,8 +468,9 @@ export const usePosStore = create<PosState>()(
           price: price,
           image: '',
           images: [],
-          category: { id: 'otros', name: 'Otros', slug: 'otros', isActive: true, order: 99 } as any,
+          category: { id: 'otros', name: 'Otros', slug: 'otros', isActive: true, order: 99 } as Category,
           categoryId: 'otros',
+          categorySlug: 'otros',
           stock: 9999,
           sku: `GEN-${Date.now()}`,
           barcode: '',
@@ -477,7 +555,16 @@ export const usePosStore = create<PosState>()(
           const res = await fetch(`/api/cash-movements?session_id=${sessionId}`)
           if (res.ok) {
             const data = await res.json()
-            const movements: CashMovement[] = data.map((m: any) => ({
+            const movements: CashMovement[] = data.map((m: {
+              id: string;
+              session_id: string | number;
+              type: 'IN' | 'OUT';
+              category: MovementCategory;
+              amount: string;
+              reason: string;
+              created_at: string;
+              cashier_name: string;
+            }) => ({
               id: m.id,
               sessionId: m.session_id,
               type: m.type,

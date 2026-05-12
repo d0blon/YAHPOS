@@ -23,6 +23,8 @@
   --color-accent-yellow: #FFD100;
   --color-accent-hover: #E6BC00;
   --color-accent-gold: #CC9900;
+  --color-accent-copper: #B87333;
+  --color-accent-copper-light: #d1925a;
 
   --animate-slide-up: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   --animate-slide-down: slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -101,31 +103,31 @@
     --border: hsl(268, 46%, 89%);
     --input: hsl(268, 46%, 89%);
     --ring: hsl(275, 100%, 40%);
+    --accent-copper: #B87333;
     --radius: 1rem;
     --font-heading: 'Outfit', sans-serif;
   }
 
   .dark {
-    /* MODO OSCURO - HSL Indigo PatagoniaPOS */
-    --background: hsl(270, 100%, 5%);
-    --foreground: hsl(0, 0%, 100%);
-    --card: hsl(275, 100%, 7%);
-    --card-foreground: hsl(260, 100%, 99%);
-    --popover: hsl(275, 100%, 7%);
-    --popover-foreground: hsl(0, 0%, 100%);
-    --primary: hsl(275, 100%, 70%);
+    /* MODO OSCURO - HSL Indigo YAHPOS! */
+    --background: hsl(260, 100%, 3%);
+    --foreground: hsl(260, 100%, 98%);
+    --card: hsl(260, 100%, 5%);
+    --card-foreground: hsl(260, 100%, 98%);
+    --popover: hsl(260, 100%, 5%);
+    --popover-foreground: hsl(260, 100%, 98%);
+    --primary: hsl(275, 100%, 60%);
     --primary-foreground: hsl(0, 0%, 100%);
-    --secondary: hsl(275, 100%, 10%);
+    --secondary: hsl(260, 100%, 12%);
     --secondary-foreground: hsl(275, 100%, 90%);
-    --muted: hsl(275, 100%, 10%);
-    --muted-foreground: hsl(275, 100%, 80%);
-    --accent: hsl(275, 100%, 60%);
+    --muted: hsl(260, 100%, 10%);
+    --muted-foreground: hsl(260, 100%, 70%);
+    --accent: hsl(275, 100%, 25%);
     --accent-foreground: hsl(0, 0%, 100%);
-    --destructive: hsl(0, 63%, 31%);
-    --destructive-foreground: hsl(0, 0%, 100%);
-    --border: hsl(275, 100%, 20%);
+    --border: hsl(260, 100%, 15%);
     --input: hsl(275, 100%, 20%);
     --ring: hsl(275, 100%, 70%);
+    --accent-copper: #B87333;
   }
 
   * {

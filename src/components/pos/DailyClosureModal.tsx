@@ -7,7 +7,6 @@ import { formatPrice } from '@/lib/utils'
 import { OrderRecord, usePosStore } from '@/stores/posStore'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
-import { supabase } from '@/lib/supabase'
 
 interface DailyClosureModalProps {
   isOpen: boolean
@@ -78,14 +77,7 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
   }
 
   const handleFinish = async () => {
-    // Limpiar estado en Supabase
-    const authUser = useAuthStore.getState().user
-    if (authUser?.id) {
-      await supabase
-        .from('profiles')
-        .update({ current_area: 'Inactivo' })
-        .eq('id', authUser.id)
-    }
+    // (Removido: El API ahora maneja el estado del perfil)
 
     clearSalesHistory()
     clearCashMovements()

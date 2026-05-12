@@ -1,0 +1,23 @@
+node_modules
+.next
+out
+build
+dist
+
+# Generated service workers
+public/sw.js
+public/workbox-*.js
+
+# Root configuration scripts (JS)
+*.js
+!next.config.js
+!tailwind.config.ts
+
+# Documentation and temporary files
+.gemini
+*.md
+lint_results.txt
+C:\Users\Blaz Baez\Desktop\E-commerce Project\austral-market-next\lint_results.txt
+
+# Environment files
+.env*

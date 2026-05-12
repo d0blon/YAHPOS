@@ -1,5 +1,5 @@
 export const ecommerceConfig = {
-  name: "PatagoniaMarket",
+  name: "YAHPOS! Market",
   slogan: "Fresco, Local, Premium",
   description: "Selección artesanal de productos regionales y esenciales para tu hogar, entregados con la rapidez que nos caracteriza.",
   hero: {

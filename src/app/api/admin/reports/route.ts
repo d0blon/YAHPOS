@@ -8,6 +8,9 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
+    // Obtenemos el store_id del perfil para filtrado explícito (Defense in Depth)
+    // Aunque RLS ya restringe el acceso en la base de datos.
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('store_id, role')

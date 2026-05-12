@@ -1,3 +1,5 @@
+import { AppRole } from '@/lib/constants/roles'
+
 export interface Product {
   id: string
   name: string
@@ -9,6 +11,7 @@ export interface Product {
   image: string
   images?: string[]
   category: Category
+  categorySlug: string
   categoryId: string
   stock: number
   sku: string
@@ -19,9 +22,12 @@ export interface Product {
   isFeatured: boolean
   rating?: number
   reviewCount?: number
+  isExempt?: boolean
   tags?: string[]
   nutritionalInfo?: NutritionalInfo
   lowStockThreshold: number
+  nutritionalSeals?: number
+  isRealtimeTracked?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -73,13 +79,14 @@ export interface User {
   rut?: string
   phone?: string
   avatar?: string
-  role: 'customer' | 'admin' | 'manager' | 'cashier' | 'cajero' | 'developer'
+  role: AppRole
   addresses: Address[]
   loyaltyPoints: number
   identityVerified: boolean
   wishlist: string[]
   purchaseHistory: Order[]
   storeId?: string
+  tier?: 'austral' | 'archipielago' | 'patagonia'
   createdAt: string
   updatedAt: string
 }
@@ -201,6 +208,8 @@ export interface StoreConfig {
     defaultShippingCost: number
     regions: ShippingRegion[]
   }
+  isJunaebEnabled?: boolean
+  getnetIsBoleta?: boolean
 }
 
 export interface ShippingRegion {
@@ -246,4 +255,37 @@ export interface Inventory {
   branchId: string
   stock: number
   updatedAt: string
+}
+export interface Store {
+  id: string;
+  name: string;
+  slug: string;
+  tier: 'austral' | 'archipielago' | 'patagonia';
+  payment_status: 'paid' | 'pending' | 'overdue';
+  next_payment_date: string | null;
+  is_active: boolean;
+  owner_email?: string;
+  contact_phone?: string;
+  address?: string;
+  city?: string;
+  merchant_id?: string;
+  config?: Record<string, unknown>;
+  custom_domain?: string | null;
+  domain_verified?: boolean;
+  subdomain?: string | null;
+}
+
+export interface FinancialStats {
+  income: number;
+  expense: number;
+  profit: number;
+  monthlyData: Array<{ month: string; income: number; expense: number }>;
+}
+
+export interface SystemLog {
+  id: string;
+  timestamp: string;
+  type: 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS';
+  message: string;
+  category: string;
 }

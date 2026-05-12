@@ -8,11 +8,10 @@ import { formatPrice } from '@/lib/utils'
 import { CashSession } from '@/stores/posStore'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
-import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 interface Terminal {
-  id: number
+  id: string
   name: string
   description?: string
   is_active: boolean
@@ -77,7 +76,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
       }
     } catch {
       // Network error, timeout, or abort — show terminal selection anyway
-      setTerminals([{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'open' }])
+      setTerminals([{ id: 'offline-1', name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }])
       setStep('select-terminal')
     }
   }
@@ -91,9 +90,9 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
       clearTimeout(timeoutId)
       
       const data = await res.json()
-      setTerminals(Array.isArray(data) ? data : [{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'open' }])
+      setTerminals(Array.isArray(data) ? data : [{ id: 'offline-1', name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }])
     } catch {
-      setTerminals([{ id: 1, name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'open' }])
+      setTerminals([{ id: 'offline-1', name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }])
     }
   }
 
@@ -107,14 +106,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
       const { usePosStore } = await import('@/stores/posStore')
       await usePosStore.getState().loadDraftFromServer(session.id)
       
-      // 3. Actualizar estado del personal
-      const authUser = useAuthStore.getState().user
-      if (authUser?.id) {
-        await supabase
-          .from('profiles')
-          .update({ current_area: session.terminal_name ?? 'Caja' })
-          .eq('id', authUser.id)
-      }
+      // 3. (Removido: El API ahora maneja el estado del perfil)
 
       toast.success(`Sesión retomada — ${session.terminal_name ?? 'Caja'}`)
     }
@@ -134,7 +126,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          terminal_id: selectedTerminal?.id ?? 1,
+          terminal_id: selectedTerminal?.id,
           cashier_name: cashierName,
           opening_amount: amount,
         }),
@@ -156,8 +148,8 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
       } else {
         // Offline or DB error — create a local-only session
         sessionData = {
-          id: Date.now(),
-          terminal_id: selectedTerminal?.id ?? 1,
+          id: `local-${Date.now()}`,
+          terminal_id: selectedTerminal?.id || 'offline-1',
           terminal_name: selectedTerminal?.name ?? 'Caja',
           cashier_name: cashierName,
           opening_amount: amount,
@@ -169,21 +161,14 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
 
       onSessionOpened(sessionData)
       
-      // Actualizar estado del personal en Supabase
-      const authUser = useAuthStore.getState().user
-      if (authUser?.id) {
-        await supabase
-          .from('profiles')
-          .update({ current_area: selectedTerminal?.name ?? 'Caja' })
-          .eq('id', authUser.id)
-      }
+      // (Removido: El API ahora maneja el estado del perfil)
 
       toast.success(`¡Caja abierta! Fondo: ${formatPrice(amount)}`)
     } catch {
       // Complete offline fallback
       const offlineSession: CashSession = {
-        id: Date.now(),
-        terminal_id: selectedTerminal?.id ?? 1,
+        id: `local-${Date.now()}`,
+        terminal_id: selectedTerminal?.id || 'offline-1',
         terminal_name: selectedTerminal?.name ?? 'Caja',
         cashier_name: cashierName,
         opening_amount: parseInt(openingAmount.replace(/\D/g, ''), 10) || 0,
@@ -208,7 +193,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
           <div className="w-20 h-20 bg-gradient-to-br from-patagonia-600 to-cyan-500 rounded-[2.5rem] flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-patagonia-600/40 border-2 border-white/20">
             <Monitor className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-black text-white uppercase tracking-tighter">PatagoniaPOS</h1>
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter">YAHPOS!</h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-2">Bienvenido, <span className="text-patagonia-400">{cashierName}</span></p>
         </div>
 

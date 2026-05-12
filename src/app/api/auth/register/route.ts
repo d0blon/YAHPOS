@@ -13,60 +13,83 @@ export async function POST(req: Request) {
 
     const cleanedRut = cleanRut(rut)
 
-    // 1. Check if RUT already exists (POS record)
-    const { data: existingUser, error: fetchError } = await supabase
+    // 1. Sign up the user in Supabase Auth first
+    // This creates the actual credentials needed for login
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          rut: cleanedRut
+        }
+      }
+    })
+
+    if (authError) throw authError
+    if (!authData.user) throw new Error('No se pudo crear el usuario de autenticación')
+
+    // 2. Sync profile data (Upsert)
+    // We use the ID from authData.user.id to ensure consistency
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
-      .eq('rut', cleanedRut)
+      .upsert({
+        id: authData.user.id,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        rut: cleanedRut,
+        role: 'customer',
+        accepts_marketing: acceptMarketing ?? true,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' }) // Usar el ID de auth para el conflicto, permitiendo actualizar perfiles existentes
+      .select()
       .single()
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('Error fetching user:', fetchError.message)
+    if (profileError) {
+      console.error('Error syncing profile:', profileError.message)
     }
 
-    if (existingUser) {
-      // 2. "UPGRADE" existing POS user to Full Account
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          email,
-          first_name: firstName,
-          last_name: lastName,
-          phone,
-          accepts_marketing: acceptMarketing ?? true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingUser.id)
-
-      if (updateError) throw updateError
-
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Cuenta vinculada y creada con éxito', 
-        user: { ...existingUser, email, first_name: firstName, last_name: lastName } 
-      })
-    } else {
-      // 3. Create NEW user
-      const { data: newUser, error: insertError } = await supabase
-        .from('profiles')
-        .insert([{
-          email,
-          first_name: firstName,
-          last_name: lastName,
-          phone,
-          rut: cleanedRut,
+    // 3. Associate with current store (Membership)
+    // El middleware proxy.ts inyecta x-store-id basado en el dominio detectado
+    const storeId = req.headers.get('x-store-id')
+    
+    if (storeId) {
+      console.log(`[Register] Asociando usuario ${authData.user.id} con tienda ${storeId}`)
+      const { error: membershipError } = await supabase
+        .from('user_stores')
+        .upsert({ // Usar upsert para evitar errores si ya existe la membresía
+          user_id: authData.user.id,
+          store_id: storeId,
           role: 'customer',
-          loyalty_points: 0,
-          accepts_marketing: acceptMarketing ?? true,
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single()
+          is_active: true
+        }, { onConflict: 'user_id,store_id' })
 
-      if (insertError) throw insertError
-
-      return NextResponse.json({ success: true, user: newUser })
+      if (membershipError) {
+        console.error('Error creating membership:', membershipError.message)
+      }
+    } else {
+      console.warn('[Register] No se detectó storeId en los headers. El usuario no fue asociado a ninguna tienda.')
     }
+
+    return NextResponse.json({ 
+      success: true, 
+      user: {
+        id: authData.user.id,
+        email: authData.user.email,
+        firstName: profile?.first_name || firstName,
+        lastName: profile?.last_name || lastName,
+        phone: profile?.phone || phone,
+        rut: profile?.rut || cleanedRut,
+        role: 'customer',
+        loyaltyPoints: profile?.loyalty_points || 0,
+        createdAt: profile?.created_at || new Date().toISOString(),
+        updatedAt: profile?.updated_at || new Date().toISOString()
+      } 
+    })
   } catch (err: any) {
     console.error('Registration error:', err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })

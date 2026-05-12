@@ -18,45 +18,54 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Austral Market | Experiencia Elite",
-  description: "Plataforma avanzada de e-commerce con una experiencia de usuario premium y sofisticada.",
+  title: "YAHPOS! | Punto de Venta Inteligente",
+  description: "El sistema de punto de venta más rápido y premium de Chile. Gestión total, integración SII y diseño de vanguardia.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/logos/yahpos_logo_square_master_32.png", sizes: "32x32", type: "image/png" },
+      { url: "/logos/yahpos_logo_square_master_48.png", sizes: "48x48", type: "image/png" },
+      { url: "/logos/yahpos_logo_square_master_192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/logos/yahpos_logo_square_master_180.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Austral Market",
+    title: "YAHPOS!",
   },
 };
 
-import { SaaSProvider } from "@/providers/SaaSProvider";
+import AppProviders from "@/providers/AppProviders";
 import { SessionSync } from "@/components/auth/SessionSync";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { EditorProvider } from "@/providers/EditorProvider";
-import { EditorToggle } from "@/components/editor/EditorToggle";
+import { headers } from "next/headers";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const storeId = headersList.get("x-store-id");
+  const storeTier = headersList.get("x-store-tier") as any;
+  const storeName = headersList.get("x-store-name");
+
+  const initialConfig = storeId ? {
+    id: storeId,
+    tier: storeTier || 'austral',
+    store_name: storeName || 'YAHPOS!',
+  } : null;
+
   return (
     <html lang="es" suppressHydrationWarning>
       <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} min-h-screen flex flex-col antialiased bg-background text-foreground relative`}>
         <div className="noise-overlay" />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          <SaaSProvider>
-            <EditorProvider>
-              <SessionSync />
-              {children}
-              <EditorToggle />
-            </EditorProvider>
-          </SaaSProvider>
-        </ThemeProvider>
+        <AppProviders initialStoreId={storeId} initialConfig={initialConfig}>
+          <SessionSync />
+          {children}
+        </AppProviders>
         <Toaster position="bottom-right" richColors />
       </body>
     </html>
