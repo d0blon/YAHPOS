@@ -1,135 +1,194 @@
 ---
-status: done
-goal: "Reemplazar toggle getnetIsBoleta por selector SII Modelo 1/2, generalizado a todos los terminales"
+status: pending
+goal: "Agregar try/catch y validación auth a rutas API críticas (~14 handlers) para evitar crashes silenciosos y acceso no autorizado"
 branch: null
-created: 2026-05-12T17:30:00-04:00
-updated: 2026-05-12T17:30:00-04:00
+created: 2026-05-12T18:00:00-04:00
+updated: 2026-05-12T18:00:00-04:00
 requires-plan: false
 depends-on: []
 ---
 
-# Handoff: SII Model Selector
+# Handoff: API try/catch + Auth
 
 ## Contexto
-El toggle `getnetIsBoleta` solo aplica a Getnet, pero desde 2024 TODOS los terminales (Getnet, TUU, SumUp, etc.) reportan automáticamente al SII. Si el POS emite boleta además del terminal, se duplica el IVA. Necesitamos un selector general: Modelo 1 (POS emite boleta siempre) / Modelo 2 (terminal emite, POS salta SII y muestra comprobante).
+El análisis de las 44 rutas API reveló:
+- **4 handlers** sin try/catch: cualquier error no manejado crashea la ruta
+- **9 handlers** sin verificación de sesión: cualquier llamada anónima puede operar
+- **3 handlers** sin filtro `store_id`: usuarios autenticados de una tienda pueden modificar datos de otra
 
-Decisión conjunta: AG recomendó esta tarea sobre API try/catch. Consenso alcanzado.
+Priorizamos las rutas de alto riesgo. Quedan excluidas rutas intencionalmente públicas (ping, health, verify-dns, webpay callbacks, products GET lookup).
 
-Item Kanban: `📋 BACKLOG` > `[SII] Modelo de Emisión SII`
+Item Kanban: `📋 BACKLOG` > `[Stab] API try/catch (14 rutas)` y `[Stab] Auth Checks en rutas`
+
+## Estrategia
+**Un helper compartido** `src/lib/api-utils.ts` con:
+- `withAuth(handler)` — wrapper que verifica sesión, extrae `user`, `profile`, `store_id`. Retorna 401 si no auth.
+- `requireStoreAccess(storeId, profile)` — helper para verificar que el perfil pertenece a la tienda.
+- `apiError(message, status)` — error estándar.
+
+Cada ruta se refactoriza para usar estos helpers. Esto evita repetir el mismo patrón en 14 archivos.
+
+## Archivos a modificar (en orden)
+
+### Helper nuevo
+0. `src/lib/api-utils.ts` — Crear con `withAuth`, `requireStoreAccess`, `apiError`
+
+### Grupo A: Agregar try/catch (4 handlers)
+1. `src/app/api/orders/route.ts` — POST handler envolver en try/catch
+2. `src/app/api/products/lookup/route.ts` — GET handler envolver en try/catch (outer)
+3. `src/app/api/auth/sso/route.ts` — GET handler envolver en try/catch
+4. `src/app/api/terminals/route.ts` — POST handler envolver en try/catch
+
+### Grupo B: Agregar auth + store_id (alta prioridad — fuga de datos)
+5. `src/app/api/customers/route.ts` — GET/POST/DELETE: agregar `withAuth` y filtro store_id
+6. `src/app/api/customers/list/route.ts` — GET: agregar `withAuth` y filtro store_id
+7. `src/app/api/customers/verify/route.ts` — POST: agregar `withAuth` y filtro store_id
+8. `src/app/api/staff/route.ts` — GET/POST/PATCH/DELETE: agregar `withAuth` y filtro store_id
+9. `src/app/api/cash-movements/route.ts` — GET/POST: agregar `withAuth` y filtro store_id
+10. `src/app/api/orders/route.ts` — POST: reemplazar `userId` del body por sesión autenticada
+11. `src/app/api/orders/[id]/confirm-payment/route.ts` — POST: agregar `withAuth` y store_id
+12. `src/app/api/categories/route.ts` — GET: agregar filtro store_id (al menos)
+13. `src/app/api/sii/sync/route.ts` — POST: agregar `withAuth` y validar store_id
+
+### Grupo C: Agregar store_id a rutas existentes con auth (alcance multi-tienda)
+14. `src/app/api/products/[id]/route.ts` — GET/PATCH/DELETE: filtrar por store_id
+15. `src/app/api/terminals/[id]/route.ts` — PATCH/DELETE: filtrar por store_id
+16. `src/app/api/pos/draft/route.ts` — GET/POST: filtrar por store_id
 
 ## Especificación Técnica
 
-### Archivos a modificar (en orden)
-
-1. `src/stores/posStore.ts` — Reemplazar tipo
-2. `src/types/index.ts` — Reemplazar tipo en StoreConfig
-3. `src/components/pos/PosSettingsModal.tsx` — Nueva UI de selector
-4. `src/app/(pos)/pos/page.tsx` — Actualizar lógica shouldSkipSii
-5. `src/components/pos/PosReceiptModal.tsx` — Mostrar "COMPROBANTE DE PAGO"
-
-### 1. `src/stores/posStore.ts`
-
-**Cambiar:**
-```ts
-// ANTES
-getnetIsBoleta?: boolean;
-
-// DESPUÉS
-siiModel?: 'modelo1' | 'modelo2';
-```
-
-**Default value** (line 226):
-```ts
-// ANTES
-getnetIsBoleta: true,
-
-// DESPUÉS
-siiModel: 'modelo2',  // Por defecto: terminales emiten, POS no duplica
-```
-
-**loadSettings** (around line 258):
-```ts
-// ANTES
-getnetIsBoleta: config.getnetIsBoleta ?? state.settings.getnetIsBoleta,
-
-// DESPUÉS
-siiModel: config.siiModel ?? state.settings.siiModel ?? 'modelo2',
-```
-
-### 2. `src/types/index.ts` (line 212)
+### Helper: `src/lib/api-utils.ts`
 
 ```ts
-// ANTES
-getnetIsBoleta?: boolean
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 
-// DESPUÉS
-siiModel?: 'modelo1' | 'modelo2'
+export function apiError(message: string, status: number = 400) {
+  return NextResponse.json({ error: message }, { status })
+}
+
+export async function withAuth() {
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) return { error: apiError('No autorizado', 401) }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('store_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.store_id) return { error: apiError('Perfil sin tienda', 403) }
+
+  return { user, profile, supabase, storeId: profile.store_id }
+}
+
+export function requireStoreAccess(profile: { store_id: string | null }, targetStoreId: string) {
+  return profile.store_id === targetStoreId
+}
 ```
 
-### 3. `src/components/pos/PosSettingsModal.tsx` (lines 150-162)
+Los 3 helpers cubren el 90% de los casos de uso. Para rutas especiales (sincronización entre stores, etc.), se puede usar `apiError` directamente.
 
-Reemplazar el toggle card de "Boleta en Getnet" por un selector de dos opciones:
+### Grupo A: try/catch — patrón estándar
 
-- **Modelo 1**: "Siempre emito boleta" — icono 📄 o similar, describe "El POS emite boleta SII para todos los pagos. Para negocios que no usan terminales o necesitan boleta siempre."
-- **Modelo 2**: "El terminal emite la boleta" — icono 📱, describe "El terminal de pago ya reporta al SII. El POS muestra comprobante de pago. Evita duplicidad de IVA."
-
-Usar dos cards clickeables (no dropdown). Al seleccionar uno, llama a `updateSettings({ siiModel: 'modelo1' })` o `updateSettings({ siiModel: 'modelo2' })`.
-
-### 4. `src/app/(pos)/pos/page.tsx` (lines 636-638)
-
-**Cambiar lógica de `shouldSkipSii`:**
+Cada handler se envuelve así:
 
 ```ts
-// ANTES
-const isGetnetBoleta = paymentMethod === 'TERMINAL' && terminalType === 'Getnet' && settings.getnetIsBoleta;
-const shouldSkipSii = isVoucherPayment || isGetnetBoleta;
+export async function POST(request: Request) {
+  try {
+    // ... existing logic ...
+  } catch (error) {
+    console.error('[POST /api/...]', error)
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+### Grupo B: auth — patrón estándar con withAuth
+
+```ts
+import { withAuth, apiError } from '@/lib/api-utils'
+
+export async function GET(request: Request) {
+  const auth = await withAuth()
+  if (auth.error) return auth.error
+
+  const { supabase, storeId } = auth
+  // ... usar storeId para filtrar queries ...
+}
+```
+
+#### Detalle para `customers/route.ts`
+- GET: filtrar `profiles` por `store_id` del auth
+- POST: asociar nuevo customer al `store_id` del auth
+- DELETE: verificar que el customer pertenece al store
+
+#### Detalle para `orders/route.ts` POST
+- Reemplazar `userId` del body por `auth.user.id`
+- Filtrar creación de orden por `store_id` del auth
+
+#### Detalle para `orders/[id]/confirm-payment/route.ts` POST
+- Verificar que la orden pertenece al `store_id` del auth
+- No permitir confirmar pagos de otras tiendas
+
+#### Detalle para `staff/route.ts`
+- Filtrar CRUD por `store_id` del auth
+- Solo admin/manager puede gestionar staff
+
+#### Detalle para `cash-movements/route.ts`
+- Filtrar por `store_id` del auth
+- Asociar movimientos al store del auth
+
+#### Detalle para `sii/sync/route.ts`
+- Reemplazar validación débil (`storeId` del body) por auth real
+- Verificar que el store_id del auth coincide
+
+### Grupo C: store_id — filtrar queries existentes
+
+```ts
+// ANTES en products/[id]/route.ts
+const { data: product } = await supabase
+  .from('products')
+  .select('*')
+  .eq('id', params.id)
+  .single()
 
 // DESPUÉS
-const isTerminalPayment = paymentMethod === 'TERMINAL' || paymentMethod === 'TARJETA';
-const terminalEmitsBoleta = isTerminalPayment && settings.siiModel === 'modelo2';
-const shouldSkipSii = isVoucherPayment || terminalEmitsBoleta;
+const { data: product } = await supabase
+  .from('products')
+  .select('*')
+  .eq('id', params.id)
+  .eq('store_id', storeId)  // <-- agregar filtro
+  .single()
 ```
 
-Esto generaliza: cualquier pago con terminal salta SII si el modelo es 2, no solo Getnet.
-
-### 5. `src/components/pos/PosReceiptModal.tsx` (lines 89-95)
-
-**Cambiar lógica del título del recibo:**
-
-Actualmente siempre muestra "BOLETA ELECTRÓNICA" (o "PRE-FOLIO INTERNO"). Necesita saber si el SII fue saltado para mostrar "COMPROBANTE DE PAGO".
-
-**Opción A (recomendada):** Pasar un prop `skipSii?: boolean` a `PosReceiptModal`. Donde se instancia el modal (en `pos/page.tsx`), pasar `skipSii={shouldSkipSii}`.
-
-```tsx
-// En PosReceiptModal:
-const title = skipSii ? 'COMPROBANTE DE PAGO' : (orderData.isOffline ? 'PRE-FOLIO INTERNO' : 'BOLETA ELECTRÓNICA');
-```
-
-**Opción B (alternativa):** Leer `settings.siiModel` y `paymentMethod` dentro del modal para deducirlo. Pero es más acoplado.
-
-Elegir Opción A: el modal recibe `skipSii` como prop.
+Mismo patrón para `terminals/[id]` y `pos/draft`.
 
 ## Do Not
-- ❌ NO cambiar la lógica de emisión del motor SII (`src/lib/sii/engine.ts`, `signer.ts`, etc.)
-- ❌ NO migrar datos existentes — el campo `getnetIsBoleta` queda como está en DB, solo se ignora
-- ❌ NO tocar voucher payments (Junaeb/Pluxe/Edenred) — ya saltan SII y siguen igual
-- ❌ NO cambiar el dteType hardcodeado (39) — eso es otra tarea
-- ❌ NO modificar PaymentModal.tsx, siiStore.ts ni ningún otro archivo fuera de la lista
+- ❌ NO cambiar lógica de negocio existente — solo agregar try/catch y auth
+- ❌ NO modificar rutas intencionalmente públicas: ping, health, verify-dns, webpay
+- ❌ NO refactorizar el contenido de los handlers — solo envolver y agregar validaciones
+- ❌ NO tocar el motor SII, PaymentModal, ni archivos fuera de la lista
+- ❌ NO modificar la estructura de respuesta exitosa (solo manejo de errores cambia)
 
 ## Criterios de Aprobación
-- [ ] Selector Modelo 1/2 visible en Ajustes del POS, reemplazando el toggle de Getnet
-- [ ] Modelo 2: pago con terminal (cualquiera) salta SII y recibo muestra "COMPROBANTE DE PAGO"
-- [ ] Modelo 1: pago con terminal emite boleta SII normal
-- [ ] Voucher payments (Junaeb/Pluxe/Edenred) saltan SII en ambos modelos
+- [ ] `src/lib/api-utils.ts` creado con `withAuth`, `requireStoreAccess`, `apiError`
+- [ ] Grupo A: 4 handlers con try/catch — error interno retorna 500 sin crash
+- [ ] Grupo B: 9 handlers con auth — llamada anónima retorna 401; datos filtrados por store
+- [ ] Grupo C: 3 handlers con filtro store_id — usuario no puede ver/modificar datos de otra tienda
 - [ ] `npm run lint` pasa
 - [ ] `npm run build` pasa
-- [ ] Al cargar settings viejos (sin `siiModel`), default a `'modelo2'`
+- [ ] Rutas públicas (ping, health, etc.) siguen sin auth
 
 ## Next Action
-1. Leer `src/stores/posStore.ts` — cambiar `getnetIsBoleta` por `siiModel`
-2. Leer `src/types/index.ts` — cambiar tipo
-3. Leer `src/components/pos/PosSettingsModal.tsx` — reemplazar toggle por selector
-4. Leer `src/app/(pos)/pos/page.tsx` — actualizar `shouldSkipSii`
-5. Leer `src/components/pos/PosReceiptModal.tsx` — agregar prop `skipSii` y título condicional
-6. Ejecutar `npm run lint` y `npm run build`
-7. Reportar
+1. Crear `src/lib/api-utils.ts`
+2. Grupo A: try/catch en 4 handlers
+3. Grupo B: auth en 9 handlers (customer, staff, cash-movements, orders, categories, sii/sync)
+4. Grupo C: store_id en 3 handlers (products/[id], terminals/[id], pos/draft)
+5. Commit por grupo (3 commits chicos)
+6. `npm run lint` y `npm run build` después de cada commit
+7. Reportar resultados
