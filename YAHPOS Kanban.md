@@ -18,7 +18,6 @@ kanban-plugin: board
 
 ## 🏗️ EN PROGRESO
 
-- [ ] **[Bug]** Pluxe aparece en REGIONES → debe ser RM
 - [ ] **[Stab]** Memory Leaks (verificar)
 
 
@@ -41,6 +40,7 @@ kanban-plugin: board
 - [x] **[DB]** Duplicados eliminados
 - [x] **[Stab]** ProductModal useState fix
 - [x] **[Stab]** SqlModal extraído
+- [x] **[Bug]** Pluxe región corregido (RM)
 - [x] **[Auth]** + SaaS + DTE setup
 
 
@@ -83,7 +83,7 @@ kanban-plugin: board
 - [x] Edenred separado
 - [x] Toggles independientes
 - [x] Selector región
-- [x] ⚠️ Pluxe en REGIONES → RM
+- [x] Bug Pluxe corregido (solo en RM)
 
 
 ## 📄 Modelo Emisión SII
