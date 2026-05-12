@@ -65,3 +65,13 @@ playwright.config.ts
 # jest
 jest.config.ts
 jest.setup.ts
+
+# supabase temp
+/supabase/.temp/
+
+# obsidian
+.obsidian/
+
+# temp reports
+simulation-report.md
+Untitled Kanban.md
