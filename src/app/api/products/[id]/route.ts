@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { withAuth } from '@/lib/api-utils'
 
 type Params = Promise<{ id: string }>
 
@@ -8,19 +8,16 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const auth = await withAuth()
+    if (auth.error) return auth.error
 
     const { id } = await params
 
-    const { data, error } = await supabase
+    const { data, error } = await auth.supabase
       .from('products')
       .select('*, inventory(*)')
       .eq('id', id)
+      .eq('store_id', auth.storeId)
       .single()
 
     if (error) {
@@ -39,17 +36,12 @@ export async function PATCH(
   { params }: { params: Params }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const auth = await withAuth()
+    if (auth.error) return auth.error
 
     const { id } = await params
     const body = await req.json()
 
-    // Only include columns that exist in the database
     const updateData: any = {
       name: body.name,
       description: body.description,
@@ -65,13 +57,13 @@ export async function PATCH(
       is_realtime_tracked: body.isRealtimeTracked,
     }
 
-    // Remove undefined fields to avoid overwriting with null
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])
 
-    const { data: product, error: productError } = await supabase
+    const { data: product, error: productError } = await auth.supabase
       .from('products')
       .update(updateData)
       .eq('id', id)
+      .eq('store_id', auth.storeId)
       .select()
       .single()
 
@@ -80,10 +72,9 @@ export async function PATCH(
       return NextResponse.json({ error: productError.message }, { status: 500 })
     }
 
-    // Si hay stock por sucursal, upsert en tabla inventory
     if (body.branchStocks && Array.isArray(body.branchStocks)) {
       for (const bs of body.branchStocks) {
-        const { error: invError } = await supabase
+        const { error: invError } = await auth.supabase
           .from('inventory')
           .upsert({
             product_id: id,
@@ -111,19 +102,16 @@ export async function DELETE(
   { params }: { params: Params }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const auth = await withAuth()
+    if (auth.error) return auth.error
 
     const { id } = await params
 
-    const { error } = await supabase
+    const { error } = await auth.supabase
       .from('products')
       .delete()
       .eq('id', id)
+      .eq('store_id', auth.storeId)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

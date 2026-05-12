@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { withAuth } from '@/lib/api-utils'
 
 export async function GET(req: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const auth = await withAuth()
+    if (auth.error) return auth.error
 
     const { searchParams } = new URL(req.url)
     const sessionId = searchParams.get('sessionId')
@@ -17,14 +13,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Session ID requerido' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await auth.supabase
       .from('pos_drafts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', auth.user.id)
       .eq('session_id', sessionId)
       .single()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is not found
+    if (error && error.code !== 'PGRST116') {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
@@ -37,12 +33,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const auth = await withAuth()
+    if (auth.error) return auth.error
 
     const body = await req.json()
     const { sessionId, cartData, suspendedOrdersData } = body
@@ -51,12 +43,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Session ID requerido' }, { status: 400 })
     }
 
-    // Upsert the draft for this user and session
-    const { data, error } = await supabase
+    const { data, error } = await auth.supabase
       .from('pos_drafts')
       .upsert({
         session_id: sessionId,
-        user_id: user.id,
+        user_id: auth.user.id,
         cart_data: cartData,
         suspended_orders_data: suspendedOrdersData,
         updated_at: new Date().toISOString()
