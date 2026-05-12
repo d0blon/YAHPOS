@@ -1,13 +1,15 @@
-import { createClient } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/api-utils'
 
 export async function GET() {
-  const supabase = await createClient()
-  
   try {
-    const { data: staff, error } = await supabase
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
+    const { data: staff, error } = await auth.supabase
       .from('profiles')
       .select('*')
+      .eq('store_id', auth.storeId)
       .in('role', ['admin', 'manager', 'cashier', 'warehouse'])
       .order('first_name', { ascending: true })
 
@@ -21,9 +23,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  
   try {
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
     const { rut, first_name, last_name, role } = await request.json()
     
     if (!rut || !first_name) {
@@ -32,13 +35,14 @@ export async function POST(request: Request) {
 
     const cleanedRut = rut.replace(/[^0-9kK]/g, '').toUpperCase()
 
-    const { data, error } = await supabase
+    const { data, error } = await auth.supabase
       .from('profiles')
       .upsert({
         rut: cleanedRut,
         first_name,
         last_name,
         role: role || 'manager',
+        store_id: auth.storeId,
         updated_at: new Date().toISOString()
       }, { onConflict: 'rut' })
       .select()
@@ -54,9 +58,10 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const supabase = await createClient()
-  
   try {
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
     const { id, current_area, role } = await request.json()
     
     if (!id) {
@@ -67,10 +72,11 @@ export async function PATCH(request: Request) {
     if (current_area !== undefined) updateData.current_area = current_area
     if (role !== undefined) updateData.role = role
 
-    const { data, error } = await supabase
+    const { data, error } = await auth.supabase
       .from('profiles')
       .update(updateData)
       .eq('id', id)
+      .eq('store_id', auth.storeId)
       .select()
       .single()
 
@@ -84,9 +90,10 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const supabase = await createClient()
-  
   try {
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     
@@ -94,7 +101,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID es requerido' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await auth.supabase
       .from('profiles')
       .update({ 
         role: 'user',
@@ -102,6 +109,7 @@ export async function DELETE(request: Request) {
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
+      .eq('store_id', auth.storeId)
       .select()
       .single()
 

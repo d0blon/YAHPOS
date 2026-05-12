@@ -1,28 +1,33 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { withAuth, apiError } from '@/lib/api-utils'
 import { customerSchema } from '@/lib/validations/customers'
 
 export async function GET(req: Request) {
   try {
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
     const { searchParams } = new URL(req.url)
     const rut = searchParams.get('rut')
     if (!rut) return NextResponse.json({ error: 'RUT required' }, { status: 400 })
 
-    const supabase = await createClient()
     const cleaned = rut.replace(/[^0-9kK]/g, '').toUpperCase()
     console.log(`[API Search] Buscando RUT: ${cleaned}`)
 
-    let { data, error } = await supabase
+    let { data, error } = await auth.supabase
       .from('profiles')
       .select('*')
       .eq('rut', cleaned)
+      .eq('store_id', auth.storeId)
       .limit(1)
 
     if ((!data || data.length === 0) && !error) {
-      const secondTry = await supabase
+      const secondTry = await auth.supabase
         .from('profiles')
         .select('*')
         .eq('rut', rut)
+        .eq('store_id', auth.storeId)
         .limit(1)
       
       data = secondTry.data
@@ -54,9 +59,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
     const body = await req.json()
     
-    // Validación con Zod
     const validated = customerSchema.safeParse(body)
     if (!validated.success) {
       return NextResponse.json({ 
@@ -67,13 +74,12 @@ export async function POST(req: Request) {
 
     const { rut, name, email, points = 0 } = validated.data
 
-    const supabase = await createClient()
     const cleaned = rut.replace(/[^0-9kK]/g, '').toUpperCase()
 
     const [firstName, ...lastNameParts] = name.split(' ')
     const lastName = lastNameParts.join(' ')
 
-    const { data, error } = await supabase
+    const { data, error } = await auth.supabase
       .from('profiles')
       .upsert({ 
         rut: cleaned, 
@@ -82,6 +88,7 @@ export async function POST(req: Request) {
         email: email || null,
         loyalty_points: points,
         role: 'customer',
+        store_id: auth.storeId,
         updated_at: new Date().toISOString()
       }, { onConflict: 'rut' })
       .select('*')
@@ -105,15 +112,18 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    const supabase = await createClient()
-    const { error } = await supabase
+    const { error } = await auth.supabase
       .from('profiles')
       .delete()
       .eq('id', id)
+      .eq('store_id', auth.storeId)
 
     if (error) throw error
 

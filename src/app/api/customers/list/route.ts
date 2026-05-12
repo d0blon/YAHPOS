@@ -1,13 +1,15 @@
-import { createClient } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
+import { withAuth } from '@/lib/api-utils'
 
 export async function GET() {
-  const supabase = await createClient()
-  
   try {
-    const { data, error } = await supabase
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
+    const { data, error } = await auth.supabase
       .from('profiles')
       .select('*')
+      .eq('store_id', auth.storeId)
       .order('created_at', { ascending: false })
 
     if (error) throw error

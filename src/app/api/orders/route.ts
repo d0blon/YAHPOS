@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { withAuth, apiError } from '@/lib/api-utils'
 import { orderSchema } from '@/lib/validations/orders'
 
 export async function GET() {
@@ -36,11 +37,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient()
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
     const body = await req.json()
     console.log('[API /orders] Recibido:', body)
 
-    // Validación con Zod
     const validated = orderSchema.safeParse(body)
     if (!validated.success) {
       console.error('[API /orders] Validation Error:', validated.error.issues)
@@ -51,7 +53,6 @@ export async function POST(req: Request) {
     }
 
     const { 
-      userId, 
       total, 
       subtotal,
       discount, 
@@ -71,9 +72,12 @@ export async function POST(req: Request) {
       offlineId
     } = validated.data
 
-    // 1. Idempotency: si ya existe orden con este offlineId, retornarla
+    if (!total || !paymentMethod) {
+      return NextResponse.json({ error: 'Faltan datos obligatorios (total, paymentMethod)' }, { status: 400 })
+    }
+
     if (offlineId) {
-      const { data: existingOrder } = await supabase
+      const { data: existingOrder } = await auth.supabase
         .from('orders')
         .select('*')
         .eq('metadata->>offline_id', offlineId)
@@ -85,33 +89,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Validar userId del body (Requerido según auditoría de seguridad)
-    if (!userId) {
-      return NextResponse.json({ error: 'Usuario no identificado (Falta userId)' }, { status: 400 })
-    }
-
-    if (!total || !paymentMethod) {
-      return NextResponse.json({ error: 'Faltan datos obligatorios (total, paymentMethod)' }, { status: 400 })
-    }
-
-    const finalUserId = userId
-
-    // 2. Obtener store_id del perfil del usuario
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('store_id')
-      .eq('id', finalUserId)
-      .single()
-
-    if (!profile?.store_id) {
-      return NextResponse.json({ error: 'El usuario no tiene una tienda asociada' }, { status: 403 })
-    }
-
-    // 2.1 Obtener configuraciones de lealtad
-    const { data: settingsData } = await supabase
+    const { data: settingsData } = await auth.supabase
       .from('settings')
       .select('key, value')
-      .eq('store_id', profile.store_id);
+      .eq('store_id', auth.storeId);
     
     const settings: Record<string, string> = {};
     settingsData?.forEach(s => { settings[s.key] = s.value; });
@@ -119,20 +100,18 @@ export async function POST(req: Request) {
     const loyaltyEnabled = settings.loyalty_enabled === 'true';
     const accumulationRate = parseInt(settings.loyalty_accumulation_rate || '100');
     
-    // Calcular puntos si no vienen pre-calculados
     let finalPointsToEarn = pointsToEarn || 0;
     if (loyaltyEnabled && !pointsToEarn && total > 0) {
       finalPointsToEarn = Math.floor(total / accumulationRate);
     }
 
-    // 3. Crear la orden
     const isEcommerce = source === 'ecommerce'
     
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await auth.supabase
       .from('orders')
       .insert([{
-        user_id: finalUserId,
-        store_id: profile.store_id,
+        user_id: auth.user.id,
+        store_id: auth.storeId,
         total: total,
         discount: discount ?? 0,
         status: status ?? (isEcommerce ? 'pending' : 'completed'),
@@ -164,11 +143,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: orderError.message }, { status: 500 })
     }
 
-    // 4. Registrar el pago en la tabla payments (Trazabilidad Financiera)
-    const { error: paymentError } = await supabase
+    const { error: paymentError } = await auth.supabase
       .from('payments')
       .insert([{
-        store_id: profile.store_id,
+        store_id: auth.storeId,
         order_id: order.id,
         amount: total,
         method: paymentMethod,
@@ -178,10 +156,8 @@ export async function POST(req: Request) {
 
     if (paymentError) {
       console.error('[API /orders] Error al registrar pago:', paymentError)
-      // No bloqueamos la orden si falla el log de pago, pero lo reportamos
     }
 
-    // 5. Insertar los items
     if (items?.length) {
       const orderItems = items.map((item: any) => ({
         order_id: order.id,
@@ -190,17 +166,15 @@ export async function POST(req: Request) {
         price: item.unitPrice ?? item.product?.price ?? 0,
       }))
 
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
+      const { error: itemsError } = await auth.supabase.from('order_items').insert(orderItems)
       if (itemsError) {
         return NextResponse.json({ error: itemsError.message }, { status: 500 })
       }
 
-      // 6. Actualizar stock (Reducción)
       for (const item of items) {
         if (item.productId) {
-          // Reducción en tabla de Sucursal (si existe branchId)
           if (branchId) {
-            const { data: inv } = await supabase
+            const { data: inv } = await auth.supabase
               .from('inventory')
               .select('stock')
               .eq('product_id', item.productId)
@@ -209,7 +183,7 @@ export async function POST(req: Request) {
             
             if (inv) {
               const newBranchStock = Math.max(0, (inv.stock || 0) - item.quantity);
-              await supabase
+              await auth.supabase
                 .from('inventory')
                 .update({ stock: newBranchStock })
                 .eq('product_id', item.productId)
@@ -217,20 +191,18 @@ export async function POST(req: Request) {
             }
           }
 
-          // Reducción en tabla maestra (products)
-          const { data: p } = await supabase.from('products').select('stock').eq('id', item.productId).single();
+          const { data: p } = await auth.supabase.from('products').select('stock').eq('id', item.productId).single();
           if (p) {
             const newStock = Math.max(0, (p.stock || 0) - item.quantity);
-            await supabase.from('products').update({ stock: newStock }).eq('id', item.productId);
+            await auth.supabase.from('products').update({ stock: newStock }).eq('id', item.productId);
           }
         }
       }
 
-      // 7. Actualizar Puntos de Fidelidad
       if (customerRut && (finalPointsToEarn > 0 || pointsRedeemed > 0)) {
         const cleanedRut = customerRut.replace(/[^0-9kK]/g, '').toUpperCase();
         
-        const { data: customerProfile } = await supabase
+        const { data: customerProfile } = await auth.supabase
           .from('profiles')
           .select('id, loyalty_points')
           .eq('rut', cleanedRut)
@@ -241,7 +213,7 @@ export async function POST(req: Request) {
           const netPointsChange = (finalPointsToEarn || 0) - (pointsRedeemed || 0);
           const newPoints = Math.max(0, currentPoints + netPointsChange);
           
-          await supabase
+          await auth.supabase
             .from('profiles')
             .update({ loyalty_points: newPoints })
             .eq('id', customerProfile.id);
