@@ -442,6 +442,16 @@ npx inngest-cli@latest dev -u http://localhost:3000/api/inngest
 - `PaymentConfirmedState` ahora acepta `data` prop y muestra `TerminalCashierBar` en header + status "Completado" + confetti
 - `CartState` refactorizado para usar `TerminalCashierBar` compartido
 
+#### ⚠️ Resultado: Fix INSUFICIENTE
+El usuario reportó "nada todavia" — el nombre del cajero sigue sin aparecer en el Customer Display. El fix de metadataRef no fue suficiente porque la causa raíz es más profunda. Posibles causas para investigar en la próxima sesión:
+1. `authUser.firstName`/`lastName` vacíos desde `useAuthStore()` (shape incorrecto del objeto real vs esperado)
+2. `currentUser` en posStore no se setea a tiempo (orden de effects)
+3. `authUser` se deserializa mal desde IndexedDB (zustand persist)
+4. El broadcast nunca se dispara (condición `items.length > 0` impide broadcast inicial)
+5. Condición `items.length > 0 && subtotal > 0` podría fallar si subtotal=0
+
+**Ver AGENTS.md §6 para investigación completa.**
+
 #### Evidence Gates
 - `npm run build`: ✅
 

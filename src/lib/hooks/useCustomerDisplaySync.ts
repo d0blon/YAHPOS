@@ -72,7 +72,7 @@ export function useCustomerDisplayReceiver() {
   const [isConnected, setIsConnected] = useState(false)
   const metadataRef = useRef({ cashierName: undefined as string | undefined, terminalName: undefined as string | undefined, terminalId: undefined as number | undefined })
 
-  const updateData = useCallback((incoming: CustomerDisplayData) => {
+  const updateData = useCallback((incoming: CustomerDisplayData): CustomerDisplayData => {
     if (incoming.cashierName) metadataRef.current.cashierName = incoming.cashierName
     if (incoming.terminalName) metadataRef.current.terminalName = incoming.terminalName
     if (incoming.terminalId) metadataRef.current.terminalId = incoming.terminalId
@@ -85,6 +85,7 @@ export function useCustomerDisplayReceiver() {
     }
 
     setData(enriched)
+    return enriched
   }, [])
 
   useEffect(() => {
@@ -100,8 +101,8 @@ export function useCustomerDisplayReceiver() {
     setIsConnected(true)
 
     channel.onmessage = (event: MessageEvent<CustomerDisplayData>) => {
-      updateData(event.data)
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(event.data)) } catch {}
+      const enriched = updateData(event.data)
+      try { if (enriched) localStorage.setItem(STORAGE_KEY, JSON.stringify(enriched)) } catch {}
     }
 
     return () => {

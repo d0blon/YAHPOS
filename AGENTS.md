@@ -226,16 +226,36 @@ Solo disponibles en Chromium (Chrome, Edge, Opera). No funcionan en Firefox ni S
 
 ---
 
-## 6. Bugs Conocidos (Backlog)
+## 6. Current Session Handoff (14 May 2026, 18:00)
 
-1. **[Auth]** callback OAuth: `.limit(1)` ignora `from_origin` — redirige a tienda incorrecta
-2. **[Auth]** "Auth session missing!" en cada request — cookies no propagan entre subdominios
-3. **[Auth]** "Invalid Refresh Token: Already Used" — race condition Strict Mode
-4. **[Charts]** Colores hardcodeados en dashboard (`#003399`, `#10b981`, etc.)
+### Última instrucción del usuario
+> "Lee tus Rules y empieza a trabajar"
+
+### Estado de la última tarea: Fix Cashier Name
+**Resultado:** El usuario reportó "nada todavia" — el fix de metadataRef NO RESOLVIÓ el problema. El nombre del cajero sigue sin aparecer en el Customer Display.
+
+**Próximo paso al iniciar sesión:**
+1. Investigar DEEPLY por qué `cashierName` no se muestra. Posibles causas:
+   - `authUser` de `useAuthStore()` tiene `firstName`/`lastName` vacíos o null → verificar shape real del objeto
+   - `currentUser` en posStore no se setea a tiempo → verificar orden de effects
+   - `authUser` se deserializa mal desde IndexedDB (zustand persist) → `firstName` podría ser `undefined`
+   - El broadcast nunca se dispara con items (`items.length > 0 && subtotal > 0` podría fallar si subtotal=0)
+   - La condición `items.length > 0` impide broadcast inicial (cuando cart está vacío)
+2. Pushear nuevos cambios a GitHub si se encuentra la raíz.
+
+### Archivos clave para investigar
+- `src/app/(pos)/pos/page.tsx:409` — línea donde se genera `cashierName`
+- `src/lib/hooks/useCustomerDisplaySync.ts` — broadcast y receiver hooks
+- `src/app/(pos)/pos/customer-display/page.tsx` — rendering de cashierName
+- `src/stores/authStore.ts:100` — cómo se construye `firstName` del usuario
 
 ---
 
-## 7. Convenciones
+## 7. Bugs Conocidos (Backlog)
+
+---
+
+## 8. Convenciones
 
 ### CSS
 - Preferir `bg-brand-primary/10` sobre colores fijos
@@ -254,7 +274,7 @@ Solo disponibles en Chromium (Chrome, Edge, Opera). No funcionan en Firefox ni S
 
 ---
 
-## 8. Formato de Descomposición de Tareas
+## 9. Formato de Descomposición de Tareas
 
 Antes de implementar, escribir esto en TASK_HANDOFF.md:
 
@@ -276,7 +296,7 @@ Antes de implementar, escribir esto en TASK_HANDOFF.md:
 
 ---
 
-## 9. Formato de Report Back
+## 10. Formato de Report Back
 
 ```
 ## Report Back: <nombre tarea>
@@ -302,7 +322,7 @@ Antes de implementar, escribir esto en TASK_HANDOFF.md:
 
 ---
 
-## 10. Prevención de Problemas
+## 11. Prevención de Problemas
 
 ### Loop Detection
 Si corriges el mismo error 3 veces → STOP. Reporta: "Llegué a un loop con [error]."

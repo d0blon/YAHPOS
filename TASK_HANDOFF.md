@@ -1,10 +1,14 @@
 ---
-status: completed
-goal: "Fase 0 (Fix IVA Duplication) + Fase 1 (Customer Display + Webpay QR) + Fix Cashier Name Persistence"
+status: pending-investigation
+goal: "Fix Cashier Name en Customer Display (root cause no encontrada)"
 branch: "main"
 created: 2026-05-14
 updated: 2026-05-14 (18:00)
 requires-plan: true
+---
+
+⚠️ **IMPORTANTE:** El fix de metadataRef NO RESOLVIÓ el problema. El usuario reportó "nada todavia". La próxima sesión debe investigar la raíz del problema (ver AGENTS.md §6).
+
 ---
 
 ## Descomposición
