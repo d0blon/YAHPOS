@@ -59,9 +59,12 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: process.cwd(),
 };
 
-export default withPWA({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  register: true,
-})(nextConfig);
+const isProd = process.env.NODE_ENV === "production";
+
+export default isProd
+  ? withPWA({
+      dest: "public",
+      register: false,
+    })(nextConfig)
+  : nextConfig;
 
