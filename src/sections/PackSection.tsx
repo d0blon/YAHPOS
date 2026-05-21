@@ -21,7 +21,7 @@ const samplePacks = [
     description: "Pan fresco + Leche entera + Mermelada artesanal",
     price: 4500,
     tag: "AHORRO 20%",
-    color: "from-blue-400 to-indigo-600",
+    color: "from-brand-400 to-brand-600",
     icon: Sparkles
   },
   {

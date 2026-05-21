@@ -15,15 +15,15 @@ const trustItems = [
     icon: Truck,
     title: "DESPACHO RÁPIDO",
     description: "Castro y alrededores",
-    color: "text-blue-400",
-    bgColor: "bg-blue-500/10"
+    color: "text-brand-accent-400",
+    bgColor: "bg-brand-accent-500/10"
   },
   {
     icon: Store,
     title: "RETIRO EN TIENDA",
     description: "Listo en 30 minutos",
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/10"
+    color: "text-brand-400",
+    bgColor: "bg-brand-500/10"
   },
   {
     icon: CreditCard,

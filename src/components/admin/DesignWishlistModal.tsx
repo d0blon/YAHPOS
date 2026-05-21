@@ -52,8 +52,8 @@ export function DesignWishlistModal({ isOpen, onClose }: DesignWishlistModalProp
   }
 
   const options = [
-    { id: 'design', label: 'Diseño Visual', icon: Palette, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'layout', label: 'Estructura', icon: Layout, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { id: 'design', label: 'Diseño Visual', icon: Palette, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
+    { id: 'layout', label: 'Estructura', icon: Layout, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
     { id: 'content', label: 'Imágenes/Fotos', icon: Camera, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { id: 'other', label: 'Otro / Idea', icon: MessageSquare, color: 'text-amber-500', bg: 'bg-amber-50' },
   ]
@@ -65,11 +65,11 @@ export function DesignWishlistModal({ isOpen, onClose }: DesignWishlistModalProp
           <>
             <div className="p-8 pb-0">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center text-white shadow-lg shadow-brand-primary/20">
                   <Sparkles className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Centro de <span className="text-corporate-blue">Innovación IA</span></h2>
+                  <h2 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Centro de <span className="text-brand-primary">Innovación IA</span></h2>
                   <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1">¿Cómo podemos mejorar tu tienda hoy?</p>
                 </div>
               </div>
@@ -87,8 +87,8 @@ export function DesignWishlistModal({ isOpen, onClose }: DesignWishlistModalProp
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-2xl border transition-all text-left group",
                         formData.area === opt.id 
-                          ? "bg-white dark:bg-gray-800 border-corporate-blue ring-2 ring-corporate-blue/10 shadow-md" 
-                          : "bg-white/50 dark:bg-white/5 border-gray-100 dark:border-white/5 hover:border-corporate-blue/30"
+                          ? "bg-white dark:bg-gray-800 border-brand-primary ring-2 ring-brand-primary/10 shadow-md" 
+                          : "bg-white/50 dark:bg-white/5 border-gray-100 dark:border-white/5 hover:border-brand-primary/30"
                       )}
                     >
                       <div className={cn("p-2 rounded-xl shrink-0 transition-transform group-hover:scale-110", opt.bg, opt.color)}>
@@ -96,7 +96,7 @@ export function DesignWishlistModal({ isOpen, onClose }: DesignWishlistModalProp
                       </div>
                       <span className={cn(
                         "text-[10px] font-black uppercase tracking-tight",
-                        formData.area === opt.id ? "text-corporate-blue" : "text-gray-600"
+                        formData.area === opt.id ? "text-brand-primary" : "text-gray-600"
                       )}>
                         {opt.label}
                       </span>
@@ -109,7 +109,7 @@ export function DesignWishlistModal({ isOpen, onClose }: DesignWishlistModalProp
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Describe tu visión</label>
                 <Textarea 
                   placeholder="Ej: Quiero que la cabecera tenga colores más cálidos y las fotos de productos sean más grandes..."
-                  className="min-h-[120px] rounded-3xl bg-white/50 dark:bg-white/5 border-gray-100 dark:border-white/5 focus:ring-corporate-blue/20 p-4 font-medium"
+                  className="min-h-[120px] rounded-3xl bg-white/50 dark:bg-white/5 border-gray-100 dark:border-white/5 focus:ring-brand-primary/20 p-4 font-medium"
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -120,7 +120,7 @@ export function DesignWishlistModal({ isOpen, onClose }: DesignWishlistModalProp
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Inspiración (Opcional)</label>
                 <Input 
                   placeholder="Link a una web que te guste o descripción de estilo..."
-                  className="h-12 rounded-2xl bg-white/50 dark:bg-white/5 border-gray-100 dark:border-white/5 focus:ring-corporate-blue/20 px-4 font-medium"
+                  className="h-12 rounded-2xl bg-white/50 dark:bg-white/5 border-gray-100 dark:border-white/5 focus:ring-brand-primary/20 px-4 font-medium"
                   value={formData.inspiration}
                   onChange={(e) => setFormData({ ...formData, inspiration: e.target.value })}
                 />
@@ -129,7 +129,7 @@ export function DesignWishlistModal({ isOpen, onClose }: DesignWishlistModalProp
               <Button 
                 type="submit" 
                 disabled={isSubmitting || !formData.area || !formData.description}
-                className="w-full h-14 bg-corporate-blue hover:bg-corporate-dark text-white rounded-[1.5rem] shadow-xl shadow-corporate-blue/20 font-black italic uppercase tracking-widest text-xs group"
+                className="w-full h-14 bg-brand-primary hover:bg-brand-700 text-white rounded-[1.5rem] shadow-xl shadow-brand-primary/20 font-black italic uppercase tracking-widest text-xs group"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

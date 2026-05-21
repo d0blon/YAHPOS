@@ -32,7 +32,7 @@ export function SectionHeader({ title, subtitle, description, icon: Icon, action
     <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
       <div>
         <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic flex items-center gap-3">
-          {Icon && <Icon className="w-8 h-8 text-corporate-blue" />}
+          {Icon && <Icon className="w-8 h-8 text-brand-primary" />}
           {title}
         </h1>
         {(subtitle || description) && <p className="text-gray-500 text-sm font-medium mt-1">{subtitle ?? description}</p>}

@@ -54,10 +54,10 @@ export default function OrderSuccessPage() {
             <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h1 className="text-4xl font-black tracking-tighter uppercase italic mb-3">
-            ¡Pedido <span className="text-corporate-blue">Recibido!</span>
+            ¡Pedido <span className="text-brand-primary">Recibido!</span>
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
-            Tu orden <span className="font-mono text-corporate-blue">#{params.id?.toString().substring(0, 8)}</span> ha sido procesada con éxito.
+            Tu orden <span className="font-mono text-brand-primary">#{params.id?.toString().substring(0, 8)}</span> ha sido procesada con éxito.
           </p>
         </div>
 
@@ -65,7 +65,7 @@ export default function OrderSuccessPage() {
         <Card className="glass-card overflow-hidden border-none shadow-2xl animate-in fade-in zoom-in-95 duration-700 delay-150">
           <CardContent className="p-0">
             {/* Status Header */}
-            <div className="bg-corporate-blue p-6 text-white flex items-center justify-between">
+            <div className="bg-brand-primary p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Package className="w-5 h-5" />
                 <span className="font-bold uppercase tracking-widest text-xs">Estado de la Orden</span>
@@ -79,7 +79,7 @@ export default function OrderSuccessPage() {
               {/* Info Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-corporate-blue">
+                  <div className="flex items-center gap-3 text-brand-primary">
                     <MapPin className="w-4 h-4" />
                     <h3 className="font-bold uppercase tracking-widest text-xs">Dirección de Entrega</h3>
                   </div>
@@ -89,7 +89,7 @@ export default function OrderSuccessPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-corporate-blue">
+                  <div className="flex items-center gap-3 text-brand-primary">
                     <CreditCard className="w-4 h-4" />
                     <h3 className="font-bold uppercase tracking-widest text-xs">Método de Pago</h3>
                   </div>
@@ -123,7 +123,7 @@ export default function OrderSuccessPage() {
             </Button>
           </Link>
           <Link href="/" className="w-full sm:w-auto">
-            <Button className="w-full h-14 px-10 bg-corporate-blue hover:bg-corporate-dark text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-corporate-blue/20 flex items-center gap-3 group">
+            <Button className="w-full h-14 px-10 bg-brand-primary hover:bg-brand-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-brand-primary/20 flex items-center gap-3 group">
               Seguir Comprando <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>

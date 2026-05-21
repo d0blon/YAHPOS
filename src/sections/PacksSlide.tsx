@@ -62,7 +62,7 @@ export default function PacksSlide() {
       {/* Background Ornaments */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-emerald-600/10 rounded-full blur-[120px] mix-blend-screen" />
-        <div className="absolute top-[10%] left-[10%] w-[30vw] h-[30vw] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen" />
+        <div className="absolute top-[10%] left-[10%] w-[30vw] h-[30vw] bg-brand-accent-600/10 rounded-full blur-[100px] mix-blend-screen" />
         <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }} />
       </div>
 
@@ -88,7 +88,7 @@ export default function PacksSlide() {
             className="text-4xl md:text-6xl font-black tracking-tighter leading-tight text-white mb-4 uppercase"
           >
             <EditableText field="packs.title" value={content.title} as="span" />{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-brand-accent-400">
               <EditableText field="packs.accentTitle" value={content.accentTitle} as="span" />
             </span>
           </motion.h2>
@@ -202,7 +202,7 @@ export default function PacksSlide() {
                     <span className="block text-sm text-gray-500 line-through mb-1">
                       <EditableText field={`packs.items.${idx}.oldPrice`} value={pack.oldPrice || ''} />
                     </span>
-                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-brand-accent-400">
                       <EditableText field={`packs.items.${idx}.price`} value={pack.price} />
                     </span>
                   </div>

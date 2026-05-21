@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { 
-  Settings, Monitor, LogOut, HardHat, Terminal, Lock, FileText, Store, LayoutDashboard, Package, Users, ShoppingCart, TrendingUp
+  Settings, Monitor, LogOut, HardHat, Terminal, Lock, FileText, Store, LayoutDashboard, Package, Users, ShoppingCart, TrendingUp, PaintBucket
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSaaS } from '@/providers/SaaSProvider'
@@ -30,6 +30,7 @@ const ROUTE_PERMISSIONS: Record<string, string[]> = {
   '/admin/clientes':      ['developer', 'owner', 'admin', 'manager'],
   '/admin/reportes':      ['developer', 'owner', 'admin'],
   '/admin/configuracion': ['developer', 'owner', 'admin'],
+  '/admin/branding':      ['developer', 'owner', 'admin'],
   '/admin/facturacion':   ['developer', 'owner', 'admin'],
   '/admin/sucursales':    ['developer', 'owner', 'admin'],
   '/admin/cajas':         ['developer', 'owner', 'admin', 'manager'],
@@ -53,6 +54,7 @@ const sidebarLinks: SidebarLink[] = [
   { href: '/admin/reportes',      label: 'Reportes',       icon: TrendingUp },
   { href: '/admin/facturacion',   label: 'Facturación SII', icon: FileText },
   { href: '/admin/sucursales',    label: 'Sucursales',      icon: Store },
+  { href: '/admin/branding',      label: 'Branding',       icon: PaintBucket },
   { href: '/admin/configuracion', label: 'Configuración',  icon: Settings },
 ]
 
@@ -99,11 +101,11 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
         {/* Header del sidebar */}
         <div className="p-6 border-b border-white/5 bg-white/5 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-corporate-blue flex items-center justify-center text-white shadow-lg shadow-corporate-blue/20">
+            <div className="w-10 h-10 rounded-xl bg-brand-primary flex items-center justify-center text-white shadow-lg shadow-brand-primary/20">
               <LayoutDashboard className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="font-black text-lg tracking-tighter uppercase italic leading-none">YAHPOS!<span className="text-corporate-blue"></span></h2>
+              <h2 className="font-black text-lg tracking-tighter uppercase italic leading-none">YAHPOS!<span className="text-brand-primary"></span></h2>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mt-1">Panel de Control</p>
             </div>
           </div>
@@ -112,8 +114,8 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
         {/* User profile */}
         <div className="px-6 py-6 border-b border-white/5">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-corporate-blue to-blue-700 p-0.5 shadow-lg shadow-corporate-blue/10">
-              <div className="w-full h-full rounded-[14px] bg-[#0a0a0c] flex items-center justify-center text-corporate-blue text-sm font-black italic">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-primary to-brand-accent-700 p-0.5 shadow-lg shadow-brand-primary/10">
+              <div className="w-full h-full rounded-[14px] bg-[#0a0a0c] flex items-center justify-center text-brand-primary text-sm font-black italic">
                 {user?.firstName?.[0]}{user?.lastName?.[0]}
               </div>
             </div>
@@ -124,9 +126,9 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
               <div className="flex items-center gap-2 mt-1">
                 <span className={cn(
                   "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md",
-                  role === 'developer' ? "bg-purple-500/10 text-purple-400" :
+                  role === 'developer' ? "bg-brand-500/10 text-brand-400" :
                   role === 'admin'     ? "bg-rose-500/10 text-rose-400" :
-                  role === 'manager'   ? "bg-blue-500/10 text-blue-400" :
+                  role === 'manager'   ? "bg-brand-accent-500/10 text-brand-accent-400" :
                                         "bg-gray-500/10 text-gray-400"
                 )}>
                   {roleLabel}
@@ -164,7 +166,7 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden",
                       isActive 
-                        ? "bg-corporate-blue text-white shadow-xl shadow-corporate-blue/20 translate-x-1" 
+                        ? "bg-brand-primary text-white shadow-xl shadow-brand-primary/20 translate-x-1" 
                         : "text-gray-400 hover:bg-white/5 hover:text-white"
                     )}
                   >
@@ -187,8 +189,8 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
                 className={cn(
                   "flex items-center gap-3 px-4 py-4 rounded-xl transition-all border group",
                   activePath === '/developer'
-                    ? "bg-purple-600 text-white shadow-xl shadow-purple-600/20"
-                    : "bg-purple-500/5 text-purple-400 border-purple-500/10 hover:bg-purple-500/10"
+                    ? "bg-brand-600 text-white shadow-xl shadow-brand-600/20"
+                    : "bg-brand-500/5 text-brand-400 border-brand-500/10 hover:bg-brand-500/10"
                 )}
               >
                 <Terminal className="w-5 h-5 group-hover:rotate-12 transition-transform" />
@@ -199,7 +201,7 @@ export default function AdminSidebar({ activePath }: AdminSidebarProps) {
             {/* Go to POS */}
             <Link 
               href="/pos" 
-              className="flex items-center justify-center gap-3 w-full py-5 px-4 bg-gray-900 hover:bg-black text-accent-yellow border border-white/10 rounded-2xl transition-all shadow-xl hover:shadow-black/20 hover:-translate-y-1 group"
+              className="flex items-center justify-center gap-3 w-full py-5 px-4 bg-gray-900 hover:bg-black text-brand-accent border border-white/10 rounded-2xl transition-all shadow-xl hover:shadow-black/20 hover:-translate-y-1 group"
             >
               <Monitor className="w-5 h-5 transition-transform group-hover:scale-110" />
               <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">Terminal POS</span>

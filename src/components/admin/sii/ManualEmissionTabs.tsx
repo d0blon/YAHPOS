@@ -177,8 +177,8 @@ export function ManualEmissionTabs() {
         <Card className="border-none bg-white dark:bg-gray-800 shadow-2xl rounded-[2.5rem] overflow-hidden">
           <CardHeader className="p-8 pb-0">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-corporate-blue/10 rounded-2xl">
-                <FileText className="h-5 w-5 text-corporate-blue" />
+              <div className="p-2.5 bg-brand-primary/10 rounded-2xl">
+                <FileText className="h-5 w-5 text-brand-primary" />
               </div>
               <CardTitle className="text-xl font-black uppercase tracking-tight">Emisión Directa</CardTitle>
             </div>
@@ -206,7 +206,7 @@ export function ManualEmissionTabs() {
                         disabled={!enabled}
                         className={cn(
                           "w-full h-12 rounded-xl font-black uppercase tracking-tighter text-[10px] transition-all",
-                          dteType === type.id ? "bg-corporate-blue text-white shadow-lg" : "border-gray-100 text-gray-400",
+                          dteType === type.id ? "bg-brand-primary text-white shadow-lg" : "border-gray-100 text-gray-400",
                           !enabled && "opacity-50 grayscale"
                         )}
                       >
@@ -237,7 +237,7 @@ export function ManualEmissionTabs() {
                   <div className="space-y-2">
                     <Label className="text-[9px] font-bold uppercase text-gray-500">Tipo de Despacho</Label>
                     <select 
-                      className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 focus:ring-2 focus:ring-corporate-blue/20 outline-none"
+                      className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 focus:ring-2 focus:ring-brand-primary/20 outline-none"
                       value={guiaConfig.tipoDespacho}
                       onChange={(e) => setGuiaConfig({...guiaConfig, tipoDespacho: Number(e.target.value) as any})}
                     >
@@ -250,7 +250,7 @@ export function ManualEmissionTabs() {
                   <div className="space-y-2">
                     <Label className="text-[9px] font-bold uppercase text-gray-500">Motivo del Traslado</Label>
                     <select 
-                      className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 focus:ring-2 focus:ring-corporate-blue/20 outline-none"
+                      className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 focus:ring-2 focus:ring-brand-primary/20 outline-none"
                       value={guiaConfig.indTraslado}
                       onChange={(e) => setGuiaConfig({...guiaConfig, indTraslado: Number(e.target.value) as any})}
                     >
@@ -313,7 +313,7 @@ export function ManualEmissionTabs() {
             )}
 
             <div className="space-y-4 pt-4 border-t border-gray-50 dark:border-gray-700">
-              <div className="flex items-center gap-2 text-corporate-blue mb-2">
+              <div className="flex items-center gap-2 text-brand-primary mb-2">
                 <User className="w-4 h-4" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Datos del Receptor</span>
               </div>
@@ -495,7 +495,7 @@ export function ManualEmissionTabs() {
                     <span className="font-black text-gray-600 font-mono">${totals.exempt.toLocaleString()}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center bg-corporate-blue p-5 rounded-3xl shadow-xl shadow-corporate-blue/20">
+                <div className="flex justify-between items-center bg-brand-primary p-5 rounded-3xl shadow-xl shadow-brand-primary/20">
                   <span className="font-black text-white uppercase tracking-[0.2em] text-xs">Total</span>
                   <span className="text-2xl font-black text-white font-mono tracking-tighter">${totals.total.toLocaleString()}</span>
                 </div>
@@ -503,7 +503,7 @@ export function ManualEmissionTabs() {
                 <Button 
                   onClick={handleEmit}
                   disabled={isSubmitting}
-                  className="w-full h-16 rounded-[2rem] bg-corporate-blue hover:bg-corporate-dark text-white font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all active:scale-95 disabled:opacity-50"
+                  className="w-full h-16 rounded-[2rem] bg-brand-primary hover:bg-brand-700 text-white font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all active:scale-95 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

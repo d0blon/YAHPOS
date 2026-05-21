@@ -67,10 +67,10 @@ export default function BottomNav() {
         {/* Animated Background Indicator */}
         <div 
           ref={indicatorRef}
-          className="absolute top-1/2 -translate-y-1/2 w-16 h-16 bg-blue-600/20 rounded-3xl border border-blue-500/30 blur-[2px] transition-opacity duration-300 pointer-events-none"
+          className="absolute top-1/2 -translate-y-1/2 w-16 h-16 bg-brand-accent-600/20 rounded-3xl border border-brand-accent-500/30 blur-[2px] transition-opacity duration-300 pointer-events-none"
           style={{ opacity: activeIndex === -1 ? 0 : 1 }}
         >
-          <div className="absolute inset-0 bg-blue-500/10 rounded-3xl" />
+          <div className="absolute inset-0 bg-brand-accent-500/10 rounded-3xl" />
         </div>
 
         {navItems.map((item, index) => {
@@ -84,7 +84,7 @@ export default function BottomNav() {
               onClick={handleInteraction}
               className={cn(
                 "nav-item relative flex flex-col items-center justify-center w-16 h-16 transition-all duration-500 z-10",
-                isActive ? "text-blue-400" : "text-gray-500"
+                isActive ? "text-brand-accent-400" : "text-gray-500"
               )}
             >
               <div className="nav-icon relative">
@@ -93,7 +93,7 @@ export default function BottomNav() {
                   isActive && "scale-110"
                 )} />
                  {(item.badge ?? 0) > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-blue-600 text-[10px] font-black text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-black/50 shadow-lg shadow-blue-600/20">
+                  <span className="absolute -top-2 -right-2 bg-brand-accent-600 text-[10px] font-black text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-black/50 shadow-lg shadow-brand-accent-600/20">
                     {item.badge}
                   </span>
                 )}

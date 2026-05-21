@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
@@ -65,6 +65,8 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/w3c-web-usb": "^1.0.14",
+    "@types/web-bluetooth": "^0.0.21",
     "autocannon": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",

@@ -87,7 +87,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
     toast.success(`${product.name} agregado`, {
       description: `Se han añadido ${quantity} unidades al carrito.`,
       icon: <ShoppingCart className="w-4 h-4" />,
-      className: "glass-card border-blue-500/20"
+      className: "glass-card border-brand-accent-500/20"
     })
   }
 
@@ -102,7 +102,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
       
       {/* Scroll Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 z-[100] bg-white/5">
-        <div className="h-full bg-blue-500 w-0" id="scroll-progress" />
+        <div className="h-full bg-brand-accent-500 w-0" id="scroll-progress" />
       </div>
 
       <main ref={containerRef} className="min-h-screen pt-32 pb-20 relative z-10 overflow-hidden">
@@ -122,7 +122,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
               <ChevronRight className="w-3 h-3 text-gray-800" />
               <Link href={`/categoria/${categorySlug}`} className="hover:text-white transition-colors">{categoryName}</Link>
               <ChevronRight className="w-3 h-3 text-gray-800" />
-              <span className="text-blue-400">{product.name}</span>
+              <span className="text-brand-accent-400">{product.name}</span>
             </nav>
 
             <Button variant="ghost" onClick={() => router.back()} className="rounded-full text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white">
@@ -157,7 +157,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
                       PRODUCTO EXENTO
                     </div>
                   )}
-                  <div className="bg-blue-600/20 backdrop-blur-md border border-blue-500/30 text-blue-400 font-black px-4 py-2 rounded-xl text-[10px] tracking-widest uppercase">
+                  <div className="bg-brand-accent-600/20 backdrop-blur-md border border-brand-accent-500/30 text-brand-accent-400 font-black px-4 py-2 rounded-xl text-[10px] tracking-widest uppercase">
                     SELECCIÓN ELITE
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
                     <button 
                       key={idx}
                       onClick={() => setSelectedImage(idx)}
-                      className={`hero-reveal relative w-24 h-24 rounded-3xl overflow-hidden border-2 transition-all duration-500 shrink-0 ${selectedImage === idx ? 'border-blue-500 scale-105 bg-blue-500/10' : 'border-white/5 bg-white/5 hover:border-white/20'}`}
+                      className={`hero-reveal relative w-24 h-24 rounded-3xl overflow-hidden border-2 transition-all duration-500 shrink-0 ${selectedImage === idx ? 'border-brand-accent-500 scale-105 bg-brand-accent-500/10' : 'border-white/5 bg-white/5 hover:border-white/20'}`}
                     >
                       <img src={img} alt={`${product.name} ${idx}`} className="w-full h-full object-cover" />
                     </button>
@@ -189,8 +189,8 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
             <div ref={contentRef} className="space-y-12">
               <div className="space-y-6">
                 <div className="hero-reveal inline-flex items-center gap-3">
-                  <span className="w-12 h-[2px] bg-blue-500/40" />
-                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">{categoryName}</span>
+                  <span className="w-12 h-[2px] bg-brand-accent-500/40" />
+                  <span className="text-[10px] font-black text-brand-accent-400 uppercase tracking-[0.4em]">{categoryName}</span>
                 </div>
                 
                 <h1 className="hero-reveal text-5xl md:text-7xl font-black text-white tracking-tighter leading-[0.9] mb-8">
@@ -213,7 +213,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
                   <div className="flex flex-col">
                     <span className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Valoración</span>
                     <div className="flex items-center gap-2">
-                       <Star className="w-6 h-6 fill-blue-500 text-blue-500" />
+                       <Star className="w-6 h-6 fill-brand-accent-500 text-brand-accent-500" />
                        <span className="text-2xl font-black text-white">4.9</span>
                     </div>
                   </div>
@@ -229,7 +229,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
               {/* Action Board */}
               <div className="hero-reveal glass-card p-10 rounded-[3rem] border border-white/10 space-y-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
-                   <ShoppingCart className="w-32 h-32 text-blue-500" />
+                   <ShoppingCart className="w-32 h-32 text-brand-accent-500" />
                 </div>
 
                 <div className="relative z-10 space-y-8">
@@ -252,7 +252,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
 
                       <Button 
                         onClick={handleAddToCart}
-                        className="flex-1 h-[84px] bg-white text-black hover:bg-blue-50 transition-all rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm group"
+                        className="flex-1 h-[84px] bg-white text-black hover:bg-brand-accent-50 transition-all rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm group"
                       >
                         <ShoppingCart className="w-5 h-5 mr-3 group-hover:rotate-[-10deg] transition-transform" />
                         Agregar al Carrito
@@ -279,7 +279,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
                    { icon: RotateCcw, label: "Devolución", sub: "30 Días" }
                  ].map((item, i) => (
                    <div key={i} className="info-card flex flex-col items-center text-center gap-3 group">
-                      <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                      <div className="w-14 h-14 rounded-2xl bg-brand-accent-600/10 border border-brand-accent-500/20 flex items-center justify-center text-brand-accent-400 group-hover:bg-brand-accent-600 group-hover:text-white transition-all duration-500">
                         <item.icon className="w-6 h-6" />
                       </div>
                       <div>
@@ -325,13 +325,13 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
             <div className="mt-40 space-y-16">
               <div className="flex items-center justify-between">
                 <div className="space-y-4">
-                  <Badge variant="outline" className="border-blue-500/30 text-blue-400 font-black px-4 py-1 text-[10px] tracking-widest uppercase">
+                  <Badge variant="outline" className="border-brand-accent-500/30 text-brand-accent-400 font-black px-4 py-1 text-[10px] tracking-widest uppercase">
                     Te puede interesar
                   </Badge>
                   <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter">Productos Relacionados</h2>
                 </div>
                 <Link href={`/categoria/${categorySlug}`}>
-                   <Button variant="ghost" className="text-blue-400 font-black uppercase tracking-widest text-xs hover:text-white">
+                   <Button variant="ghost" className="text-brand-accent-400 font-black uppercase tracking-widest text-xs hover:text-white">
                       Explorar Todo <ChevronRight className="w-4 h-4 ml-2" />
                    </Button>
                 </Link>
@@ -355,7 +355,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent p-16 flex flex-col justify-center">
                 <h3 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-6 max-w-2xl leading-[0.9]">
                    EXPERIMENTA LA <br />
-                   DIFERENCIA <span className="text-blue-500">ELITE</span>.
+                   DIFERENCIA <span className="text-brand-accent-500">ELITE</span>.
                 </h3>
                 <p className="text-xl text-white/70 max-w-md font-medium mb-10 leading-relaxed">
                    En YAHPOS! elevamos el estándar de tus compras diarias con una selección inigualable.

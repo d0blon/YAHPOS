@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils'
 
 const ROLE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   admin:    { label: 'Administrador',     color: 'text-rose-700',   bg: 'bg-rose-100'   },
-  developer: { label: 'Desarrollador',    color: 'text-purple-700', bg: 'bg-purple-100' },
-  manager:  { label: 'Encargado Turno',  color: 'text-blue-700',   bg: 'bg-blue-100'   },
+  developer: { label: 'Desarrollador',    color: 'text-brand-700', bg: 'bg-brand-100' },
+  manager:  { label: 'Encargado Turno',  color: 'text-brand-accent-700', bg: 'bg-brand-accent-100'   },
   cashier:  { label: 'Colaborador',      color: 'text-green-700',  bg: 'bg-green-100'  },
   customer: { label: 'Cliente',          color: 'text-gray-700',   bg: 'bg-gray-100'   },
 }
@@ -53,7 +53,7 @@ export function UserDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-corporate-blue to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+        <div className="w-8 h-8 bg-gradient-to-br from-brand-primary to-brand-accent-700 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
           {initials || <User className="w-4 h-4" />}
         </div>
         <span className="hidden md:inline text-sm font-semibold text-gray-800 dark:text-white">
@@ -72,7 +72,7 @@ export function UserDropdown() {
           {/* Header: Profile summary */}
           <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-corporate-blue to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-accent-700 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
                 {initials || <User className="w-6 h-6" />}
               </div>
               <div className="min-w-0">
@@ -90,7 +90,7 @@ export function UserDropdown() {
             </div>
             {/* Loyalty Points - shown for all */}
             <div className="mt-3 flex items-center gap-2 bg-white dark:bg-gray-900 rounded-xl px-3 py-2 border border-gray-100 dark:border-gray-700">
-              <Coins className="w-4 h-4 text-accent-yellow" />
+              <Coins className="w-4 h-4 text-brand-accent" />
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {user.loyaltyPoints ?? 0} <span className="text-gray-400 font-normal">Puntos Austral</span>
               </span>
@@ -170,7 +170,7 @@ function MenuItem({ href, icon: Icon, label, onClick }: {
       onClick={onClick}
       className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300 group"
     >
-      <Icon className="w-4 h-4 text-gray-400 group-hover:text-corporate-blue transition-colors flex-shrink-0" />
+      <Icon className="w-4 h-4 text-gray-400 group-hover:text-brand-primary transition-colors flex-shrink-0" />
       <span>{label}</span>
     </Link>
   )

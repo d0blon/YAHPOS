@@ -116,10 +116,10 @@ export default function LoginPage() {
           <div className="max-w-md mx-auto">
 
             {/* Card */}
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-100/50 dark:shadow-black/40 border border-white/20 dark:border-gray-800/50 overflow-hidden">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-brand-accent-100/50 dark:shadow-black/40 border border-white/20 dark:border-gray-800/50 overflow-hidden">
 
               {/* Top accent bar */}
-              <div className="h-1.5 bg-gradient-to-r from-corporate-blue via-blue-400 to-accent-yellow" />
+              <div className="h-1.5 bg-gradient-to-r from-brand-primary via-brand-accent-400 to-brand-accent" />
 
               <div className="p-8">
                 {/* Header */}
@@ -190,7 +190,7 @@ export default function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="tu@email.com"
-                        className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/40 focus:border-corporate-blue transition-all text-sm"
+                        className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition-all text-sm"
                         autoComplete="email"
                       />
                     </div>
@@ -201,7 +201,7 @@ export default function LoginPage() {
                       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                         Contraseña
                       </label>
-                      <Link href="/recuperar-contrasena" className="text-xs text-corporate-blue hover:underline font-medium">
+                      <Link href="/recuperar-contrasena" className="text-xs text-brand-primary hover:underline font-medium">
                         ¿Olvidaste tu contraseña?
                       </Link>
                     </div>
@@ -213,7 +213,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-11 pr-12 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-corporate-blue/40 focus:border-corporate-blue transition-all text-sm"
+                        className="w-full pl-11 pr-12 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition-all text-sm"
                         autoComplete="current-password"
                       />
                       <button
@@ -230,7 +230,7 @@ export default function LoginPage() {
                     <input
                       id="remember-me"
                       type="checkbox"
-                      className="rounded border-gray-300 text-corporate-blue focus:ring-corporate-blue"
+                      className="rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
                     />
                     <label htmlFor="remember-me" className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
                       Recordarme en este dispositivo
@@ -241,7 +241,7 @@ export default function LoginPage() {
                     id="login-submit"
                     type="submit"
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-corporate-blue hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-primary hover:bg-brand-accent-700 active:bg-brand-accent-800 text-white font-bold rounded-2xl transition-all shadow-lg shadow-brand-accent-500/25 hover:shadow-brand-accent-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
                   >
                     {isLoading ? (
                       <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -257,7 +257,7 @@ export default function LoginPage() {
                 <div className="mt-6 text-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     ¿No tienes cuenta?{' '}
-                    <Link href="/registro" className="text-corporate-blue font-bold hover:underline">
+                    <Link href="/registro" className="text-brand-primary font-bold hover:underline">
                       Crear cuenta gratis
                     </Link>
                   </p>

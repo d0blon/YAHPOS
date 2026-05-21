@@ -66,8 +66,8 @@ function CompletarPerfilForm() {
     <main className="flex-1 flex items-center justify-center py-16 w-full">
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto">
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-100/50 dark:shadow-black/40 border border-white/20 dark:border-gray-800/50 overflow-hidden">
-              <div className="h-1.5 bg-gradient-to-r from-corporate-blue via-blue-400 to-accent-yellow" />
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-brand-accent-100/50 dark:shadow-black/40 border border-white/20 dark:border-gray-800/50 overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-brand-primary via-brand-accent-400 to-brand-accent" />
 
               <div className="p-8">
                 {/* Header */}
@@ -97,7 +97,7 @@ function CompletarPerfilForm() {
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
                           placeholder="Juan"
-                          className="w-full pl-9 pr-3 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-corporate-blue/40 focus:border-corporate-blue transition-all text-sm"
+                          className="w-full pl-9 pr-3 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition-all text-sm"
                         />
                       </div>
                     </div>
@@ -113,7 +113,7 @@ function CompletarPerfilForm() {
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
                           placeholder="Pérez"
-                          className="w-full pl-9 pr-3 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-corporate-blue/40 focus:border-corporate-blue transition-all text-sm"
+                          className="w-full pl-9 pr-3 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition-all text-sm"
                         />
                       </div>
                     </div>
@@ -131,7 +131,7 @@ function CompletarPerfilForm() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+56 9 1234 5678"
-                        className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-corporate-blue/40 focus:border-corporate-blue transition-all text-sm"
+                        className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition-all text-sm"
                       />
                     </div>
                   </div>
@@ -148,7 +148,7 @@ function CompletarPerfilForm() {
                         value={rut}
                         onChange={(e) => setRut(formatRut(e.target.value))}
                         placeholder="12.345.678-9"
-                        className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-corporate-blue/40 focus:border-corporate-blue transition-all text-sm"
+                        className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:border-brand-primary transition-all text-sm"
                       />
                     </div>
                   </div>
@@ -157,7 +157,7 @@ function CompletarPerfilForm() {
                     id="complete-profile-submit"
                     type="submit"
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-corporate-blue hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-primary hover:bg-brand-accent-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-brand-accent-500/25 hover:shadow-brand-accent-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
                   >
                     {isLoading ? (
                       <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -178,7 +178,7 @@ function CompletarPerfilForm() {
 
 export default function CompletarPerfilPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-corporate-blue border-t-transparent rounded-full" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full" /></div>}>
       <CompletarPerfilForm />
     </Suspense>
   )

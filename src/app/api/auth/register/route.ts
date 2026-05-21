@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { cleanRut } from '@/lib/utils'
+import { createAdminClient } from '@/lib/supabase'
 
 export async function POST(req: Request) {
   try {
@@ -12,9 +13,23 @@ export async function POST(req: Request) {
     }
 
     const cleanedRut = cleanRut(rut)
+    const storeId = req.headers.get('x-store-id')
+
+    // Check if a profile with this RUT already exists (e.g. created by POS)
+    let existingQuery = supabase
+      .from('profiles')
+      .select('id, loyalty_points, first_name, last_name, email, store_id')
+      .eq('rut', cleanedRut)
+      .limit(1)
+
+    const { data: existingProfiles } = await existingQuery
+
+    const existingProfile = existingProfiles?.[0]
+    const existingPoints = existingProfile?.loyalty_points || 0
+    const existingProfileId = existingProfile?.id
+    const existingStoreId = existingProfile?.store_id
 
     // 1. Sign up the user in Supabase Auth first
-    // This creates the actual credentials needed for login
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -31,21 +46,24 @@ export async function POST(req: Request) {
     if (authError) throw authError
     if (!authData.user) throw new Error('No se pudo crear el usuario de autenticación')
 
-    // 2. Sync profile data (Upsert)
-    // We use the ID from authData.user.id to ensure consistency
+    // 2. Update/Create profile linked to auth user
+    // The handle_new_user trigger already creates a basic profile, we enhance it
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .upsert({
         id: authData.user.id,
-        email,
-        first_name: firstName,
-        last_name: lastName,
+        email: email?.toLowerCase().trim(),
+        first_name: firstName?.trim() || existingProfile?.first_name,
+        last_name: lastName?.trim() || existingProfile?.last_name,
         phone,
         rut: cleanedRut,
         role: 'customer',
+        loyalty_points: existingPoints,
+        is_full_account: true,
+        store_id: storeId || existingStoreId,
         accepts_marketing: acceptMarketing ?? true,
         updated_at: new Date().toISOString()
-      }, { onConflict: 'id' }) // Usar el ID de auth para el conflicto, permitiendo actualizar perfiles existentes
+      }, { onConflict: 'id' })
       .select()
       .single()
 
@@ -53,15 +71,20 @@ export async function POST(req: Request) {
       console.error('Error syncing profile:', profileError.message)
     }
 
-    // 3. Associate with current store (Membership)
-    // El middleware proxy.ts inyecta x-store-id basado en el dominio detectado
-    const storeId = req.headers.get('x-store-id')
-    
+    // 3. If the existing profile has a different ID (POS-created), delete it
+    // to avoid duplicate profiles with the same RUT
+    if (existingProfileId && existingProfileId !== authData.user.id) {
+      const admin = createAdminClient()
+      await admin.from('profiles').delete().eq('id', existingProfileId)
+      console.log(`[Register] Perfil POS antiguo eliminado: ${existingProfileId}`)
+    }
+
+    // 4. Associate with current store (storeId already declared above)
     if (storeId) {
       console.log(`[Register] Asociando usuario ${authData.user.id} con tienda ${storeId}`)
       const { error: membershipError } = await supabase
         .from('user_stores')
-        .upsert({ // Usar upsert para evitar errores si ya existe la membresía
+        .upsert({
           user_id: authData.user.id,
           store_id: storeId,
           role: 'customer',
@@ -72,7 +95,7 @@ export async function POST(req: Request) {
         console.error('Error creating membership:', membershipError.message)
       }
     } else {
-      console.warn('[Register] No se detectó storeId en los headers. El usuario no fue asociado a ninguna tienda.')
+      console.warn('[Register] No se detectó storeId en los headers.')
     }
 
     return NextResponse.json({ 
@@ -85,7 +108,8 @@ export async function POST(req: Request) {
         phone: profile?.phone || phone,
         rut: profile?.rut || cleanedRut,
         role: 'customer',
-        loyaltyPoints: profile?.loyalty_points || 0,
+        loyaltyPoints: profile?.loyalty_points || existingPoints,
+        isFullAccount: true,
         createdAt: profile?.created_at || new Date().toISOString(),
         updatedAt: profile?.updated_at || new Date().toISOString()
       } 

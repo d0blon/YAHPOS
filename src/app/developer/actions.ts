@@ -672,7 +672,7 @@ export async function generateDtePdfAction(documentId: string) {
         giro: dte.Encabezado.Emisor.GiroEmis,
         direccion: dte.Encabezado.Emisor.DirOrigen
       },
-      timbre: doc.xml_content.match(/<TED.*?>.*?<\/TED>/s)?.[0] || undefined
+      timbre: doc.xml_content.match(/<TED.*?>[\s\S]*?<\/TED>/)?.[0] || undefined
     }
 
     const pdfBytes = await generateBoletaPdf(pdfData as any)

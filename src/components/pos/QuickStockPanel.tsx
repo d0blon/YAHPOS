@@ -83,12 +83,12 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
 
   return (
     <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-hidden">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300">
+      <div className="bg-white dark:bg-surface-100 w-full max-w-5xl max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col border border-slate-200 dark:border-gray-800 animate-in zoom-in-95 duration-300">
         
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-md rounded-t-[2.5rem]">
+        <div className="p-6 border-b border-slate-100 dark:border-gray-800 flex justify-between items-center bg-slate-50/50 dark:bg-surface-100/50 backdrop-blur-md rounded-t-[2.5rem]">
           <div className="flex items-center gap-4">
-             <div className="p-3 bg-patagonia-600 text-white rounded-2xl shadow-lg">
+             <div className="p-3 bg-brand-primary text-white rounded-2xl shadow-lg">
                 <Package className="w-6 h-6" />
              </div>
              <div>
@@ -103,10 +103,10 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
                 placeholder="BUSCAR PRODUCTO..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-10 h-10 w-64 rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-950 font-bold text-xs"
+                className="pl-10 h-10 w-64 rounded-xl border-slate-200 dark:border-gray-800 bg-surface-50 font-bold text-xs"
               />
             </div>
-            <button onClick={onClose} className="p-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95">
+            <button onClick={onClose} className="p-3 bg-slate-100 hover:bg-slate-200 dark:bg-surface-200 dark:hover:bg-gray-700 rounded-xl transition-all active:scale-95">
               <X className="w-5 h-5 text-slate-500" />
             </button>
           </div>
@@ -130,18 +130,18 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
                 return (
                   <div key={p.id} className={cn(
                     "p-5 rounded-[2rem] border-2 transition-all flex flex-col gap-4",
-                    isLow ? "bg-rose-500/5 border-rose-500/10" : "bg-slate-50 dark:bg-slate-800/20 border-slate-100 dark:border-slate-800"
+                    isLow ? "bg-rose-500/5 border-rose-500/10" : "bg-slate-50 dark:bg-surface-200/20 border-slate-100 dark:border-gray-800"
                   )}>
                      <div className="flex items-start justify-between gap-4">
                         <div className="flex gap-4">
-                           <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 overflow-hidden border border-slate-100 dark:border-slate-700 p-2 shrink-0">
+                           <div className="w-16 h-16 rounded-2xl bg-white dark:bg-surface-200 overflow-hidden border border-slate-100 dark:border-gray-700 p-2 shrink-0">
                               <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
                            </div>
                            <div className="min-w-0">
                               <h4 className="font-black text-slate-900 dark:text-white leading-tight uppercase text-sm line-clamp-1">{p.name}</h4>
                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter mt-1">{p.sku || p.barcode || 'SIN SKU'}</p>
                               <div className="flex items-center gap-2 mt-2">
-                                 <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase">{p.unit}</span>
+                                 <span className="px-2 py-0.5 bg-slate-200 dark:bg-surface-250 rounded text-[9px] font-black text-slate-600 dark:text-gray-300 uppercase">{p.unit}</span>
                                  {p.isRealtimeTracked && (
                                    <span className="flex items-center gap-1 text-emerald-500 text-[9px] font-black uppercase">
                                       <Zap className="w-2.5 h-2.5 animate-pulse fill-current" /> TIENDA VIVA
@@ -162,10 +162,10 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
                      </div>
 
                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-1.5 flex items-center justify-between min-w-[140px]">
+                        <div className="flex-1 bg-white dark:bg-surface-50 rounded-2xl border border-slate-200 dark:border-gray-800 p-1.5 flex items-center justify-between min-w-[140px]">
                            <button 
                              onClick={() => handleStockChange(p.id, p.stock, -1)}
-                             className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-rose-500 hover:text-white transition-all active:scale-90"
+                             className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-surface-200 flex items-center justify-center text-slate-600 dark:text-gray-300 hover:bg-rose-500 hover:text-white transition-all active:scale-90"
                            >
                               <ArrowDownRight className="w-4 h-4" />
                            </button>
@@ -181,7 +181,7 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
 
                            <button 
                              onClick={() => handleStockChange(p.id, p.stock, 1)}
-                             className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
+                             className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-surface-200 flex items-center justify-center text-slate-600 dark:text-gray-300 hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
                            >
                               <ArrowUpRight className="w-4 h-4" />
                            </button>
@@ -193,7 +193,7 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
                              <button
                                key={val}
                                onClick={() => handleStockChange(p.id, p.stock, val)}
-                               className="px-3 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-400 hover:bg-patagonia-500 hover:text-white transition-all active:scale-95"
+                               className="px-3 h-11 rounded-xl bg-slate-100 dark:bg-surface-200 text-[10px] font-black text-slate-600 dark:text-gray-400 hover:bg-brand-500 hover:text-white transition-all active:scale-95"
                              >
                                +{val}
                              </button>
@@ -205,7 +205,7 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
                           disabled={change === 0 || isUpdating === p.id}
                           className={cn(
                             "flex-1 h-11 px-4 rounded-xl font-black gap-2 transition-all shadow-lg text-xs",
-                            change !== 0 ? "bg-patagonia-600 hover:bg-patagonia-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                            change !== 0 ? "bg-brand-primary hover:brightness-90 text-white" : "bg-slate-100 dark:bg-surface-200 text-slate-400"
                           )}
                         >
                            {isUpdating === p.id ? (

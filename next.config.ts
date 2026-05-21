@@ -67,4 +67,3 @@ export default isProd
       register: false,
     })(nextConfig)
   : nextConfig;
-

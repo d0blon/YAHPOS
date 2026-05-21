@@ -69,14 +69,14 @@ export default function FeaturedProductsClient({ products }: FeaturedProductsCli
         >
           <motion.div variants={headerVariants} className="max-w-2xl">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-[2px] bg-corporate-blue dark:bg-accent-yellow" />
-              <span className="text-sm font-black uppercase tracking-[0.3em] text-corporate-blue dark:text-accent-yellow">
+              <div className="w-10 h-[2px] bg-brand-primary dark:bg-brand-accent" />
+              <span className="text-sm font-black uppercase tracking-[0.3em] text-brand-primary dark:text-brand-accent">
                 Selección Exclusiva
               </span>
             </div>
             <h2 className="text-5xl md:text-7xl font-black text-gray-900 dark:text-white tracking-tighter leading-[0.9] mb-8">
               MÁS QUE <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-corporate-blue via-purple-500 to-accent-yellow">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary via-brand-500 to-brand-accent">
                 PRODUCTOS
               </span>
             </h2>
@@ -87,7 +87,7 @@ export default function FeaturedProductsClient({ products }: FeaturedProductsCli
           
           <motion.div variants={headerVariants}>
             <Link href="/categoria/todos" className="group">
-              <div className="relative p-[1px] rounded-full bg-gradient-to-r from-corporate-blue to-accent-yellow overflow-hidden transition-transform duration-500 hover:scale-105 active:scale-95">
+              <div className="relative p-[1px] rounded-full bg-gradient-to-r from-brand-primary to-brand-accent overflow-hidden transition-transform duration-500 hover:scale-105 active:scale-95">
                 <div className="px-8 py-4 rounded-full bg-white dark:bg-black flex items-center gap-3 transition-colors group-hover:bg-transparent">
                   <span className="font-bold uppercase tracking-widest text-sm group-hover:text-white transition-colors">
                     Explorar Todo
@@ -117,11 +117,11 @@ export default function FeaturedProductsClient({ products }: FeaturedProductsCli
         {/* Decorative Floating Element */}
         <div className="mt-20 flex justify-center opacity-50">
           <div className="flex items-center gap-4 animate-bounce">
-            <Sparkles className="text-accent-yellow w-6 h-6" />
+            <Sparkles className="text-brand-accent w-6 h-6" />
             <span className="text-xs font-bold uppercase tracking-[0.5em] text-gray-400">
               Nuevos Arribos Diarios
             </span>
-            <Sparkles className="text-corporate-blue w-6 h-6" />
+            <Sparkles className="text-brand-primary w-6 h-6" />
           </div>
         </div>
       </div>

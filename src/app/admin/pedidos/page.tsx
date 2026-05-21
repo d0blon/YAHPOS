@@ -24,9 +24,9 @@ import { toast } from 'sonner'
 // Mock de estados de pedido
 const STATUS_COLORS: any = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  preparing: 'bg-blue-100 text-blue-800 border-blue-200',
+  preparing: 'bg-brand-accent-100 text-brand-accent-800 border-brand-accent-200',
   ready: 'bg-green-100 text-green-800 border-green-200',
-  shipped: 'bg-purple-100 text-purple-800 border-purple-200',
+  shipped: 'bg-brand-100 text-brand-800 border-brand-200',
   delivered: 'bg-gray-100 text-gray-800 border-gray-200',
   cancelled: 'bg-red-100 text-red-800 border-red-200',
 }
@@ -93,14 +93,14 @@ export default function AdminPedidosPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-            Gestión de <span className="text-blue-500">Pedidos</span>
+            Gestión de <span className="text-brand-accent-500">Pedidos</span>
           </h1>
           <p className="text-white/50 text-sm font-medium">Control logístico y armado de pedidos (Picking)</p>
         </div>
         
         <div className="flex items-center gap-4 bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl">
           <div className="px-6 py-2 text-center border-r border-white/10">
-            <p className="text-3xl font-black text-blue-500">{orders.length}</p>
+            <p className="text-3xl font-black text-brand-accent-500">{orders.length}</p>
             <p className="text-[10px] uppercase font-black tracking-widest text-white/30">Total Hoy</p>
           </div>
           <div className="px-6 py-2 text-center">
@@ -130,7 +130,7 @@ export default function AdminPedidosPage() {
             onClick={() => setFilter('all')}
             className={cn(
               "rounded-xl px-4 h-11 font-bold transition-all border-white/10",
-              filter === 'all' ? 'bg-blue-600 text-white hover:bg-blue-500' : 'text-white/50 hover:bg-white/5 hover:text-white'
+              filter === 'all' ? 'bg-brand-accent-600 text-white hover:bg-brand-accent-500' : 'text-white/50 hover:bg-white/5 hover:text-white'
             )}
           >
             Todos
@@ -150,7 +150,7 @@ export default function AdminPedidosPage() {
             onClick={() => setFilter('preparing')}
             className={cn(
               "rounded-xl px-4 h-11 font-bold transition-all border-white/10",
-              filter === 'preparing' ? 'bg-blue-500 text-white hover:bg-blue-400' : 'text-white/50 hover:bg-white/5 hover:text-white'
+              filter === 'preparing' ? 'bg-brand-accent-500 text-white hover:bg-brand-accent-400' : 'text-white/50 hover:bg-white/5 hover:text-white'
             )}
           >
             En Picking
@@ -184,7 +184,7 @@ export default function AdminPedidosPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredOrders.map((order) => (
-            <Card key={order.id} className="overflow-hidden border border-white/5 bg-white/5 backdrop-blur-xl hover:border-blue-500/30 transition-all duration-300 shadow-xl group rounded-3xl">
+            <Card key={order.id} className="overflow-hidden border border-white/5 bg-white/5 backdrop-blur-xl hover:border-brand-accent-500/30 transition-all duration-300 shadow-xl group rounded-3xl">
               <CardContent className="p-0">
                 {/* Header de la Card */}
                 <div className="p-5 border-b border-white/5 flex justify-between items-start bg-white/5">
@@ -203,7 +203,7 @@ export default function AdminPedidosPage() {
                     </h3>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-xl font-black text-blue-400 tracking-tighter">{formatPrice(order.total)}</span>
+                    <span className="text-xl font-black text-brand-accent-400 tracking-tighter">{formatPrice(order.total)}</span>
                     <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">{order.payment_method}</span>
                   </div>
                 </div>
@@ -226,12 +226,12 @@ export default function AdminPedidosPage() {
                   </div>
 
                   {order.service_fee > 0 && (
-                    <div className="flex items-center justify-between p-3 bg-blue-500/5 rounded-2xl text-xs border border-blue-500/10">
-                      <span className="text-blue-400 font-black uppercase tracking-widest text-[9px] flex items-center gap-2">
+                    <div className="flex items-center justify-between p-3 bg-brand-accent-500/5 rounded-2xl text-xs border border-brand-accent-500/10">
+                      <span className="text-brand-accent-400 font-black uppercase tracking-widest text-[9px] flex items-center gap-2">
                         <AlertCircle className="w-3.5 h-3.5" />
                         Picking Fee Incluido
                       </span>
-                      <span className="font-black text-blue-400">{formatPrice(order.service_fee)}</span>
+                      <span className="font-black text-brand-accent-400">{formatPrice(order.service_fee)}</span>
                     </div>
                   )}
                 </div>
@@ -241,7 +241,7 @@ export default function AdminPedidosPage() {
                   {order.status === 'pending' && (
                     <Button 
                       onClick={() => updateOrderStatus(order.id, 'preparing')}
-                      className="w-full bg-blue-600 hover:bg-blue-500 gap-2 text-[11px] font-black uppercase tracking-widest h-11 text-white rounded-xl shadow-lg shadow-blue-500/20 border-none"
+                      className="w-full bg-brand-accent-600 hover:bg-brand-accent-500 gap-2 text-[11px] font-black uppercase tracking-widest h-11 text-white rounded-xl shadow-lg shadow-brand-accent-500/20 border-none"
                     >
                       <ClipboardList className="w-4 h-4" />
                       Empezar Picking

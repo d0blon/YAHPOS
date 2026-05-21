@@ -32,7 +32,6 @@ export default async function ShopLayout({
   // Plan Archipiélago / Patagonia: mostrar el ecommerce completo
   return (
     <>
-      <ShopBackdrop />
       <RouteTransition />
       <Header />
       <main className="relative z-10 min-h-screen flex flex-col pt-0">

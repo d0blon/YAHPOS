@@ -28,7 +28,7 @@ export default function UpgradePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-corporate-blue"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary"></div>
       </div>
     )
   }
@@ -36,19 +36,19 @@ export default function UpgradePage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-6 relative overflow-hidden">
       {/* Background Decorative Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-corporate-blue/20 blur-[120px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-primary/20 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-accent-600/10 blur-[120px] rounded-full" />
       
       <div className="max-w-6xl w-full z-10 text-center mt-12">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-bold mb-8">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-accent-500/10 border border-brand-accent-500/20 text-brand-accent-400 text-sm font-bold mb-8">
           <Zap className="w-4 h-4 fill-current" />
           <span>PLANES DE SUSCRIPCIÓN 2026</span>
         </div>
 
         {/* Title */}
         <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter bg-gradient-to-b from-white via-white to-white/40 bg-clip-text text-transparent">
-          Escala tu negocio con <span className="text-corporate-blue">YAHPOS!</span>
+          Escala tu negocio con <span className="text-brand-primary">YAHPOS!</span>
         </h1>
         
         <p className="text-gray-400 text-lg md:text-xl mb-16 max-w-2xl mx-auto leading-relaxed">
@@ -63,20 +63,20 @@ export default function UpgradePage() {
               key={tier.id}
               className={`relative p-8 rounded-3xl border transition-all duration-500 group overflow-hidden ${
                 tier.slug === 'archipielago' 
-                  ? 'bg-gradient-to-b from-blue-600/20 to-transparent border-blue-500/50 scale-105 shadow-2xl shadow-blue-500/10' 
+                  ? 'bg-gradient-to-b from-brand-accent-600/20 to-transparent border-brand-accent-500/50 scale-105 shadow-2xl shadow-brand-accent-500/10' 
                   : 'bg-white/5 border-white/10 hover:border-white/20'
               }`}
             >
               {tier.slug === 'archipielago' && (
                 <div className="absolute top-4 right-4">
-                  <Badge className="bg-blue-500 text-white border-0">RECOMENDADO</Badge>
+                  <Badge className="bg-brand-accent-500 text-white border-0">RECOMENDADO</Badge>
                 </div>
               )}
 
               <div className="mb-8">
                 <h3 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
                   {tier.slug === 'austral' && <Store className="w-6 h-6 text-gray-400" />}
-                  {tier.slug === 'archipielago' && <Rocket className="w-6 h-6 text-blue-400" />}
+                  {tier.slug === 'archipielago' && <Rocket className="w-6 h-6 text-brand-accent-400" />}
                   {tier.slug === 'patagonia' && <Trophy className="w-6 h-6 text-yellow-500" />}
                   {tier.name}
                 </h3>
@@ -100,7 +100,7 @@ export default function UpgradePage() {
                   <span className={tier.features.ecommerce ? 'text-gray-200' : 'text-gray-600'}>E-commerce Online</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <Boxes className={`w-5 h-5 ${tier.limit_products ? 'text-blue-500' : 'text-yellow-500'}`} />
+                  <Boxes className={`w-5 h-5 ${tier.limit_products ? 'text-brand-accent-500' : 'text-yellow-500'}`} />
                   <span className="text-gray-200">
                     {tier.limit_products ? `Hasta ${tier.limit_products} productos` : 'Productos ilimitados'}
                   </span>
@@ -124,7 +124,7 @@ export default function UpgradePage() {
                   tier.slug === currentTierSlug
                     ? 'bg-white/10 text-white border border-white/20 cursor-default'
                     : tier.slug === 'archipielago'
-                      ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                      ? 'bg-brand-accent-500 hover:bg-brand-accent-600 text-white shadow-lg shadow-brand-accent-500/25'
                       : 'bg-white text-black hover:bg-gray-200'
                 }`}
                 disabled={tier.slug === currentTierSlug}

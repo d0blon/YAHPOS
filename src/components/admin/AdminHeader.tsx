@@ -75,7 +75,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           </Button>
 
           <nav className="hidden md:flex items-center gap-2 text-sm text-gray-500 overflow-hidden whitespace-nowrap">
-            <Link href="/admin" className="hover:text-corporate-blue transition-colors flex items-center gap-1.5 shrink-0">
+            <Link href="/admin" className="hover:text-brand-primary transition-colors flex items-center gap-1.5 shrink-0">
               <LayoutDashboard className="w-4 h-4" />
               <span className="font-bold uppercase tracking-tighter italic">Admin</span>
             </Link>
@@ -89,7 +89,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                     "transition-colors truncate",
                     crumb.isLast 
                       ? "text-gray-900 dark:text-white font-black uppercase italic tracking-tighter" 
-                      : "hover:text-corporate-blue"
+                      : "hover:text-brand-primary"
                   )}
                 >
                   {crumb.label}
@@ -105,7 +105,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           {/* AI Innovation Button - The Magic Wand */}
           <Button 
             onClick={() => setIsWishlistOpen(true)}
-            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-none rounded-2xl px-4 h-10 shadow-lg shadow-purple-500/20 animate-pulse-subtle group"
+            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-accent-600 hover:from-brand-700 hover:to-brand-accent-700 text-white border-none rounded-2xl px-4 h-10 shadow-lg shadow-brand-500/20 animate-pulse-subtle group"
           >
             <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
             <span className="text-[10px] font-black uppercase tracking-widest italic">Mejorar con IA</span>
@@ -115,7 +115,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           <div className="flex items-center bg-gray-50 dark:bg-white/5 p-1 rounded-2xl border border-gray-100 dark:border-white/5">
             <Link href="/pos">
               <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl hover:bg-white dark:hover:bg-white/10 shadow-sm" title="Terminal POS">
-                <Monitor className="w-4 h-4 text-corporate-blue" />
+                <Monitor className="w-4 h-4 text-brand-primary" />
               </Button>
             </Link>
             <Link href="/">
@@ -139,12 +139,12 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 <p className="text-sm font-black italic uppercase tracking-tighter text-gray-900 dark:text-white">
                   {user?.firstName}
                 </p>
-                <p className="text-[9px] font-bold text-corporate-blue uppercase tracking-widest mt-0.5">
+                <p className="text-[9px] font-bold text-brand-primary uppercase tracking-widest mt-0.5">
                   {user?.role}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-corporate-blue to-blue-700 p-0.5 shadow-lg shadow-corporate-blue/10 shrink-0">
-                <div className="w-full h-full rounded-[14px] bg-white dark:bg-gray-900 flex items-center justify-center text-corporate-blue text-xs font-black italic">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-primary to-blue-700 p-0.5 shadow-lg shadow-brand-primary/10 shrink-0">
+                <div className="w-full h-full rounded-[14px] bg-white dark:bg-gray-900 flex items-center justify-center text-brand-primary text-xs font-black italic">
                   {user?.firstName?.[0]}
                 </div>
               </div>

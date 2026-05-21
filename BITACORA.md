@@ -1,5 +1,46 @@
 # Bitácora — YAHPOS!
 
+### 2026-05-19 — Fix session-sync cookie propagation (INCOMPLETO — BLOQUEADO)
+
+**Problema:** Auth cross-subdomain loop. session-sync perdía cookies en el redirect.
+
+**Intento de fix:** Reescribir session-sync para usar HTML 200 + Set-Cookie headers raw + window.location.replace() en vez de NextResponse.redirect() + cookies.
+
+**Resultado:** session-sync responde 200, pero `[Middleware] Auth Error: Auth session missing!` persiste en requests posteriores. Las cookies no se propagan correctamente al middleware.
+
+**Impacto colateral:** Webpack compilation hang tras limpiar `.next` cache (cache cold). No arranca con `--webpack`. Turbopack sirve páginas pero auth sigue sin funcionar.
+
+**Files tocados:**
+| Archivo | Cambio |
+|---------|--------|
+| `src/app/api/auth/session-sync/route.ts` | Reescrito: HTML + Set-Cookie headers (NO FIX) |
+| `src/middleware.ts` | Sanitización trailing dots |
+
+**Archivos revertidos a original:**
+| Archivo | Razón |
+|---------|-------|
+| `next.config.ts` | Se quitó `turbopack: {}` agregado experimentalmente |
+| `package.json` | Se revirtió `"next dev"` → `"next dev --webpack"` |
+
+**Lección:** No modificar config de build ni cambiar entre webpack/turbopack sin entender impacto de PWA plugin. Documentar cambios ANTES de aplicar.
+
+---
+
+### 2026-05-16 — Loyalty Fixes + Multi-Tenant Auth + Customer Display V2
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/app/api/auth/callback/route.ts` | Auth callback redirige a `fromOrigin` para TODOS los usuarios. Staff filtrados por subdominio vía `stores!inner`. |
+| `src/app/api/auth/register/route.ts` | Agregado `store_id` al upsert del profile. |
+| `src/app/api/customers/route.ts` | Fallback a búsqueda sin `store_id` si no encuentra. |
+| `supabase/migrations/021_identity_verification.sql` | Incluye UPDATE para marcar `is_full_account=true` en perfiles con email. |
+| `src/app/(pos)/pos/page.tsx` | + CustomerStatusPanel (QR registro / icono carnet / verified) + auto-refresh 3s + validateSession() + broadcast reset en vacío + estabilizado init effect + metadata broadcast ya no borra items |
+| `src/app/(pos)/pos/customer-display/page.tsx` | IdleState ahora muestra "Bienvenidos a [Tienda]" con logo y puntos del cliente |
+| `AGENTS.md` | Handoff + bugs actualizados |
+| `YAHPOS Kanban.md` | Bugs resueltos marcados |
+
+---
+
 ## Índice
 
 - [1. Resumen del Proyecto](#1-resumen-del-proyecto)
@@ -454,6 +495,47 @@ El usuario reportó "nada todavia" — el nombre del cajero sigue sin aparecer e
 
 #### Evidence Gates
 - `npm run build`: ✅
+
+### 2026-05-15 — Fix Cashier Name en Customer Display (Root Cause)
+
+#### 🐛 Bug: cashierName nunca llega en primer broadcast
+**Causa raíz:** Race condition entre Zustand persist hydration (async desde IndexedDB/localStorage) y el `useEffect(420)` que dispara el primer broadcast en `pos/page.tsx`.
+
+1. React monta el POS → `useAuthStore()` devuelve `{ user: null }` (Zustand no ha hidratado aún)
+2. `useEffect(420)` se dispara con `authUser=null` → broadcast `cashierName: undefined`
+3. El `metadataRef.current.cashierName` y `lastBroadcastRef` se "envenenan" con `undefined`
+4. Aunque Zustand hidrata posteriomente y React re-renderiza, en Strict Mode (React 18+) los BroadcastChannel pueden cerrarse/recrearse y los mensajes perderse
+5. El fix anterior de `metadataRef` no cubría este caso porque también dependía del state de React
+
+**Fix (`useCustomerDisplaySync.ts`):**
+- Nueva función `getCashierFromStore()` que lee síncronamente `useAuthStore.getState().user` directo del store Zustand, bypassando el ciclo de render de React
+- Agregada como tercer fallback (`?? getCashierFromStore()`) en `enriched.cashierName` tanto en `broadcast()` como en `updateData()`
+- Cadena completa: `data.cashierName ?? metadataRef.current.cashierName ?? getCashierFromStore()`
+- `getCashierFromStore()` también fallback a `usePosStore.getState().currentUser` para modo local sin login
+
+#### ✅ Resultado esperado
+El Customer Display recibe `cashierName` desde el primer broadcast porque se lee directo del store de Zustand (ya hidratado para cuando el usuario interactúa), sin esperar React states.
+
+#### Evidence Gates
+- `npm run lint`: ✅ (pre-existing errors only)
+- `npx tsc --noEmit`: ✅ (no type errors)
+
+### 2026-05-15 — Show pointsToEarn en Customer Display + scrollbar brand color
+
+#### 🖥️ Customer Display
+- **`src/app/(pos)/pos/page.tsx`**: Agregado `pointsToEarn` faltante en el broadcast de cart-update (effect de items) y en el metadata broadcast
+- **`src/app/(pos)/pos/customer-display/page.tsx`**: Movido `pointsToEarn` fuera del bloque `customerName` al footer de totales, visible para todos los clientes (no solo identificados)
+
+#### 🎨 Scrollbar brand color
+- **`src/app/globals.css`**: Cambiado scrollbar thumb de `rgba(255,255,255,0.1)` a `color-mix(in srgb, var(--brand-primary, #4b0082) 20%, transparent)` para visibilidad en modo claro. Agregado soporte Firefox via `scrollbar-color`.
+
+### 2026-05-15 — Footer compacto Customer Display + Bug EditorToggle en POS
+
+#### 🖥️ Customer Display footer compacto
+- **`src/app/(pos)/pos/customer-display/page.tsx`**: Footer rediseñado: items+subtotal en una línea, IVA+puntos+descuento en una línea secundaria con separadores `·`, total más pequeño (`text-2xl`), padding reducido. Sin `pointsToEarn` duplicado en bloque de cliente.
+
+#### 🐛 Bug: EditorToggle visible en rutas incorrectas
+- **`src/components/editor/EditorToggle.tsx`**: Agregada exclusión de `/pos`. Corregida lógica de `isLandingPage` para que solo excluya `/` en producción (yahpos.cl), no en localhost. Así el toggle solo aparece en páginas del e-commerce.
 
 ### 2026-05-14 — Fase 0 (IVA Duplication Fix) + Fase 1 (Customer Display + Webpay QR)
 

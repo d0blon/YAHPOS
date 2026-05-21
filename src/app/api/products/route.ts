@@ -2,15 +2,92 @@ import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase'
 import { generateSlug } from '@/lib/utils'
 import { productSchema } from '@/lib/validations/products'
+import fs from 'fs'
+import path from 'path'
 
-export const revalidate = 60; // Cache for 60 seconds (ISR)
+export const revalidate = 60;
+
+const DEMO_HOST_PREFIX = 'master.'
+
+let catalogCache: any[] | null = null
+
+function loadCatalog(): any[] {
+  if (catalogCache) return catalogCache
+  const filePath = path.join(process.cwd(), 'public', 'data', 'catalog.json')
+  const raw = fs.readFileSync(filePath, 'utf-8')
+  catalogCache = JSON.parse(raw) as any[]
+  return catalogCache
+}
+
+function transformCatalogItem(item: any, index: number) {
+  const categorySlug = (item.category_main || '').toLowerCase().replace(/\s+/g, '-')
+  const categoryName = categorySlug
+    ? categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1)
+    : 'Sin categoría'
+  const slug = generateSlug(item.name)
+
+  return {
+    id: `demo-${item.sku || `catalog-${index}`}`,
+    name: item.name,
+    slug,
+    description: item.name_raw || item.name,
+    price: item.price,
+    image: item.images?.[0] || '',
+    category: categoryName,
+    categorySlug,
+    categoryId: categorySlug,
+    stock: 999,
+    lowStockThreshold: 5,
+    sku: item.sku || '',
+    barcode: item.sku || '',
+    unit: 'un',
+    isActive: true,
+    isFeatured: false,
+    discount: 0,
+    tags: item.tags || [],
+    brand: item.brand || '',
+    isExempt: false,
+    nutritionalSeals: 0,
+    isRealtimeTracked: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+function serveDemoCatalog(req?: Request) {
+  try {
+    const catalog = loadCatalog()
+    const url = req ? new URL(req.url) : null
+    const slug = url?.searchParams.get('slug')
+
+    if (slug && req) {
+      const item = catalog.find((p: any) => generateSlug(p.name) === slug)
+      if (!item) {
+        return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+      }
+      const idx = catalog.indexOf(item)
+      return NextResponse.json(transformCatalogItem(item, idx))
+    }
+
+    const transformed = catalog.map((item: any, i: number) => transformCatalogItem(item, i))
+    return NextResponse.json(transformed)
+  } catch (err) {
+    console.error('[GET /api/products] Demo catalog error:', err)
+    return NextResponse.json({ error: 'Error loading demo catalog' }, { status: 500 })
+  }
+}
 
 export async function GET(req: Request) {
+  // Demo store (master.*): sirve desde catalog.json
+  const host = req.headers.get('host') || ''
+  if (host.startsWith(DEMO_HOST_PREFIX)) {
+    return serveDemoCatalog(req)
+  }
+
   const supabase = await createClient()
   const adminSupabase = createAdminClient()
   
   try {
-    // Identificar el store_id. 
     const { data: store, error: storeError } = await adminSupabase
       .from('stores')
       .select('id')
@@ -18,16 +95,16 @@ export async function GET(req: Request) {
       .limit(1)
       .single()
 
-    if (storeError || !store) {
-      console.error('[API /products] Store not found or inactive:', storeError)
-      return NextResponse.json({ error: 'Tienda no encontrada o inactiva' }, { status: 404 })
-    }
+  // Fallback: si no hay store activa en DB, servimos catalog.json (dev local)
+  if (storeError || !store) {
+    return serveDemoCatalog(req)
+  }
 
-    const storeId = store.id
-    
-    const { searchParams } = new URL(req.url)
-    const branchId = searchParams.get('branch_id')
-    const slug = searchParams.get('slug')
+  const storeId = store.id
+  
+  const { searchParams } = new URL(req.url)
+  const branchId = searchParams.get('branch_id')
+  const slug = searchParams.get('slug')
 
     // Usamos el cliente normal (respetando RLS) si es posible.
     // Si la tienda es pública, las políticas RLS deben permitir SELECT anónimo filtrado por store_id.
@@ -103,6 +180,11 @@ export async function GET(req: Request) {
     }
 
     const dataList = products ?? []
+
+    // Si no hay productos en DB, servir catálogo demo (útil para dev local)
+    if (dataList.length === 0) {
+      return serveDemoCatalog(req)
+    }
 
     // NOTA: La columna `category` en products ya almacena el slug directamente
     // (ej: "alimentos", "bebidas"). No hay columna category_id en esta tabla.

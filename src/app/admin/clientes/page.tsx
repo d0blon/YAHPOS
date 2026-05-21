@@ -58,14 +58,14 @@ export default function AdminClientes() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-            Base de Datos de <span className="text-corporate-blue">Clientes</span>
+            Base de Datos de <span className="text-brand-primary">Clientes</span>
           </h1>
           <p className="text-gray-500 text-sm font-medium">Gestiona perfiles, RUTs y programas de fidelización</p>
         </div>
         
         <div className="flex items-center gap-4 bg-white/50 dark:bg-white/5 backdrop-blur-md p-2 rounded-2xl border border-white/20 dark:border-white/10 shadow-lg">
           <div className="px-6 py-2 text-center border-r border-gray-200 dark:border-gray-700">
-            <p className="text-3xl font-black text-corporate-blue">{customers.length}</p>
+            <p className="text-3xl font-black text-brand-primary">{customers.length}</p>
             <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Total</p>
           </div>
           <div className="px-6 py-2 text-center">
@@ -96,7 +96,7 @@ export default function AdminClientes() {
           </Button>
           <Button 
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-xl px-6 h-12 font-bold shadow-lg shadow-corporate-blue/20 flex items-center gap-2"
+            className="bg-brand-primary hover:bg-brand-700 text-white rounded-xl px-6 h-12 font-bold shadow-lg shadow-brand-primary/20 flex items-center gap-2"
           >
             <UserPlus className="w-5 h-5" />
             Nuevo Cliente
@@ -108,7 +108,7 @@ export default function AdminClientes() {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <Card className="w-full max-w-md border-none shadow-2xl bg-white dark:bg-gray-800 rounded-3xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <CardHeader className="bg-corporate-blue text-white p-6">
+            <CardHeader className="bg-brand-primary text-white p-6">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                   <UserPlus className="w-6 h-6" />
@@ -165,7 +165,7 @@ export default function AdminClientes() {
                   Cancelar
                 </Button>
                 <Button 
-                  className="flex-[2] bg-corporate-blue hover:bg-corporate-dark text-white h-12 rounded-xl font-bold shadow-lg shadow-corporate-blue/20"
+                  className="flex-[2] bg-brand-primary hover:bg-brand-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-brand-primary/20"
                   disabled={isSaving || !newCustomer.rut || !newCustomer.name}
                   onClick={async () => {
                     try {
@@ -199,7 +199,7 @@ export default function AdminClientes() {
         <CardHeader className="border-b border-gray-100/50 dark:border-gray-700/50 bg-white/30 dark:bg-black/10">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-black uppercase italic tracking-tighter">
-              Listado de <span className="text-corporate-blue">Clientes</span>
+              Listado de <span className="text-brand-primary">Clientes</span>
             </CardTitle>
             <Badge variant="outline" className="rounded-lg font-bold border-gray-200 dark:border-gray-700">
               {filteredCustomers.length} Resultados
@@ -224,7 +224,7 @@ export default function AdminClientes() {
                 {isLoading ? (
                   <tr>
                     <td colSpan={7} className="py-20 text-center">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-corporate-blue mb-4" />
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-primary mb-4" />
                       <p className="text-sm text-gray-500">Cargando clientes...</p>
                     </td>
                   </tr>
@@ -241,14 +241,14 @@ export default function AdminClientes() {
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                           customer.role === 'admin' ? 'bg-red-100 text-red-600' :
-                          customer.role === 'developer' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' :
+                          customer.role === 'developer' ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30' :
                           customer.role === 'manager' ? 'bg-orange-100 text-orange-600' :
-                          'bg-corporate-blue/10 text-corporate-blue'
+                          'bg-brand-primary/10 text-brand-primary'
                         }`}>
                           {customer.name?.charAt(0) || '?'}
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold text-gray-900 dark:text-white group-hover:text-corporate-blue transition-colors">{customer.name}</span>
+                          <span className="font-bold text-gray-900 dark:text-white group-hover:text-brand-primary transition-colors">{customer.name}</span>
                           <span className="text-[10px] text-gray-400 font-mono uppercase tracking-tighter">{customer.id.substring(0,8)}</span>
                         </div>
                       </div>
@@ -257,11 +257,11 @@ export default function AdminClientes() {
                       <Badge 
                         className={`font-black uppercase tracking-widest text-[9px] px-2 py-0.5 rounded-md border-none ${
                           customer.role === 'admin' ? 'bg-red-500 text-white shadow-sm' :
-                          customer.role === 'developer' ? 'bg-purple-600 text-white shadow-neon' :
+                          customer.role === 'developer' ? 'bg-brand-600 text-white shadow-neon' :
                           customer.role === 'manager' ? 'bg-amber-500 text-white' :
                           customer.role === 'cashier' ? 'bg-emerald-500 text-white' :
                           customer.role === 'warehouse' ? 'bg-slate-500 text-white' :
-                          'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                          'bg-brand-accent-100 text-brand-accent-600 dark:bg-brand-accent-900/30 dark:text-brand-accent-400'
                         }`}
                       >
                         {customer.role === 'admin' ? 'Administrador' :
@@ -287,7 +287,7 @@ export default function AdminClientes() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="text-gray-400 hover:text-corporate-blue"
+                          className="text-gray-400 hover:text-brand-primary"
                           onClick={() => {
                             setNewCustomer({
                               name: customer.name,

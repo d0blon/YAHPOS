@@ -224,34 +224,77 @@ Solo disponibles en Chromium (Chrome, Edge, Opera). No funcionan en Firefox ni S
 | `src/app/(pos)/pos/customer-display/page.tsx` | Nuevo `TerminalCashierBar` compartido; CashierName visible en cart-update, payment-qr y payment-confirmed |
 | `BITACORA.md` | Changelog actualizado |
 
+### 2026-05-15 — Fix Cashier Name (Root Cause)
+| Archivo | Cambio |
+|---------|--------|
+| `src/lib/hooks/useCustomerDisplaySync.ts` | Nueva función `getCashierFromStore()` como tercer fallback en broadcast/receiver para leer directo del store Zustand |
+| `TASK_HANDOFF.md` | Estado actualizado a fix-implemented con root cause |
+| `BITACORA.md` | Changelog actualizado |
+
+### 2026-05-16 — Loyalty Fixes + Multi-Tenant Auth + Customer Display V2
+| Archivo | Cambio |
+|---------|--------|
+| `src/app/api/auth/callback/route.ts` | Auth callback ahora redirige a `fromOrigin` para TODOS los usuarios (clientes y staff). Staff con membresía filtrada por subdominio. |
+| `src/app/api/auth/register/route.ts` | Agregado `store_id` al upsert del profile. Eliminada duplicación de `const storeId`. |
+| `src/app/api/customers/route.ts` | GET: fallback a búsqueda sin `store_id` si no encuentra con él (perfiles web). |
+| `supabase/migrations/021_identity_verification.sql` | Incluye UPDATE para marcar `is_full_account=true` en perfiles con email. |
+| `src/app/(pos)/pos/page.tsx` | + `CustomerStatusPanel` (QR registro / icono carnet / verified badge) + auto-refresh cada 3s + `validateSession()` en handleCheckout + broadcast `reset` cuando carrito vacío + efecto inicialización estabilizado (sin `authUser`/`isAuthenticated` en deps) + efecto broadcast metadata ya no borra items |
+| `src/app/(pos)/pos/customer-display/page.tsx` | IdleState ahora muestra "Bienvenidos a [Tienda]" con logo, o "gracias por preferirnos" con puntos si hay customerName |
+| `AGENTS.md` | Handoff actualizado |
+| `BITACORA.md` | Changelog actualizado |
+| `YAHPOS Kanban.md` | Bugs marcados como resueltos |
+
+### 2026-05-19 — Fix session-sync cookie propagation (INCOMPLETO — BLOQUEADO)
+| Archivo | Cambio | Estado |
+|---------|--------|--------|
+| `src/app/api/auth/session-sync/route.ts` | Reescrito: HTML 200 + Set-Cookie headers + window.location.replace() en vez de NextResponse.redirect() + cookies | 🔄 Probado - auth sigue sin propagarse |
+| `src/middleware.ts` | Sanitización trailing dots en redirect path | 🟢 Inocuo |
+| `TASK_HANDOFF.md` | Documentación completa del estado bloqueado | 🟢 |
+
 ---
 
-## 6. Current Session Handoff (14 May 2026, 18:00)
+## 6. Current Session Handoff (19 May 2026)
 
-### Última instrucción del usuario
-> "Lee tus Rules y empieza a trabajar"
+### ⛔ ESTADO ACTUAL: BLOQUEADO
 
-### Estado de la última tarea: Fix Cashier Name
-**Resultado:** El usuario reportó "nada todavia" — el fix de metadataRef NO RESOLVIÓ el problema. El nombre del cajero sigue sin aparecer en el Customer Display.
+**Última instrucción del usuario:** intentar arreglar auth cross-subdomain loop en master.localhost:3000
 
-**Próximo paso al iniciar sesión:**
-1. Investigar DEEPLY por qué `cashierName` no se muestra. Posibles causas:
-   - `authUser` de `useAuthStore()` tiene `firstName`/`lastName` vacíos o null → verificar shape real del objeto
-   - `currentUser` en posStore no se setea a tiempo → verificar orden de effects
-   - `authUser` se deserializa mal desde IndexedDB (zustand persist) → `firstName` podría ser `undefined`
-   - El broadcast nunca se dispara con items (`items.length > 0 && subtotal > 0` podría fallar si subtotal=0)
-   - La condición `items.length > 0` impide broadcast inicial (cuando cart está vacío)
-2. Pushear nuevos cambios a GitHub si se encuentra la raíz.
+### Lo que se intentó
+- Se reescribió `session-sync/route.ts` para usar HTML 200 + `Set-Cookie` headers raw + `window.location.replace()`, en lugar de `NextResponse.redirect()` + `response.cookies.set()` que perdía cookies en el redirect.
+- Se agregó sanitización de trailing dots en middleware (path `/pos.` → `/pos`).
 
-### Archivos clave para investigar
-- `src/app/(pos)/pos/page.tsx:409` — línea donde se genera `cashierName`
-- `src/lib/hooks/useCustomerDisplaySync.ts` — broadcast y receiver hooks
-- `src/app/(pos)/pos/customer-display/page.tsx` — rendering de cashierName
-- `src/stores/authStore.ts:100` — cómo se construye `firstName` del usuario
+### Lo que SÍ funciona
+- Turbopack (`npx next dev`) arranca y sirve páginas (login, root).
+- El flujo OAuth completo funciona hasta session-sync: callback (200) → session-sync (200).
+- `setSession()` captura cookies correctamente vía `setAll()` callback.
+
+### Lo que NO funciona
+1. **Webpack (`next dev --webpack`)**: Compilación se cuelga tras limpiar `.next` cache (cache cold). Permanece en `Compiling /pos ...`.
+2. **Auth session missing**: Después de session-sync, toda request subsecuente muestra `[Middleware] Auth Error: Auth session missing!`. Las cookies seteadas no son reconocidas por `getUser()`.
+
+### Hipótesis principales
+- **H1:** Los nombres de cookies capturados por `setAll()` en session-sync no coinciden con los que espera `getUser()` en el middleware.
+- **H2:** Timing: el `window.location.replace()` se ejecuta antes de que el browser persista los `Set-Cookie` headers.
+- **H3:** La PWA plugin (`@ducanh2912/next-pwa`) interfiere con webpack 5 en cache cold.
+
+### Pendiente (usuario)
+- Ejecutar `021_identity_verification.sql` y `022_fix_drafts_session_id.sql` en Supabase SQL Editor (cuando el auth esté funcional)
+
+### Ver TASK_HANDOFF.md para detalle completo
 
 ---
 
 ## 7. Bugs Conocidos (Backlog)
+
+### 🔴 Bloqueantes
+- [ ] **[Auth]** Session-sync no propaga cookies al middleware — `Auth session missing!` tras login exitoso
+- [ ] **[Build]** Webpack compilation hang con cache cold (PWA plugin maybe). Workaround: Turbopack
+
+### 🟡 Backlog
+- [ ] **[Stab]** Invalid Refresh Token: Already Used (race condition Strict Mode)
+- [ ] **[Infra]** Inngress — Setup inicial
+- [ ] **[Infra]** Migrar SII sync a Inngest
+- [ ] **[Mkt]** Resends — Sistema de reenvío de marketing a clientes
 
 ---
 

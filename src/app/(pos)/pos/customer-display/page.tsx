@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, CheckCircle2, Wifi, WifiOff, ScanLine, Award, Package, Monitor } from 'lucide-react'
+import { ShoppingCart, CheckCircle2, Wifi, WifiOff, ScanLine, Award, Package, Monitor, IdCard, Smartphone, DollarSign } from 'lucide-react'
 import { useCustomerDisplayReceiver, type CustomerDisplayData } from '@/lib/hooks/useCustomerDisplaySync'
 import { formatPrice, cn } from '@/lib/utils'
+import QRCode from 'qrcode'
 
 function ConfettiParticle({ index }: { index: number }) {
   const colors = ['#ffd100', '#4b0082', '#22c55e', '#ef4444', '#3b82f6', '#f97316']
@@ -25,33 +26,90 @@ function ConfettiParticle({ index }: { index: number }) {
   )
 }
 
-function IdleState() {
+// --- QR Registration Panel ---
+function RegisterQrPanel({ data }: { data: CustomerDisplayData }) {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const registerUrl = data.registerUrl || (
+    typeof window !== 'undefined'
+      ? `${window.location.protocol}//${window.location.host}/registro`
+      : '/registro'
+  )
+
+  useEffect(() => {
+    QRCode.toDataURL(registerUrl, {
+      width: 140,
+      margin: 1,
+      color: { dark: '#000', light: '#fff' }
+    }).then(setQrDataUrl).catch(() => {})
+  }, [registerUrl])
+
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full gap-8 p-10">
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <div className="w-32 h-32 rounded-3xl bg-brand-primary flex items-center justify-center shadow-2xl shadow-brand-primary/30">
-          <ShoppingCart className="w-16 h-16 text-white" />
+    <div className="px-6 py-4 bg-blue-500/[0.04] border-b border-blue-500/10 shrink-0">
+      <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-1 flex-1">
+          <p className="text-xs font-black text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
+            <Smartphone className="w-4 h-4" /> Crea tu cuenta
+          </p>
+          <p className="text-sm text-muted-foreground leading-tight">
+            Escanea el código para crear tu cuenta y acumular puntos
+          </p>
         </div>
-      </motion.div>
+        {qrDataUrl && (
+          <div className="shrink-0 bg-white rounded-xl p-1.5 shadow-sm border border-blue-500/20">
+            <img src={qrDataUrl} alt="Registro" className="w-28 h-28" />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function IdleState({ data }: { data?: CustomerDisplayData | null }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full w-full gap-6 p-10">
+      {data?.storeLogo ? (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-2"
+        >
+          <img src={data.storeLogo} alt={data.storeName || ''} className="h-24 w-auto object-contain" />
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="w-32 h-32 rounded-3xl bg-brand-primary flex items-center justify-center shadow-2xl shadow-brand-primary/30">
+            <ShoppingCart className="w-16 h-16 text-white" />
+          </div>
+        </motion.div>
+      )}
       <motion.h1
-        className="text-5xl font-black text-foreground tracking-tight"
+        className="text-5xl font-black text-foreground tracking-tight text-center"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        Bienvenido
+        {data?.storeName ? (
+          <>Bienvenidos a <span className="text-brand-primary">{data.storeName}</span></>
+        ) : (
+          'Bienvenido'
+        )}
       </motion.h1>
       <motion.p
-        className="text-2xl text-muted-foreground font-medium"
+        className="text-2xl text-muted-foreground font-medium text-center max-w-2xl"
         initial={{ y: 10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.35 }}
       >
-        Escanea tus productos para comenzar
+        {data?.customerName ? (
+          <>{data.customerName}, ¡gracias por preferirnos! {data.customerPoints !== undefined && data.customerPoints > 0 && `Tienes ${data.customerPoints.toLocaleString('es-CL')} puntos.`}</>
+        ) : (
+          '¡Gracias por preferirnos!'
+        )}
       </motion.p>
     </div>
   )
@@ -133,29 +191,23 @@ function CartState({ data }: { data: CustomerDisplayData }) {
 
   useEffect(() => {
     const el = scrollRef.current
-    if (!el || items.length <= 2) return
+    if (!el || items.length <= 1) return
 
     let direction = 1
-    let paused = false
     let rafId: number
-    const maxScroll = el.scrollHeight - el.clientHeight
-    if (maxScroll <= 0) return
 
     const tick = () => {
       if (!el) return
-      if (!paused) {
-        el.scrollTop += direction * 0.6
-        if (el.scrollTop >= maxScroll) {
-          el.scrollTop = maxScroll
-          direction = -1
-          paused = true
-          setTimeout(() => { paused = false }, 1000)
-        } else if (el.scrollTop <= 0) {
-          el.scrollTop = 0
-          direction = 1
-          paused = true
-          setTimeout(() => { paused = false }, 1000)
-        }
+      const maxScroll = el.scrollHeight - el.clientHeight
+      if (maxScroll <= 0) return
+
+      el.scrollTop += direction * 0.5
+      if (el.scrollTop >= maxScroll) {
+        el.scrollTop = maxScroll
+        direction = -1
+      } else if (el.scrollTop <= 0) {
+        el.scrollTop = 0
+        direction = 1
       }
       rafId = requestAnimationFrame(tick)
     }
@@ -190,9 +242,6 @@ function CartState({ data }: { data: CustomerDisplayData }) {
                     <span className="text-xs text-muted-foreground font-mono">{data.customerRut}</span>
                   )}
                 </div>
-                {data.pointsToEarn !== undefined && data.pointsToEarn > 0 && (
-                  <span className="text-xs text-emerald-600 font-medium">+{data.pointsToEarn} pts esta compra</span>
-                )}
               </div>
             </div>
             {data.customerPoints !== undefined && (
@@ -202,6 +251,28 @@ function CartState({ data }: { data: CustomerDisplayData }) {
                 <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Puntos</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Register QR Panel — when customer is identified but has no web account */}
+      {data.customerName && data.customerRut && !data.isFullAccount && (
+        <RegisterQrPanel data={data} />
+      )}
+
+      {/* Identity Verification Prompt — when customer has account but not verified */}
+      {data.customerName && data.isFullAccount && !data.identityVerified && (
+        <div className="px-6 py-4 bg-amber-500/[0.08] border-b border-amber-500/20 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center shrink-0 shadow-inner">
+              <IdCard className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="text-base font-black text-amber-700 dark:text-amber-400 leading-tight">Verifica tu identidad</p>
+              <p className="text-sm text-amber-600/80 dark:text-amber-400/60 font-medium">
+                Por favor, muestra tu carnet a la cajera para validar tu cuenta
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -230,27 +301,40 @@ function CartState({ data }: { data: CustomerDisplayData }) {
 
       {/* Totals footer */}
       <div className="px-6 py-3 bg-surface-100 border-t border-border shrink-0">
-        <div className="flex items-end justify-between">
-          <div className="space-y-1 text-sm">
-            <div className="flex items-center gap-4 text-muted-foreground">
-              <span className="font-medium">{data.itemsCount || items.length} producto{(data.itemsCount || items.length) !== 1 ? 's' : ''}</span>
-              <span>Subtotal <span className="text-foreground font-bold">{formatPrice(data.subtotal)}</span></span>
-            </div>
-            <div className="text-muted-foreground/70 text-xs">
-              IVA 19% <span className="text-muted-foreground font-medium">{formatPrice(Math.round(data.subtotal * 0.19 / 1.19))}</span>
-            </div>
-            {data.discount > 0 && (
-              <div className="text-emerald-600 font-medium text-xs">
-                Descuento -{formatPrice(data.discount)}
-              </div>
-            )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">POWERED BY</span>
+            <img src="/logos/yahpos_logo_master.svg" alt="YAHPOS!" className="h-5 w-auto object-contain" />
           </div>
-          <div className="flex flex-col items-end gap-1">
-            {data.discount > 0 && (
-              <span className="text-sm text-muted-foreground line-through font-bold">{formatPrice(data.subtotal)}</span>
-            )}
-            <div className="flex items-baseline gap-2">
-              <span className="text-xs text-foreground uppercase tracking-wider font-medium">Total</span>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end gap-0.5 text-sm">
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <span>PRODUCTO{(data.itemsCount || items.length) !== 1 ? 'S' : ''} <span className="text-foreground font-bold">{data.itemsCount || items.length}</span></span>
+                <span className="text-muted-foreground/40">·</span>
+                <span>NETO <span className="text-foreground font-bold">{formatPrice(Math.round(data.subtotal / 1.19))}</span></span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>IVA 19% <span className="text-foreground font-medium">{formatPrice(Math.round(data.subtotal * 0.19 / 1.19))}</span></span>
+                {data.pointsRedeemed !== undefined && data.pointsRedeemed > 0 && (
+                  <>
+                    <span className="text-foreground/40">·</span>
+                    <span className="text-amber-500 font-bold">-{data.pointsRedeemed} pts</span>
+                  </>
+                )}
+                {data.pointsToEarn !== undefined && data.pointsToEarn > 0 && (
+                  <>
+                    <span className="text-foreground/40">·</span>
+                    <span className="text-foreground font-medium">+{data.pointsToEarn} pts</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="w-px h-9 bg-border" />
+            <div className="flex flex-col items-end leading-none">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total</span>
+              {data.discount > 0 && (
+                <span className="text-xs text-muted-foreground line-through font-bold">{formatPrice(data.subtotal)}</span>
+              )}
               <span className="text-3xl font-black text-foreground tracking-tight">
                 {formatPrice(data.total)}
               </span>
@@ -391,6 +475,88 @@ function PaymentConfirmedState({ data }: { data?: CustomerDisplayData }) {
         >
           Gracias por tu compra
         </motion.p>
+
+        {(data?.pointsToEarn && data.pointsToEarn > 0) || (data?.pointsRedeemed && data.pointsRedeemed > 0) ? (
+          <motion.div
+            className="flex items-center gap-6 mt-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+          >
+            {data?.pointsToEarn && data.pointsToEarn > 0 && (
+              <div className="flex flex-col items-center px-6 py-3 rounded-2xl bg-brand-primary/10 border border-brand-primary/20">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Puntos Ganados</span>
+                <span className="text-3xl font-black text-brand-primary">+{data.pointsToEarn}</span>
+              </div>
+            )}
+            {data?.pointsRedeemed && data.pointsRedeemed > 0 && (
+              <div className="flex flex-col items-center px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Puntos Canjeados</span>
+                <span className="text-3xl font-black text-amber-500">-{data.pointsRedeemed}</span>
+              </div>
+            )}
+            {data?.customerPoints !== undefined && (
+              <div className="flex flex-col items-center px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Puntos</span>
+                <span className="text-3xl font-black text-emerald-500">{data.customerPoints.toLocaleString('es-CL')}</span>
+              </div>
+            )}
+          </motion.div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function PaymentProcessingState({ data }: { data: CustomerDisplayData }) {
+  return (
+    <div className="flex flex-col h-full w-full bg-surface-50">
+      <div className="flex items-center justify-between px-6 py-2.5 bg-surface-100 border-b border-border shrink-0">
+        <TerminalCashierBar data={data} />
+        <div className="flex items-center gap-2 text-xs">
+          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-amber-600 font-medium italic">En proceso...</span>
+        </div>
+      </div>
+      
+      <div className="flex-1 flex flex-col items-center justify-center gap-10 p-10">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="w-24 h-24 rounded-3xl bg-brand-primary/10 flex items-center justify-center mb-4 relative">
+             <motion.div 
+               className="absolute inset-0 border-4 border-brand-primary border-t-transparent rounded-3xl"
+               animate={{ rotate: 360 }}
+               transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+             />
+             <DollarSign className="w-10 h-10 text-brand-primary" />
+          </div>
+          <h2 className="text-5xl font-black text-foreground tracking-tight">Procesando Pago</h2>
+          <p className="text-2xl text-muted-foreground font-medium">Por favor, espera un momento...</p>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white dark:bg-surface-100 p-8 rounded-3xl border border-border shadow-2xl flex flex-col items-center gap-6 min-w-[320px]"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="text-center">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Método de Pago</p>
+            <div className="px-5 py-2 rounded-xl bg-brand-primary text-white font-black text-xl shadow-lg shadow-brand-primary/20">
+              {data.paymentMethod || 'Seleccionado'}
+            </div>
+          </div>
+
+          <div className="w-full h-px bg-border" />
+
+          <div className="text-center">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Total a Pagar</p>
+            <p className="text-5xl font-black text-foreground tracking-tight">{formatPrice(data.total)}</p>
+          </div>
+        </motion.div>
       </div>
     </div>
   )
@@ -418,18 +584,20 @@ export default function CustomerDisplayPage() {
 
   const renderContent = () => {
     if (!data || data.type === 'reset') {
-      return <IdleState />
+      return <IdleState data={data} />
     }
 
     switch (data.type) {
       case 'cart-update':
         return <CartState data={data} />
+      case 'payment-processing':
+        return <PaymentProcessingState data={data} />
       case 'payment-qr':
         return <PaymentQrState data={data} />
       case 'payment-confirmed':
         return <PaymentConfirmedState data={data} />
       default:
-        return <IdleState />
+        return <IdleState data={data} />
     }
   }
 
@@ -442,10 +610,14 @@ export default function CustomerDisplayPage() {
     >
       <header className="flex items-center justify-between px-6 py-3 bg-surface-100 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
-            <ShoppingCart className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-black text-foreground tracking-tight">YAHPOS!</span>
+          {data?.storeLogo ? (
+            <img src={data.storeLogo} alt={data?.storeName || ''} className="h-8 w-auto object-contain" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
+              <ShoppingCart className="w-4 h-4 text-white" />
+            </div>
+          )}
+          <span className="text-lg font-black text-foreground tracking-tight">{data?.storeName || 'YAHPOS!'}</span>
           {itemsCount > 0 && (
             <div className="ml-2 px-2.5 py-0.5 rounded-full bg-brand-primary text-white text-xs font-black">
               {itemsCount}

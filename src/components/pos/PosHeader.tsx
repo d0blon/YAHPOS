@@ -43,10 +43,10 @@ export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderPro
       
       {/* Search Bar - Center Piece */}
       <div className="flex-1 max-w-2xl relative group">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 group-focus-within:text-corporate-blue transition-colors" />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 group-focus-within:text-brand-primary transition-colors" />
         <Input 
           autoFocus
-          className="pl-14 h-14 text-lg rounded-2xl bg-gray-50 border-none focus:bg-white shadow-inner focus:ring-2 focus:ring-corporate-blue/20 transition-all font-medium"
+          className="pl-14 h-14 text-lg rounded-2xl bg-gray-50 border-none focus:bg-white shadow-inner focus:ring-2 focus:ring-brand-primary/20 transition-all font-medium"
           placeholder="Escanear producto o Escribir búsqueda rápida..." 
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -61,7 +61,7 @@ export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderPro
         {cashSession && (
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl">
-              <Monitor className="w-4 h-4 text-corporate-blue" />
+              <Monitor className="w-4 h-4 text-brand-primary" />
               <div className="leading-none">
                 <p className="text-[9px] font-black uppercase tracking-tighter text-gray-400">Terminal</p>
                 <p className="text-xs font-bold text-gray-700">{cashSession.terminal_name}</p>
@@ -149,11 +149,11 @@ export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderPro
           className={cn(
             "flex items-center gap-3 px-4 py-2 rounded-2xl border transition-all active:scale-95",
             currentUser?.role === 'admin' 
-              ? "bg-corporate-blue text-white border-corporate-blue shadow-lg shadow-corporate-blue/20" 
+              ? "bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20" 
               : "bg-white text-gray-500 border-gray-100"
           )}
         >
-          <BadgeCheck className={cn("w-5 h-5", currentUser?.role === 'admin' ? "text-accent-yellow" : "text-gray-300")} />
+          <BadgeCheck className={cn("w-5 h-5", currentUser?.role === 'admin' ? "text-brand-accent" : "text-gray-300")} />
           <div className="text-left leading-none">
             <p className="text-[9px] font-black uppercase tracking-tighter opacity-70">Perfil</p>
             <p className="text-xs font-bold">{currentUser?.role === 'admin' ? 'ADMIN' : 'CAJERO'}</p>

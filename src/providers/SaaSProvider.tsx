@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { getStoreSettingsAction } from '@/app/developer/actions'
 import { supabase } from '@/lib/supabase'
 
@@ -12,6 +12,8 @@ interface SaaSConfig {
   tax_id: string | null
   white_label_enabled: boolean
   accent_color: string
+  appearance_primary_color: string
+  surface_color: string | null
 }
 
 interface SaaSContextType {
@@ -41,20 +43,22 @@ export function SaaSProvider({
     store_logo: initialConfig?.store_logo || null,
     tax_id: initialConfig?.tax_id || null,
     white_label_enabled: initialConfig?.white_label_enabled || false,
-    accent_color: initialConfig?.accent_color || '#003399'
+    accent_color: initialConfig?.accent_color || '#003399',
+    appearance_primary_color: initialConfig?.appearance_primary_color || '#4b0082',
+    surface_color: initialConfig?.surface_color || null,
   })
   const [storeId, setStoreId] = useState<string | null>(initialStoreId)
   const [isLoading, setIsLoading] = useState(!initialConfig)
 
-  const fetchConfig = async () => {
+  const fetchConfig = async (force = false) => {
     // Si no hay storeId (dominio raíz), no necesitamos buscar nada
     if (!initialStoreId) {
       setIsLoading(false)
       return
     }
 
-    // Si ya tenemos el config inicial completo del servidor, no re-hidratar
-    if (initialConfig && initialStoreId) {
+    // Skip re-fetch on mount si ya tenemos config inicial de headers
+    if (!force && initialConfig && initialStoreId) {
       setIsLoading(false)
       return
     }
@@ -73,7 +77,9 @@ export function SaaSProvider({
           store_logo: data.config?.store_logo || null,
           tax_id: data.config?.tax_id || null,
           white_label_enabled: data.config?.white_label_enabled || false,
-          accent_color: data.config?.accent_color || '#003399'
+          accent_color: data.config?.accent_color || '#003399',
+          appearance_primary_color: data.config?.appearance_primary_color || '#4b0082',
+          surface_color: data.config?.surface_color || null,
         }
         setConfig(normalizedConfig)
       }
@@ -83,6 +89,8 @@ export function SaaSProvider({
       setIsLoading(false)
     }
   }
+
+  const refreshConfig = useCallback(() => fetchConfig(true), [])
 
   useEffect(() => {
     fetchConfig()
@@ -112,7 +120,9 @@ export function SaaSProvider({
               store_logo: updated.config?.store_logo ?? prev.store_logo,
               tax_id: updated.config?.tax_id ?? prev.tax_id,
               white_label_enabled: updated.config?.white_label_enabled ?? prev.white_label_enabled,
-              accent_color: updated.config?.accent_color ?? prev.accent_color
+              accent_color: updated.config?.accent_color ?? prev.accent_color,
+              appearance_primary_color: updated.config?.appearance_primary_color ?? prev.appearance_primary_color,
+              surface_color: updated.config?.surface_color ?? prev.surface_color,
             }))
           }
         }
@@ -168,7 +178,7 @@ export function SaaSProvider({
   }
 
   return (
-    <SaaSContext.Provider value={{ config, storeId, isLoading, isFeatureEnabled, isDocumentTypeEnabled, tier: config.tier, refreshConfig: fetchConfig }}>
+    <SaaSContext.Provider value={{ config, storeId, isLoading, isFeatureEnabled, isDocumentTypeEnabled, tier: config.tier, refreshConfig }}>
       {children}
     </SaaSContext.Provider>
   )

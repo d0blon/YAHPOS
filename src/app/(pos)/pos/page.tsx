@@ -1,13 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { 
   Search, ShoppingCart, User, Plus, Minus, Trash2, MapPin,
   Banknote, History, PauseCircle, PlusCircle, Calculator, Archive,
   Loader2, Sun, Moon,
   Award, PackageOpen, Monitor, DollarSign, ChevronRight, X,
-  Wifi, WifiOff, Store, RefreshCw
+  Wifi, WifiOff, Store, RefreshCw, Fingerprint
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,6 +39,9 @@ import { useSiiStore } from '@/stores/siiStore'
 import { RealTimeStockBadge } from '@/components/pos/RealTimeStockBadge'
 import { QuickStockPanel } from '@/components/pos/QuickStockPanel'
 import { RemoteClosureListener } from '@/components/pos/RemoteClosureListener'
+import { useHardwareStore } from '@/lib/hardware/hardwareStore'
+import { TERMINALS_WITH_DTE, VOUCHER_METHODS, GATEWAY_METHODS } from '@/lib/hardware/types'
+import { useCustomerDisplayBroadcast } from '@/lib/hooks/useCustomerDisplaySync'
 
 // --- FLYING ITEM PARTICLE ---
 const FlyingItem = ({ x, y, onComplete }: { x: number, y: number, onComplete: () => void }) => {
@@ -53,7 +56,7 @@ const FlyingItem = ({ x, y, onComplete }: { x: number, y: number, onComplete: ()
       }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       onAnimationComplete={onComplete}
-      className="fixed top-0 left-0 w-12 h-12 bg-patagonia-600 rounded-full z-[9999] pointer-events-none flex items-center justify-center shadow-lg"
+      className="fixed top-0 left-0 w-12 h-12 bg-brand-primary rounded-full z-[9999] pointer-events-none flex items-center justify-center shadow-lg"
     >
       <ShoppingCart className="w-6 h-6 text-white" />
     </motion.div>
@@ -78,7 +81,7 @@ const OfflineIndicator = ({ isSyncing }: { isSyncing: boolean }) => {
     <div className={cn(
       "flex items-center gap-3 px-4 py-2 rounded-2xl transition-all duration-500 border backdrop-blur-md shadow-sm",
       isOnline 
-        ? "bg-white/50 dark:bg-slate-900/50 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
+        ? "bg-white/50 dark:bg-surface-100/50 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
         : "bg-rose-500/10 border-rose-500/20 text-rose-500 animate-pulse"
     )}>
       <div className="relative flex items-center justify-center">
@@ -91,7 +94,7 @@ const OfflineIndicator = ({ isSyncing }: { isSyncing: boolean }) => {
         {/* Subtle Sync LED Indicator */}
         {isSyncing && isOnline && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <RefreshCw className="w-3 h-3 animate-spin text-patagonia-400" />
+            <RefreshCw className="w-3 h-3 animate-spin text-brand-400" />
           </div>
         )}
       </div>
@@ -101,7 +104,7 @@ const OfflineIndicator = ({ isSyncing }: { isSyncing: boolean }) => {
           {isOnline ? 'SISTEMA ONLINE' : 'MODO OFFLINE'}
         </span>
         {isSyncing && (
-          <span className="text-[7px] font-black text-patagonia-500 animate-pulse tracking-[0.2em] mt-0.5">
+          <span className="text-[7px] font-black text-brand-500 animate-pulse tracking-[0.2em] mt-0.5">
             SINCRONIZANDO...
           </span>
         )}
@@ -146,10 +149,10 @@ const ProductCard = React.memo(({ p, onClick }: { p: Product, onClick: (p: Produ
   return (
     <button 
       onClick={(e) => onClick(p, e)}
-      className="group relative flex flex-col bg-white dark:bg-slate-900 rounded-[2rem] p-4 text-left border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl hover:-translate-y-2 hover:border-patagonia-600 transition-all duration-500 ease-out active:scale-[0.98] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
+      className="group relative flex flex-col bg-white dark:bg-surface-100 rounded-[2rem] p-4 text-left border border-slate-100 dark:border-gray-800 shadow-sm hover:shadow-2xl hover:-translate-y-2 hover:border-brand-primary transition-all duration-500 ease-out active:scale-[0.98] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
       style={{ animationDelay: `${((p.id.charCodeAt(p.id.length - 1) || 0) % 10) * 30}ms` }}
     >
-      <div className="w-full aspect-square bg-slate-50 dark:bg-slate-800/50 rounded-3xl mb-4 relative overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-800">
+      <div className="w-full aspect-square bg-slate-50 dark:bg-surface-200/50 rounded-3xl mb-4 relative overflow-hidden flex items-center justify-center border border-slate-100 dark:border-gray-800">
         {p.image && !imgError ? (
           <Image 
             src={p.image} 
@@ -180,7 +183,7 @@ const ProductCard = React.memo(({ p, onClick }: { p: Product, onClick: (p: Produ
             <div className={cn(
               "px-3 py-1 rounded-full text-[8px] font-black tracking-tighter uppercase backdrop-blur-md shadow-lg border animate-in slide-in-from-left-2",
               statusMsg.includes('horno') ? 'bg-amber-500 text-white border-amber-400 animate-pulse' :
-              statusMsg.includes('frescos') ? 'bg-indigo-500 text-white border-indigo-400' :
+              statusMsg.includes('frescos') ? 'bg-brand-500 text-white border-brand-400' :
               statusMsg.includes('hecho') ? 'bg-emerald-500 text-white border-emerald-400' :
               'bg-rose-500 text-white border-rose-400'
             )}>
@@ -190,16 +193,16 @@ const ProductCard = React.memo(({ p, onClick }: { p: Product, onClick: (p: Produ
         </div>
 
         {isWeighable && (
-          <div className="absolute top-3 right-3 w-8 h-8 bg-patagonia-600 rounded-full flex items-center justify-center shadow-lg shadow-patagonia-600/30 z-10 animate-pulse">
+          <div className="absolute top-3 right-3 w-8 h-8 bg-brand-primary rounded-full flex items-center justify-center shadow-lg shadow-brand-primary/30 z-10 animate-pulse">
             <Monitor className="w-4 h-4 text-white" />
           </div>
         )}
       </div>
       <div className="space-y-1.5 mt-auto px-1">
-        <p className="font-black text-slate-600 dark:text-slate-400 group-hover:text-patagonia-600 transition-colors line-clamp-2 leading-tight text-[10px] uppercase tracking-tighter">{p.name}</p>
+        <p className="font-black text-slate-600 dark:text-white group-hover:text-brand-primary transition-colors line-clamp-2 leading-tight text-xs uppercase tracking-tighter">{p.name}</p>
         <div className="flex items-center justify-between">
            <p className="font-black text-xl text-slate-900 dark:text-white tracking-tighter">{formatPrice(p.price)}</p>
-           <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-patagonia-600 transition-all shadow-sm group-hover:bg-patagonia-600 group-hover:text-white group-hover:scale-110">
+           <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-surface-200 flex items-center justify-center text-brand-primary transition-all shadow-sm group-hover:bg-brand-primary group-hover:text-white group-hover:scale-110">
               <Plus className="w-5 h-5" />
            </div>
         </div>
@@ -228,32 +231,32 @@ const QuickAddModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClos
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 overflow-hidden">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 border border-white/10 flex flex-col">
-        <div className="p-10 pb-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center shrink-0">
+      <div className="bg-white dark:bg-surface-100 w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 border border-white/10 flex flex-col">
+        <div className="p-10 pb-6 border-b border-slate-50 dark:border-gray-800 flex justify-between items-center shrink-0">
            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-patagonia-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-patagonia-600/20">
+               <div className="w-12 h-12 bg-brand-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand-primary/20">
                   <Calculator className="w-6 h-6"/>
                </div>
               <div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter leading-none">Venta Rápida</h3>
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-2">Ingreso Manual de Items</p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mt-2">Ingreso Manual de Items</p>
               </div>
            </div>
-           <button onClick={onClose} className="p-4 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all active:scale-90 group">
+           <button onClick={onClose} className="p-4 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-2xl transition-all active:scale-90 group">
             <X className="w-6 h-6 text-slate-400 group-hover:rotate-90 transition-transform" />
           </button>
         </div>
         <div className="p-10 space-y-8 overflow-y-auto custom-scrollbar">
            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] ml-6">Descripción del Item</label>
+              <label className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.3em] ml-6">Descripción del Item</label>
               <Input 
                 value={name} 
                 onChange={e => setName(e.target.value)} 
-                className="h-16 px-8 text-lg font-black rounded-2xl border-none bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white uppercase tracking-tighter" 
+                className="h-16 px-8 text-lg font-black rounded-2xl border-none bg-slate-50 dark:bg-surface-200/50 text-slate-900 dark:text-white uppercase tracking-tighter" 
               />
            </div>
-           <div className="bg-slate-100 dark:bg-slate-800/50 rounded-[2.5rem] p-8 shadow-inner border-2 border-slate-200 dark:border-slate-800 relative group">
-              <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 text-center">Monto a Cobrar</div>
+           <div className="bg-slate-100 dark:bg-surface-200/50 rounded-[2.5rem] p-8 shadow-inner border-2 border-slate-200 dark:border-gray-800 relative group">
+              <div className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.3em] mb-4 text-center">Monto a Cobrar</div>
               <div className="text-6xl font-black text-slate-900 dark:text-white text-center tracking-tighter mb-10 group-hover:scale-110 transition-transform duration-500">{formatPrice(parseInt(amount) || 0)}</div>
               <div className="grid grid-cols-3 gap-4">
                  {[1,2,3,4,5,6,7,8,9,'C',0,'OK'].map(k => (
@@ -264,7 +267,7 @@ const QuickAddModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClos
                         "h-20 rounded-[1.5rem] text-2xl font-black transition-all active:scale-95 shadow-sm",
                         k === 'OK' ? "bg-emerald-500 text-white shadow-xl shadow-emerald-900/30" : 
                         k === 'C' ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" : 
-                        "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 hover:border-patagonia-600"
+                        "bg-white dark:bg-surface-100 text-slate-900 dark:text-white border border-slate-100 dark:border-gray-800 hover:border-brand-primary"
                       )}
                     >
                       {k}
@@ -284,13 +287,13 @@ const BranchSelectionModal = ({ isOpen, branches, onSelect }: { isOpen: boolean,
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+      <div className="bg-white dark:bg-surface-100 w-full max-w-2xl rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
         <div className="p-10 text-center space-y-4">
-          <div className="w-20 h-20 bg-patagonia-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-patagonia-600/30 mx-auto mb-6">
+          <div className="w-20 h-20 bg-brand-primary rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-brand-primary/30 mx-auto mb-6">
             <Store className="w-10 h-10" />
           </div>
           <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">Seleccionar Sucursal</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs">Identifica el local donde estás operando para gestionar el stock correctamente</p>
+          <p className="text-slate-500 dark:text-gray-400 font-bold uppercase tracking-widest text-xs">Identifica el local donde estás operando para gestionar el stock correctamente</p>
         </div>
         
         <div className="p-10 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -298,18 +301,18 @@ const BranchSelectionModal = ({ isOpen, branches, onSelect }: { isOpen: boolean,
             <button
               key={branch.id}
               onClick={() => onSelect(branch.id)}
-              className="group relative bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[2rem] text-left border-2 border-transparent hover:border-patagonia-600 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300"
+              className="group relative bg-slate-50 dark:bg-surface-200/50 p-8 rounded-[2rem] text-left border-2 border-transparent hover:border-brand-primary hover:bg-white dark:hover:bg-gray-800 transition-all duration-300"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-patagonia-600 shadow-sm transition-colors">
+                <div className="w-12 h-12 bg-white dark:bg-surface-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-brand-primary shadow-sm transition-colors">
                   <MapPin className="w-6 h-6" />
                 </div>
                 <div>
                   <h4 className="font-black text-xl text-slate-900 dark:text-white uppercase tracking-tighter">{branch.name}</h4>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">{branch.address || 'Sin dirección'}</p>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest mt-1">{branch.address || 'Sin dirección'}</p>
                 </div>
               </div>
-              <ChevronRight className="absolute right-8 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-hover:text-patagonia-600 group-hover:translate-x-2 transition-all" />
+              <ChevronRight className="absolute right-8 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-hover:text-brand-primary group-hover:translate-x-2 transition-all" />
             </button>
           ))}
         </div>
@@ -319,6 +322,7 @@ const BranchSelectionModal = ({ isOpen, branches, onSelect }: { isOpen: boolean,
 }
 
 export default function PosTerminal() {
+  const categoriesRef = useRef<HTMLDivElement>(null)
   const { theme, setTheme } = useTheme()
   const { config } = useSaaS()
   const router = useRouter()
@@ -330,7 +334,8 @@ export default function PosTerminal() {
     inventory, setInventory, processCheckoutStock, salesHistory, addSale, isTrainingMode, setTrainingMode,
     currentUser, setCurrentUser, settings, cashSession, setCashSession,
     addGenericItem, pointsRedeemed, setPointsRedeemed, isSyncing, isInitialLoading,
-    selectedBranchId, setSelectedBranchId
+    selectedBranchId, setSelectedBranchId,
+    isFullAccount, identityVerified
   } = usePosStore()
 
   const [branches, setBranches] = useState<Branch[]>([])
@@ -352,6 +357,9 @@ export default function PosTerminal() {
   const displayBrand = config.white_label_enabled && config.tier === 'patagonia' 
     ? config.store_name 
     : 'YAHPOS!'
+  const registerUrl = typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.host}/registro`
+    : '/registro'
 
 
   const [search, setSearch] = useState('')
@@ -377,6 +385,156 @@ export default function PosTerminal() {
   const [viewQuickAdd, setViewQuickAdd] = useState(false)
   const [flyingItems, setFlyingItems] = useState<{id: number, x: number, y: number}[]>([])
   const [isCartBouncing, setIsCartBouncing] = useState(false)
+
+  // Inicializar hardware (impresora USB, etc.)
+  useEffect(() => {
+    useHardwareStore.getState().init()
+  }, [])
+
+  const { broadcast } = useCustomerDisplayBroadcast();
+
+  const refreshCustomerPoints = useCallback(async () => {
+    if (!customerRut) return
+    try {
+      const res = await fetch(`/api/customers?rut=${encodeURIComponent(customerRut)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data?.loyalty_points !== undefined) {
+          usePosStore.setState({
+            customerPoints: data.loyalty_points,
+            isFullAccount: data.is_full_account ?? isFullAccount,
+            identityVerified: data.identity_verified ?? identityVerified,
+            customerName: data.name || customerName,
+          })
+        }
+      }
+    } catch {}
+  }, [customerRut, customerName, isFullAccount, identityVerified])
+
+  // Auto-refresh cada 3s mientras el cliente no esté completo
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  useEffect(() => {
+    if (!customerRut || (isFullAccount && identityVerified)) {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+      return
+    }
+    pollIntervalRef.current = setInterval(refreshCustomerPoints, 3000)
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
+  }, [customerRut, isFullAccount, identityVerified, refreshCustomerPoints])
+
+  const [isVerifyingIdentity, setIsVerifyingIdentity] = useState(false)
+
+  const handleVerifyIdentity = async () => {
+    if (!customerRut) return
+    setIsVerifyingIdentity(true)
+    try {
+      const res = await fetch('/api/customers/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rut: customerRut })
+      })
+      if (res.ok) {
+        usePosStore.setState({ identityVerified: true })
+        toast.success('Identidad verificada correctamente')
+        refreshCustomerPoints()
+      } else {
+        throw new Error('Error al verificar')
+      }
+    } catch {
+      toast.error('Hubo un error al verificar la identidad')
+    } finally {
+      setIsVerifyingIdentity(false)
+    }
+  }
+
+  useEffect(() => {
+    if (items.length > 0) {
+      broadcast({
+        type: 'cart-update',
+        items: items.map(i => ({ 
+          name: i.product.name, 
+          quantity: i.quantity, 
+          price: i.product.price, 
+          total: i.product.price * i.quantity,
+          image: i.product.image,
+          originalPrice: i.product.originalPrice,
+          category: typeof i.product.category === 'string' ? i.product.category : i.product.category?.name,
+          unit: i.product.unit,
+        })),
+        subtotal,
+        total,
+        discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
+        cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
+        terminalName: cashSession?.terminal_name,
+        terminalId: cashSession?.terminal_id,
+        customerName: customerName || undefined,
+        customerRut: customerRut || undefined,
+        customerPoints: customerPoints,
+        pointsToEarn,
+        pointsRedeemed,
+        isFullAccount,
+        identityVerified,
+        registerUrl,
+        storeName: config.store_name || undefined,
+        storeLogo: config.store_logo || undefined,
+        itemsCount: items.length,
+      });
+    } else {
+      broadcast({
+        type: 'reset',
+        items: [],
+        subtotal: 0,
+        total: 0,
+        discount: 0,
+        itemsCount: 0,
+        cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
+        terminalName: cashSession?.terminal_name,
+        terminalId: cashSession?.terminal_id,
+        isFullAccount,
+        identityVerified,
+        registerUrl,
+        storeName: config.store_name || undefined,
+        storeLogo: config.store_logo || undefined,
+      });
+    }
+  }, [items, subtotal, total, pointsRedeemed, customerName, customerRut, customerPoints, pointsToEarn, isFullAccount, identityVerified, registerUrl, cashSession, authUser, currentUser, broadcast, config.store_name, config.store_logo]);
+
+  // Broadcast metadata when auth state changes (only if cart has items)
+  useEffect(() => {
+    if (items.length === 0) return
+    broadcast({
+      type: 'cart-update',
+      items: items.map(i => ({
+        name: i.product.name,
+        quantity: i.quantity,
+        price: i.product.price,
+        total: i.product.price * i.quantity,
+        image: i.product.image,
+        originalPrice: i.product.originalPrice,
+        category: typeof i.product.category === 'string' ? i.product.category : i.product.category?.name,
+        unit: i.product.unit,
+      })),
+      subtotal,
+      total,
+      discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
+      cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
+      terminalName: cashSession?.terminal_name,
+      terminalId: cashSession?.terminal_id,
+      storeName: config.store_name || undefined,
+      storeLogo: config.store_logo || undefined,
+      itemsCount: items.length,
+      pointsToEarn,
+      pointsRedeemed,
+    });
+  }, [cashSession, broadcast, config.store_name, config.store_logo]);
 
   // 1. Hidratación y Protección de Ruta (Optimizado)
   useEffect(() => {
@@ -453,7 +611,7 @@ export default function PosTerminal() {
       })
       .catch(err => console.warn('[POS] Error al cargar configuraciones', err));
 
-  }, [isHydrated, isAuthenticated, authUser, router, setCurrentUser, currentUser, setInventory, selectedBranchId, config.tier])
+  }, [isHydrated, router, setCurrentUser, currentUser, setInventory, selectedBranchId, config.tier])
 
   // -- REALTIME INVENTORY SYNC --
   useEffect(() => {
@@ -517,54 +675,92 @@ export default function PosTerminal() {
   })
 
 
-  // -- BARCODE SCANNER --
+  // -- BARCODE SCANNER (keyboard wedge + paste) --
   useEffect(() => {
+    const processBarcode = (barcode: string, source: 'scanner' | 'paste' = 'scanner') => {
+      if (barcode.startsWith('20') && barcode.length >= 12) {
+        const plu = barcode.substring(2, 7);
+        const weightString = barcode.substring(7, 12);
+        const weight = parseInt(weightString) / 1000;
+        
+        const found = inventory.find(p => p.sku === plu || p.barcode === plu || p.id.includes(plu));
+        if (found) {
+          if ((found.stock ?? 1) <= 0) {
+            toast.error(`${found.name} — SIN STOCK`, {
+              description: `PLU ${plu} — No hay unidades disponibles`,
+              action: { label: 'Stock', onClick: () => setIsStockPanelOpen(true) },
+              duration: 6000,
+            });
+            return;
+          }
+          usePosStore.getState().addItem(found, weight);
+          toast.success(`${found.name} (${weight}kg) Pesado ✅`);
+        } else {
+          toast.error(`PLU ${plu} no encontrado`, {
+            description: `Código de balanza: ${barcode}`,
+            duration: 5000,
+          });
+        }
+      } else {
+        const found = inventory.find(p => p.barcode === barcode || p.sku === barcode);
+        if (found) {
+          if ((found.stock ?? 1) <= 0) {
+            toast.error(`${found.name} — SIN STOCK`, {
+              description: `Código: ${barcode} — No hay unidades disponibles`,
+              action: { label: 'Ajustar Stock', onClick: () => setIsStockPanelOpen(true) },
+              duration: 6000,
+            });
+            return;
+          }
+           if (found.unit === 'kg') setWeightModalProduct(found);
+           else {
+             usePosStore.getState().addItem(found);
+             toast.success(`${found.name} ✅`);
+           }
+        } else {
+          toast.error(`Código no reconocido: ${barcode}`, {
+            description: 'Verificá que el producto esté cargado en el sistema',
+            duration: 5000,
+          });
+        }
+      }
+    };
+
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
       const currentTime = Date.now();
+      // Scanner físico: si pasaron más de 50ms entre teclas, no es scanner → reiniciar buffer
       if (currentTime - lastKeyTime > 50) barcodeBuffer = '';
-      if (e.key === 'Enter' && barcodeBuffer.length >= 12) {
+      if (e.key === 'Enter' && barcodeBuffer.length >= 4) {
         e.preventDefault();
-        
-        // --- LÓGICA DE BALANZA (EAN-13 VARIABLE) ---
-        // Formato: 20 + KKKKK (PLU) + WWWWW (Peso/Precio) + C
-        if (barcodeBuffer.startsWith('20') && barcodeBuffer.length >= 12) {
-          const plu = barcodeBuffer.substring(2, 7);
-          const weightString = barcodeBuffer.substring(7, 12);
-          const weight = parseInt(weightString) / 1000; // Convertir 01250 a 1.250kg
-          
-          const found = inventory.find(p => p.sku === plu || p.barcode === plu || p.id.includes(plu));
-          if (found) {
-            usePosStore.getState().addItem(found, weight);
-            toast.success(`${found.name} (${weight}kg) Pesado ✅`);
-          } else {
-            toast.error(`Producto PLU ${plu} no encontrado`);
-          }
-        } else {
-          // --- LÓGICA NORMAL ---
-          const found = inventory.find(p => p.barcode === barcodeBuffer || p.sku === barcodeBuffer);
-          if (found) {
-             if (found.unit === 'kg') setWeightModalProduct(found);
-             else {
-               usePosStore.getState().addItem(found);
-               toast.success(`${found.name} Escaneado ✅`);
-             }
-          } else {
-            toast.error("Código no reconocido");
-          }
-        }
-        
+        processBarcode(barcodeBuffer, 'scanner');
         barcodeBuffer = '';
         return;
       }
       if (e.key.length === 1 && /[0-9A-Za-z]/.test(e.key)) barcodeBuffer += e.key;
       lastKeyTime = currentTime;
     };
+
+    const handlePaste = (e: ClipboardEvent) => {
+      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+      const text = e.clipboardData?.getData('text') || '';
+      const cleaned = text.replace(/[^0-9A-Za-z]/g, '');
+      if (cleaned.length >= 4) {
+        e.preventDefault();
+        e.stopPropagation();
+        processBarcode(cleaned, 'paste');
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('paste', handlePaste);
+    };
   }, [inventory]);
 
   // -- SERVER SYNC (DRAFTS) - Gated to prevent 401 loop --
@@ -577,7 +773,30 @@ export default function PosTerminal() {
     }
   }, [items, suspendedOrders, cashSession, isAuthenticated]);
 
-  const handleCheckout = async (paymentMethod: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED', receivedAmount?: number, terminalType?: string) => {
+  // Validar sesión activa antes de procesar pago
+  const validateSession = useCallback(async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || !user) {
+        toast.error('Sesión expirada. Inicia sesión nuevamente.')
+        router.push('/login?redirect=/pos')
+        return false
+      }
+      return true
+    } catch {
+      toast.error('Error de conexión. Verifica tu internet.')
+      return false
+    }
+  }, [router])
+
+  const handleCheckout = async (paymentMethod: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED' | 'WEBPAY_QR', receivedAmount?: number, terminalType?: string) => {
+    // Validar sesión activa
+    const isValid = await validateSession()
+    if (!isValid) {
+      setIsProcessing(false)
+      return
+    }
+
     setIsProcessing(true);
     setIsPaymentModalOpen(false);
     
@@ -589,6 +808,7 @@ export default function PosTerminal() {
     try {
       // 0. Validación de Reglas de Negocio (JUNAEB / PLUXE / EDENRED)
       const isVoucherPayment = paymentMethod === 'JUNAEB' || paymentMethod === 'PLUXE' || paymentMethod === 'EDENRED';
+      const isGatewayPayment = (GATEWAY_METHODS as readonly string[]).includes(paymentMethod);
       
       if (isVoucherPayment) {
         const maxSeals = settings.maxSeals ?? 2;
@@ -610,9 +830,50 @@ export default function PosTerminal() {
         toast.info(msg);
         await new Promise(r => setTimeout(r, 1000));
       }
-      // Determinar si se debe omitir la emisión SII
-      const isDigitalPayment = ['TERMINAL', 'TARJETA'].includes(paymentMethod);
-      const shouldSkipSii = isVoucherPayment || (settings.siiModel === 'SII_VOUCHER_SKIP' && isDigitalPayment);
+      const terminalHandlesDte = terminalType 
+        ? (settings.terminalsDte?.[terminalType] ?? TERMINALS_WITH_DTE[terminalType] ?? false) 
+        : false;
+
+      if (terminalType && TERMINALS_WITH_DTE[terminalType] && !settings.terminalsDte?.[terminalType]) {
+        toast.error(`Seguridad SII: ${terminalType} emite su propia boleta. Activá "Emite su boleta" en Ajustes > Hardware.`, {
+          description: 'Si no activás esta opción, YAHPOS! emitirá otra boleta y duplicarás el IVA.',
+          duration: 8000,
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      const shouldSkipSii = (isVoucherPayment || terminalHandlesDte) && !isGatewayPayment;
+
+      broadcast({
+        type: 'payment-processing',
+        items: items.map(i => ({ 
+          name: i.product.name, 
+          quantity: i.quantity, 
+          price: i.product.price, 
+          total: i.product.price * i.quantity,
+          image: i.product.image,
+          originalPrice: i.product.originalPrice,
+          category: typeof i.product.category === 'string' ? i.product.category : i.product.category?.name,
+          unit: i.product.unit,
+        })),
+        subtotal,
+        total,
+        discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
+        cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
+        terminalName: cashSession?.terminal_name,
+        terminalId: cashSession?.terminal_id,
+        paymentMethod: paymentMethod === 'TERMINAL' ? `TERMINAL (${terminalType})` : paymentMethod,
+        customerName: customerName || undefined,
+        customerRut: customerRut || undefined,
+        customerPoints: customerPoints,
+        pointsToEarn,
+        pointsRedeemed,
+        isFullAccount,
+        identityVerified,
+        registerUrl,
+        itemsCount: items.length,
+      });
 
       const orderData = {
         id: temporalId,
@@ -727,6 +988,8 @@ export default function PosTerminal() {
       addSale(finalOrderRecord);
       processCheckoutStock();
       clearPos();
+      const newCustomerPoints = customerRut ? (customerPoints || 0) + pointsToEarn - pointsRedeemed : undefined;
+      broadcast({ type: 'payment-confirmed', items: [], subtotal: 0, total: 0, discount: 0, itemsCount: 0, pointsToEarn, pointsRedeemed: pointsRedeemed, customerName: customerName || undefined, customerRut: customerRut || undefined, customerPoints: newCustomerPoints, isFullAccount, identityVerified, registerUrl, cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined, terminalName: cashSession?.terminal_name, terminalId: cashSession?.terminal_id });
       setPointsRedeemed(0);
       setIsRedeeming(false);
       
@@ -739,6 +1002,7 @@ export default function PosTerminal() {
 
     } catch (error) {
       console.error('[Checkout Error]', error);
+      broadcast({ type: 'reset', items: [], subtotal: 0, total: 0, discount: 0, itemsCount: 0, cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined, terminalName: cashSession?.terminal_name, terminalId: cashSession?.terminal_id });
       toast.error('Error procesando el pago');
     } finally {
       setIsProcessing(false);
@@ -791,7 +1055,7 @@ export default function PosTerminal() {
   if (!isHydrated) return null;
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden font-sans text-foreground">
+    <div className="h-screen bg-surface-50 flex overflow-hidden font-sans text-foreground">
       <SyncOverlay isVisible={isInitialLoading} status="syncing" />
       <OfflineSyncManager />
       <RemoteClosureListener />
@@ -822,9 +1086,9 @@ export default function PosTerminal() {
           />
 
       {/* 2. MAIN AREA */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background transition-colors duration-500 relative">
+      <div className="flex-1 flex flex-col min-w-0 bg-surface-50 transition-colors duration-500 relative">
         {/* Header Section */}
-        <header className="h-20 bg-card border-b border-border px-8 flex items-center justify-between shrink-0 shadow-sm z-10 transition-colors duration-500">
+        <header className="h-20 bg-surface-100 border-b border-border px-8 flex items-center justify-between shrink-0 shadow-sm z-10 transition-colors duration-500">
            <Image 
              src="/logos/yahpos_logo_master.svg" 
              alt="YAHPOS!" 
@@ -838,7 +1102,7 @@ export default function PosTerminal() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   placeholder="Buscar Producto..." 
-                  className="w-full h-10 pl-11 bg-input border-none rounded-xl focus-visible:ring-2 focus-visible:ring-patagonia-600 text-sm font-medium transition-all"
+                  className="w-full h-10 pl-11 bg-input border-none rounded-xl focus-visible:ring-2 focus-visible:ring-brand-primary text-sm font-medium transition-all"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -849,7 +1113,7 @@ export default function PosTerminal() {
               {config.tier === 'patagonia' && (
                 <button 
                   onClick={() => setIsBranchModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-patagonia-600/10 text-patagonia-600 border border-patagonia-600/20 hover:bg-patagonia-600 hover:text-white transition-all group"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-primary/10 text-brand-primary border border-brand-primary/20 hover:bg-brand-primary hover:text-white transition-all group"
                 >
                   <MapPin className="w-4 h-4" />
                   <span className="text-[10px] font-black uppercase tracking-widest">
@@ -861,7 +1125,7 @@ export default function PosTerminal() {
 
               <button
                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                 className="w-10 h-10 flex items-center justify-center rounded-xl bg-muted hover:bg-muted-foreground/10 transition-all border border-border"
+                 className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-150 hover:bg-muted-foreground/10 transition-all border border-border"
                >
                  {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
                </button>
@@ -874,13 +1138,16 @@ export default function PosTerminal() {
         </header>
 
         {/* Categories Section */}
-        <div className="px-8 py-5 bg-muted dark:bg-muted/50 backdrop-blur-md border-b border-border flex overflow-x-auto whitespace-nowrap gap-4 shrink-0 scroll-smooth items-center touch-pan-x custom-scrollbar">
+        <div 
+          ref={categoriesRef}
+          onWheel={(e) => { e.currentTarget.scrollLeft += e.deltaY; e.preventDefault() }}
+          className="px-8 py-5 bg-surface-100 backdrop-blur-md border-b border-border flex overflow-x-auto whitespace-nowrap gap-4 shrink-0 scroll-smooth items-center touch-pan-x custom-scrollbar">
            <button 
              className={cn(
                 "rounded-xl px-6 font-black h-12 text-xs transition-all shadow-sm flex items-center gap-2 uppercase tracking-wide min-w-max",
                 selectedCategory === 'Todos' 
-                  ? "bg-patagonia-600 text-white shadow-patagonia-500/20" 
-                  : "bg-card text-muted-foreground border border-border hover:bg-background"
+                  ? "bg-brand-primary text-white shadow-brand-primary/20" 
+                  : "bg-surface-100 text-muted-foreground border border-border hover:bg-surface-50"
              )}
              onClick={() => setSelectedCategory('Todos')}
            >
@@ -892,8 +1159,8 @@ export default function PosTerminal() {
                className={cn(
                   "rounded-xl px-6 font-black h-12 text-xs transition-all shadow-sm flex items-center gap-2 uppercase tracking-wide min-w-max",
                   selectedCategory === cat 
-                    ? "bg-patagonia-600 text-white shadow-patagonia-500/20" 
-                    : "bg-card text-muted-foreground border border-border hover:bg-background"
+                    ? "bg-brand-primary text-white shadow-brand-primary/20" 
+                    : "bg-surface-100 text-muted-foreground border border-border hover:bg-surface-50"
                )}
                onClick={() => setSelectedCategory(cat)}
              >
@@ -903,7 +1170,7 @@ export default function PosTerminal() {
         </div>
 
         {/* Products Grid */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-8 bg-surface-100 custom-scrollbar">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {filteredProducts.map(p => (
               <ProductCard key={p.id} p={p} onClick={handleProductClick} />
@@ -919,7 +1186,7 @@ export default function PosTerminal() {
       </div>
 
       {/* 3. RIGHT SIDEBAR (Cart / Checkout) */}
-      <div className="w-full max-w-[420px] bg-card flex flex-col border-l border-border shrink-0 shadow-2xl relative hidden lg:flex">
+      <div className="w-full max-w-[420px] bg-surface-100 flex flex-col border-l border-border shrink-0 shadow-2xl relative hidden lg:flex">
         
         {/* Cart Header */}
         <div className="p-6 flex items-center justify-between border-b border-border">
@@ -927,9 +1194,9 @@ export default function PosTerminal() {
               <motion.div 
                 animate={isCartBouncing ? { scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] } : {}}
                 transition={{ duration: 0.3 }}
-                className="w-10 h-10 bg-patagonia-500/20 rounded-xl flex items-center justify-center"
+                className="w-10 h-10 bg-brand-500/20 rounded-xl flex items-center justify-center"
               >
-                 <ShoppingCart className="w-5 h-5 text-patagonia-400" />
+                 <ShoppingCart className="w-5 h-5 text-brand-400" />
               </motion.div>
               <h2 className="text-xl font-black text-foreground dark:text-white tracking-tight">Ticket Venta</h2>
            </div>
@@ -951,7 +1218,7 @@ export default function PosTerminal() {
                 <Button 
                   variant="ghost" 
                   onClick={() => setViewQuickAdd(true)}
-                  className="w-10 h-10 p-0 rounded-xl bg-patagonia-500/20 text-patagonia-400 hover:bg-blue-500 hover:text-white transition-all group"
+                  className="w-10 h-10 p-0 rounded-xl bg-brand-500/20 text-brand-400 hover:bg-brand-500 hover:text-white transition-all group"
                   title="Teclado Numérico"
                 >
                    <Calculator className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -970,7 +1237,7 @@ export default function PosTerminal() {
                         toast.error('El carrito está vacío');
                      }
                   }}
-                  className="w-10 h-10 p-0 rounded-xl bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all group"
+                  className="w-10 h-10 p-0 rounded-xl bg-brand-500/10 text-brand-400 hover:bg-brand-500 hover:text-white transition-all group"
                   title="Pausar Venta Actual"
                 >
                    <Archive className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -984,7 +1251,7 @@ export default function PosTerminal() {
                   onClick={() => setViewSuspended(!viewSuspended)}
                   className={cn(
                      "w-10 h-10 p-0 rounded-xl transition-all relative group",
-                     viewSuspended ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground hover:text-white hover:bg-muted"
+                     viewSuspended ? "bg-amber-500 text-white" : "bg-surface-150 text-muted-foreground hover:text-white hover:bg-surface-150"
                   )}
                   title="Ver Tickets en Pausa"
                 >
@@ -1012,20 +1279,20 @@ export default function PosTerminal() {
             </div>
         </div>
 
-        {/* Customer Selection */}
+         {/* Customer Selection */}
         <div className="px-6 py-4 border-b border-border">
            <button 
              onClick={() => setIsCustomerModalOpen(true)}
-             className="w-full p-4 bg-muted hover:bg-muted border border-border rounded-2xl flex items-center gap-4 transition-all text-left group"
+             className="w-full p-4 bg-surface-150 hover:bg-surface-150 border border-border rounded-2xl flex items-center gap-4 transition-all text-left group"
            >
               <div className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center border transition-all",
-                customerRut ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-patagonia-600/40 border-patagonia-600/50 text-white"
+                customerRut ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-brand-primary/40 border-brand-primary/50 text-white"
               )}>
                  <User className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest group-hover:text-patagonia-400 transition-colors">Cliente Registrado</p>
+                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest group-hover:text-brand-400 transition-colors">Cliente Registrado</p>
                  <p className="text-foreground dark:text-white font-bold truncate">{customerName || 'Público General'}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-white" />
@@ -1043,32 +1310,32 @@ export default function PosTerminal() {
                  </div>
                ) : (
                  items.map((item) => (
-                    <div key={item.product.id} className="pos-card-glass p-3 rounded-2xl border-slate-100 dark:border-slate-800/50 hover:border-patagonia-600/30 transition-all group animate-in slide-in-from-right-4 duration-300">
+                    <div key={item.product.id} className="pos-card-glass p-3 rounded-2xl border-slate-100 dark:border-gray-800/50 hover:border-brand-primary/30 transition-all group animate-in slide-in-from-right-4 duration-300">
                        <div className="flex justify-between items-start mb-2">
                           <div className="flex-1 min-w-0 pr-3">
-                             <p className="text-[8px] font-black text-patagonia-600 dark:text-patagonia-400 uppercase tracking-[0.2em] mb-0.5">
+                             <p className="text-[8px] font-black text-brand-primary dark:text-brand-400 uppercase tracking-[0.2em] mb-0.5">
                                 {typeof item.product.category === 'string' ? item.product.category : (item.product.category as { name?: string })?.name || 'GENÉRICO'}
                              </p>
-                             <p className="text-slate-900 dark:text-white font-black leading-tight text-sm group-hover:text-patagonia-600 transition-colors uppercase tracking-tighter line-clamp-2">{item.product.name}</p>
+                             <p className="text-slate-900 dark:text-white font-black leading-tight text-sm group-hover:text-brand-primary transition-colors uppercase tracking-tighter line-clamp-2">{item.product.name}</p>
                           </div>
                           <p className="text-lg font-black text-slate-900 dark:text-white tracking-tighter whitespace-nowrap">{formatPrice(item.product.price * item.quantity)}</p>
                        </div>
                        <div className="flex items-center justify-between gap-3">
                           {item.product.unit === 'kg' ? (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-patagonia-600/10 rounded-xl border-2 border-patagonia-600/20 shadow-inner">
-                              <Monitor className="w-4 h-4 text-patagonia-600" />
-                              <span className="text-sm font-black text-patagonia-600 tracking-tight">{item.quantity.toFixed(3)} KG</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-primary/10 rounded-xl border-2 border-brand-primary/20 shadow-inner">
+                              <Monitor className="w-4 h-4 text-brand-primary" />
+                              <span className="text-sm font-black text-brand-primary tracking-tight">{item.quantity.toFixed(3)} KG</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-xl p-1 border border-slate-200/50 dark:border-slate-800">
+                            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-surface-200/50 rounded-xl p-1 border border-slate-200/50 dark:border-gray-800">
                               <button 
                                 onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:text-rose-500 transition-all active:scale-90"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white dark:bg-surface-100 shadow-sm hover:text-rose-500 transition-all active:scale-90"
                               ><Minus className="w-4 h-4" /></button>
                               <span className="w-8 text-center text-slate-900 dark:text-white font-black text-base tracking-tighter">{item.quantity}</span>
                               <button 
                                 onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm hover:text-emerald-500 transition-all active:scale-90"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white dark:bg-surface-100 shadow-sm hover:text-emerald-500 transition-all active:scale-90"
                               ><Plus className="w-4 h-4" /></button>
                             </div>
                           )}
@@ -1089,27 +1356,92 @@ export default function PosTerminal() {
             {/* Loyalty Redemption Zone */}
             {customerRut && items.length > 0 && settings.loyaltyEnabled && (
               <div className="px-6 py-4 bg-amber-500/5 border-t border-amber-500/10">
-                 <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest flex items-center gap-1"><Award className="w-3.5 h-3.5"/> Canje de Puntos</span>
-                    <span className="text-xs font-black text-amber-400">Max: {customerPoints || 0}</span>
-                 </div>
-                 <div className="flex gap-2">
-                    <select 
-                      className="flex-1 bg-background dark:bg-muted border border-border rounded-xl text-foreground dark:text-white font-black text-xs h-10 px-3 outline-none focus:ring-2 focus:ring-amber-500/50"
-                      value={pointsRedeemed}
-                      onChange={(e) => setPointsRedeemed(parseInt(e.target.value))}
+                {!isFullAccount ? (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <Award className="w-5 h-5 text-blue-400 shrink-0" />
+                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 leading-relaxed">
+                      Para canjear puntos, crea tu cuenta en la página del negocio y asocia tu RUT.
+                    </p>
+                  </div>
+                ) : !identityVerified ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <Fingerprint className="w-5 h-5 text-rose-400 shrink-0" />
+                      <div>
+                        <p className="text-[10px] font-black text-rose-500/60 uppercase tracking-widest">Identidad no verificada</p>
+                        <p className="text-xs text-muted-foreground">Pide el carnet al cliente para verificar</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleVerifyIdentity}
+                      disabled={isVerifyingIdentity}
+                      className="shrink-0 h-10 px-5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-lg active:scale-95 transition-all"
                     >
-                       <option value={0}>0 Puntos</option>
-                       {Array.from({ length: Math.floor((customerPoints || 0) / (settings.loyalty?.redemptionMultiple || 100)) }, (_, i) => (i + 1) * (settings.loyalty?.redemptionMultiple || 100)).map(p => (
-                         <option key={p} value={p}>{p} Puntos (-{formatPrice(p * (settings.loyalty?.redemptionRate || 1))})</option>
-                       ))}
-                    </select>
-                 </div>
+                      {isVerifyingIdentity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
+                      Verificar Identidad
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-black text-amber-500/60 uppercase tracking-widest flex items-center gap-1"><Award className="w-3.5 h-3.5"/> Canje de Puntos</span>
+                      <span className="text-xs font-black text-amber-400">Max: {customerPoints || 0}</span>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative flex-1">
+                          <input
+                            type="number"
+                            min={0}
+                            max={customerPoints || 0}
+                            step={settings.loyalty?.redemptionMultiple || 100}
+                            placeholder="0"
+                            value={pointsRedeemed || ''}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : parseInt(e.target.value) || 0
+                              const multiple = settings.loyalty?.redemptionMultiple || 100
+                              const rounded = Math.floor(val / multiple) * multiple
+                              setPointsRedeemed(Math.min(rounded, customerPoints || 0))
+                            }}
+                            onFocus={refreshCustomerPoints}
+                            className="w-full h-14 bg-surface-50 dark:bg-surface-150 border-2 border-amber-500/30 focus:border-amber-500 rounded-2xl text-foreground dark:text-white font-black text-xl text-center px-4 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                        <span className="text-sm font-black text-amber-500 shrink-0 min-w-[100px] text-right">
+                          -{formatPrice(pointsRedeemed * (settings.loyalty?.redemptionRate || 1))}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPointsRedeemed(Math.min((Math.floor((pointsRedeemed || 0) / (settings.loyalty?.redemptionMultiple || 100)) + 1) * (settings.loyalty?.redemptionMultiple || 100), customerPoints || 0))}
+                          disabled={(pointsRedeemed || 0) >= (customerPoints || 0)}
+                          className="flex-1 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 font-black text-sm hover:bg-amber-500/20 transition-all active:scale-95 disabled:opacity-40"
+                        >
+                          +{settings.loyalty?.redemptionMultiple || 100}
+                        </button>
+                        <button
+                          onClick={() => setPointsRedeemed(Math.min((Math.floor((pointsRedeemed || 0) / ((settings.loyalty?.redemptionMultiple || 100) * 5)) + 1) * ((settings.loyalty?.redemptionMultiple || 100) * 5), customerPoints || 0))}
+                          disabled={(pointsRedeemed || 0) >= (customerPoints || 0)}
+                          className="flex-1 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 font-black text-sm hover:bg-amber-500/20 transition-all active:scale-95 disabled:opacity-40"
+                        >
+                          +{(settings.loyalty?.redemptionMultiple || 100) * 5}
+                        </button>
+                        <button
+                          onClick={() => setPointsRedeemed(customerPoints || 0)}
+                          disabled={(pointsRedeemed || 0) >= (customerPoints || 0)}
+                          className="flex-1 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-700 font-black text-sm hover:bg-amber-500/30 transition-all active:scale-95 disabled:opacity-40"
+                        >
+                          MAX
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
             {/* Order Totals (Fixed Bottom) */}
-             <div className="p-5 bg-muted border-t border-border space-y-4">
+             <div className="p-5 bg-surface-150 border-t border-border space-y-4">
                 <div className="space-y-1 px-2">
                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                       <span>Neto</span>
@@ -1141,7 +1473,7 @@ export default function PosTerminal() {
                 <Button 
                   onClick={() => setIsPaymentModalOpen(true)}
                   disabled={items.length === 0 || isProcessing}
-                  className="w-full h-16 text-xl bg-patagonia-600 hover:bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-patagonia-500/20 flex items-center justify-center gap-3 group transition-all active:scale-[0.98] relative overflow-hidden"
+                  className="w-full h-16 text-xl bg-brand-primary hover:bg-brand-700 text-white rounded-2xl font-black shadow-xl shadow-brand-primary/20 flex items-center justify-center gap-3 group transition-all active:scale-[0.98] relative overflow-hidden"
                 >
                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                    {isProcessing ? (

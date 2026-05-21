@@ -45,8 +45,8 @@ export default function DeliverySlide() {
     <section id="delivery" className="relative w-full h-full flex items-center justify-center overflow-hidden bg-background">
       {/* Background Ornaments */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[20%] left-[-10%] w-[50vw] h-[50vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10s]" />
-        <div className="absolute bottom-[0%] right-[10%] w-[40vw] h-[40vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute top-[20%] left-[-10%] w-[50vw] h-[50vw] bg-brand-accent-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10s]" />
+        <div className="absolute bottom-[0%] right-[10%] w-[40vw] h-[40vw] bg-brand-600/10 rounded-full blur-[120px] mix-blend-screen" />
         <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }} />
       </div>
 
@@ -61,9 +61,9 @@ export default function DeliverySlide() {
             viewport={{ once: false, amount: 0.3 }}
           >
             <motion.div variants={itemVariants} className="mb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 backdrop-blur-md">
-                <Truck className="w-4 h-4 text-blue-400" />
-                <span className="text-xs font-bold uppercase tracking-widest text-blue-300">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-accent-500/10 border border-brand-accent-500/20 backdrop-blur-md">
+                <Truck className="w-4 h-4 text-brand-accent-400" />
+                <span className="text-xs font-bold uppercase tracking-widest text-brand-accent-300">
                   Despacho Rápido
                 </span>
               </div>
@@ -74,7 +74,7 @@ export default function DeliverySlide() {
               className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] text-white mb-6 uppercase"
             >
               <EditableText field="delivery.title" value={content.title} as="span" />{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-400 to-brand-400">
                 <EditableText field="delivery.accentTitle" value={content.accentTitle} as="span" />
               </span>
             </motion.h2>
@@ -93,8 +93,8 @@ export default function DeliverySlide() {
                 const Icon = iconMap[feature.icon] || Truck
                 return (
                   <div key={idx} className="group/feat flex items-center gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-2xl backdrop-blur-sm relative overflow-hidden">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-                      <Icon className="w-5 h-5 text-blue-400" />
+                    <div className="w-10 h-10 rounded-full bg-brand-accent-500/10 flex items-center justify-center shrink-0">
+                      <Icon className="w-5 h-5 text-brand-accent-400" />
                     </div>
                     <div className="flex-1">
                       <EditableText field={`delivery.features.${idx}.text`} value={feature.text} as="span" className="text-gray-300 font-medium" />
@@ -120,7 +120,7 @@ export default function DeliverySlide() {
                     const newFeatures = [...(content.features || []), { icon: 'Truck', text: 'Nueva característica de entrega' }]
                     editor.updateField('delivery.features', newFeatures)
                   }}
-                  className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-white/10 rounded-2xl text-blue-400 hover:bg-blue-400/5 hover:border-blue-400/50 transition-all text-sm font-bold"
+                  className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-white/10 rounded-2xl text-brand-accent-400 hover:bg-blue-400/5 hover:border-blue-400/50 transition-all text-sm font-bold"
                 >
                   <Plus className="w-4 h-4" /> Añadir Beneficio
                 </button>
@@ -132,7 +132,7 @@ export default function DeliverySlide() {
                 href="/delivery" 
                 className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest overflow-hidden transition-transform hover:scale-105 active:scale-95"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-accent-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="relative">Pedir Ahora</span>
                 <ArrowRight className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -148,14 +148,14 @@ export default function DeliverySlide() {
           >
             <div className="relative w-full max-w-lg">
               {/* Abstract Map Graphic */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-indigo-500/20 rounded-[3rem] blur-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-brand-accent-500/20 to-brand-500/20 rounded-[3rem] blur-2xl" />
               <div className="relative aspect-square rounded-[3rem] border border-white/10 bg-white/5 backdrop-blur-3xl shadow-2xl p-8 flex flex-col justify-center items-center overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at center, white 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
                 
                 {/* Simulated delivery route animation */}
                 <div className="relative z-10 w-full h-full flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-indigo-500/20 border-2 border-indigo-500 flex items-center justify-center absolute top-1/4 left-1/4 shadow-[0_0_30px_rgba(99,102,241,0.5)]">
-                    <StoreIcon className="w-6 h-6 text-indigo-400" />
+                  <div className="w-16 h-16 rounded-full bg-brand-500/20 border-2 border-brand-500 flex items-center justify-center absolute top-1/4 left-1/4 shadow-[0_0_30px_rgba(99,102,241,0.5)]">
+                    <StoreIcon className="w-6 h-6 text-brand-400" />
                   </div>
                   
                   {/* Dashed line */}
@@ -173,7 +173,7 @@ export default function DeliverySlide() {
                   </svg>
 
                   <motion.div 
-                    className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center absolute shadow-[0_0_30px_rgba(59,130,246,0.8)] z-20"
+                    className="w-12 h-12 rounded-full bg-brand-accent-500 flex items-center justify-center absolute shadow-[0_0_30px_rgba(59,130,246,0.8)] z-20"
                     animate={{ 
                       top: ['25%', '65%'],
                       left: ['25%', '65%']

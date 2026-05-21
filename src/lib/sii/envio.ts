@@ -47,7 +47,7 @@ export async function enviarAlSII(xml: string, fileName: string, token: string, 
   
   // Convertir XML a ISO-8859-1 antes de enviar
   const xmlBuffer = iconv.encode(xml, 'ISO-8859-1');
-  body.append('archivo', new Blob([xmlBuffer], { type: 'application/xml' }), fileName);
+  body.append('archivo', new Blob([new Uint8Array(xmlBuffer)], { type: 'application/xml' }), fileName);
 
   const response = await fetch(url, {
     method: 'POST',

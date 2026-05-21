@@ -114,10 +114,10 @@ export default function AdminCajasPage() {
         />
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-corporate-blue transition-colors" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
             <Input 
               placeholder="Buscar por cajero o terminal..."
-              className="pl-10 w-[300px] h-11 bg-white border-gray-100 rounded-xl focus:ring-corporate-blue/20 transition-all"
+              className="pl-10 w-[300px] h-11 bg-white border-gray-100 rounded-xl focus:ring-brand-primary/20 transition-all"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -136,7 +136,7 @@ export default function AdminCajasPage() {
       <SectionCard>
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-gray-400">
-            <Loader2 className="w-10 h-10 animate-spin text-corporate-blue" />
+            <Loader2 className="w-10 h-10 animate-spin text-brand-primary" />
             <p className="font-medium animate-pulse">Obteniendo estado de terminales...</p>
           </div>
         ) : error ? (
@@ -162,20 +162,20 @@ export default function AdminCajasPage() {
             {filteredSessions.map((session) => (
               <div 
                 key={session.id}
-                className="group relative overflow-hidden bg-white border border-gray-100 rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-corporate-blue/5 hover:-translate-y-1"
+                className="group relative overflow-hidden bg-white border border-gray-100 rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-brand-primary/5 hover:-translate-y-1"
               >
                 {/* Glass Background Decor */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-corporate-blue/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
                 
                 <div className="relative flex flex-col h-full">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-corporate-blue/10 rounded-2xl">
-                        <Monitor className="w-6 h-6 text-corporate-blue" />
+                      <div className="p-3 bg-brand-primary/10 rounded-2xl">
+                        <Monitor className="w-6 h-6 text-brand-primary" />
                       </div>
                       <div>
                         <h3 className="text-lg font-bold text-gray-900">{session.terminals?.name || 'Terminal Desconocido'}</h3>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-corporate-blue/60">ID: {session.id.slice(0,8)}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-primary/60">ID: {session.id.slice(0,8)}</p>
                       </div>
                     </div>
                     <Badge className="bg-green-50 text-green-600 border-green-100 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">

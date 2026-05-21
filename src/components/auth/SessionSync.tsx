@@ -41,7 +41,6 @@ export function SessionSync() {
       if (event === 'SIGNED_OUT') {
         logout()
         router.refresh()
-        router.push('/login')
       }
     })
 

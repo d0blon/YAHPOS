@@ -198,7 +198,7 @@ const DEFAULT_CONTENT: SiteContent = {
     },
     features: [
       { icon: 'Truck', title: 'ENVÍO YAHPOS!', sub: 'Mismo día garantizado', color: 'text-blue-400' },
-      { icon: 'CreditCard', title: 'PAGO BLINDADO', sub: 'Seguridad nivel bancario', color: 'text-purple-400' },
+      { icon: 'CreditCard', title: 'PAGO BLINDADO', sub: 'Seguridad nivel bancario', color: 'text-brand-400' },
       { icon: 'ShieldCheck', title: 'GARANTÍA TOTAL', sub: 'Satisfacción certificada', color: 'text-emerald-400' },
       { icon: 'Headphones', title: 'SOPORTE 24/7', sub: 'Línea prioritaria miembros', color: 'text-amber-400' },
     ]

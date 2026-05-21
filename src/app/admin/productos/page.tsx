@@ -79,13 +79,13 @@ export default function AdminProducts() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-              Gestión de <span className="text-corporate-blue">Inventario</span>
+              Gestión de <span className="text-brand-primary">Inventario</span>
             </h1>
             <p className="text-gray-500 text-sm font-medium">Catálogo de productos y control de stock centralizado</p>
           </div>
           <Button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-corporate-blue hover:bg-corporate-blue/90 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-corporate-blue/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+            className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-brand-primary/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Nuevo Producto
@@ -118,8 +118,8 @@ export default function AdminProducts() {
         <Card className="border-none shadow-sm overflow-hidden">
           <CardHeader className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-black uppercase tracking-tighter italic">Lista de <span className="text-corporate-blue">Productos</span></CardTitle>
-              <Badge className="bg-corporate-blue/10 text-corporate-blue border-none font-bold">{filteredProducts.length} Ítems</Badge>
+              <CardTitle className="text-xl font-black uppercase tracking-tighter italic">Lista de <span className="text-brand-primary">Productos</span></CardTitle>
+              <Badge className="bg-brand-primary/10 text-brand-primary border-none font-bold">{filteredProducts.length} Ítems</Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -139,7 +139,7 @@ export default function AdminProducts() {
                   {isLoading ? (
                     <tr>
                       <td colSpan={6} className="py-20 text-center">
-                        <Loader2 className="w-8 h-8 text-corporate-blue animate-spin mx-auto" />
+                        <Loader2 className="w-8 h-8 text-brand-primary animate-spin mx-auto" />
                         <p className="mt-2 text-gray-500 font-medium">Cargando catálogo...</p>
                       </td>
                     </tr>
@@ -214,7 +214,7 @@ export default function AdminProducts() {
                               variant="ghost" 
                               size="icon" 
                               onClick={() => handleEdit(p)}
-                              className="h-9 w-9 text-gray-400 hover:text-corporate-blue hover:bg-corporate-blue/5"
+                              className="h-9 w-9 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/5"
                             >
                               <Edit2 className="w-4 h-4" />
                             </Button>

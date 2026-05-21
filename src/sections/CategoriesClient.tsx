@@ -58,8 +58,8 @@ export default function CategoriesClient({ counts }: { counts: CategoryCounts })
 
       {/* Background Ornaments */}
       <div className="absolute inset-0 pointer-events-none opacity-50">
-        <div className="absolute top-[30%] left-[5%] w-[600px] h-[600px] bg-corporate-blue/10 rounded-full blur-[140px]" />
-        <div className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-accent-yellow/8 rounded-full blur-[120px]" />
+        <div className="absolute top-[30%] left-[5%] w-[600px] h-[600px] bg-brand-primary/10 rounded-full blur-[140px]" />
+        <div className="absolute bottom-[10%] right-[5%] w-[500px] h-[500px] bg-brand-accent/8 rounded-full blur-[120px]" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10 flex-grow flex flex-col justify-center">
@@ -72,7 +72,7 @@ export default function CategoriesClient({ counts }: { counts: CategoryCounts })
             viewport={{ once: true, margin: "-100px" }}
             variants={headerVariants}
           >
-            <Badge variant="outline" className="mb-4 border-corporate-blue/30 text-corporate-blue dark:text-accent-yellow px-4 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
+            <Badge variant="outline" className="mb-4 border-brand-primary/30 text-brand-primary dark:text-brand-accent px-4 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
               {ecommerceConfig.categories.subtitle}
             </Badge>
           </motion.div>
@@ -114,7 +114,7 @@ export default function CategoriesClient({ counts }: { counts: CategoryCounts })
               >
                 <Link 
                   href={`/categoria/${category.slug}`}
-                  className="group relative block h-[180px] overflow-hidden rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 backdrop-blur-3xl transition-all duration-700 hover:border-corporate-blue/30 dark:hover:border-accent-yellow/30 shadow-sm hover:shadow-2xl hover:shadow-corporate-blue/10"
+                  className="group relative block h-[180px] overflow-hidden rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 backdrop-blur-3xl transition-all duration-700 hover:border-brand-primary/30 dark:hover:border-brand-accent/30 shadow-sm hover:shadow-2xl hover:shadow-brand-primary/10"
                 >
                   {/* Blurred Object on the Right */}
                   <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[70%] h-[120%] pointer-events-none select-none overflow-hidden">
@@ -131,7 +131,7 @@ export default function CategoriesClient({ counts }: { counts: CategoryCounts })
                   {/* Content Section */}
                   <div className="relative h-full z-20 p-8 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter transition-colors duration-300 group-hover:text-indigo-400 group-hover:translate-x-1">
+                      <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter transition-colors duration-300 group-hover:text-brand-400 group-hover:translate-x-1">
                         {category.name}
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium max-w-[60%] line-clamp-2">
@@ -143,8 +143,8 @@ export default function CategoriesClient({ counts }: { counts: CategoryCounts })
                       <Badge variant="secondary" className="bg-white/10 dark:bg-white/5 border-none text-[10px] font-bold py-1">
                         {displayCount > 0 ? `${displayCount} Productos` : 'Próximamente'}
                       </Badge>
-                      <div className="w-8 h-8 rounded-full bg-corporate-blue/10 dark:bg-accent-yellow/10 flex items-center justify-center opacity-0 -translate-x-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0">
-                        <ArrowRight className="w-4 h-4 text-corporate-blue dark:text-accent-yellow" />
+                      <div className="w-8 h-8 rounded-full bg-brand-primary/10 dark:bg-brand-accent/10 flex items-center justify-center opacity-0 -translate-x-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0">
+                        <ArrowRight className="w-4 h-4 text-brand-primary dark:text-brand-accent" />
                       </div>
                     </div>
                   </div>

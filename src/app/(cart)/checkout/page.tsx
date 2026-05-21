@@ -181,11 +181,11 @@ export default function CheckoutPage() {
               <ChevronRight className="w-3 h-3 text-gray-700" />
               <Link href="/carrito" className="hover:text-white transition-colors">Carrito</Link>
               <ChevronRight className="w-3 h-3 text-gray-700" />
-              <span className="text-blue-400">Checkout Seguro</span>
+              <span className="text-brand-accent-400">Checkout Seguro</span>
             </nav>
             
             <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase mb-2">
-              Finalizar <span className="text-blue-500 italic">Pedido</span>
+              Finalizar <span className="text-brand-accent-500 italic">Pedido</span>
             </h1>
             <p className="text-gray-500 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-green-500" />
@@ -204,11 +204,11 @@ export default function CheckoutPage() {
                 <div 
                   key={item.s} 
                   className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl transition-all duration-500 ${
-                    step === item.s ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500'
+                    step === item.s ? 'bg-brand-accent-600 text-white shadow-lg shadow-brand-accent-600/20' : 'text-gray-500'
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${
-                    step === item.s ? 'bg-white text-blue-600' : (step > item.s ? 'bg-green-500 text-white' : 'bg-white/5')
+                    step === item.s ? 'bg-white text-brand-accent-600' : (step > item.s ? 'bg-green-500 text-white' : 'bg-white/5')
                   }`}>
                     {step > item.s ? <Check className="w-4 h-4" /> : item.s}
                   </div>
@@ -225,8 +225,8 @@ export default function CheckoutPage() {
                 {step === 1 && (
                   <div className="glass-card p-8 md:p-12 rounded-[40px] border-white/5 bg-white/5">
                     <div className="flex items-center gap-4 mb-10">
-                      <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                        <MapPin className="w-7 h-7 text-blue-500" />
+                      <div className="w-14 h-14 rounded-2xl bg-brand-accent-500/10 flex items-center justify-center">
+                        <MapPin className="w-7 h-7 text-brand-accent-500" />
                       </div>
                       <div>
                         <h2 className="text-2xl font-black text-white tracking-tight uppercase">Datos de Entrega</h2>
@@ -237,48 +237,48 @@ export default function CheckoutPage() {
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Nombre</label>
-                        <input name="firstName" type="text" placeholder="Ej. Juan" defaultValue={user?.firstName} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="firstName" type="text" placeholder="Ej. Juan" defaultValue={user?.firstName} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Apellido</label>
-                        <input name="lastName" type="text" placeholder="Ej. Pérez" defaultValue={user?.lastName} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="lastName" type="text" placeholder="Ej. Pérez" defaultValue={user?.lastName} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       <div className="md:col-span-2 space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Email de Contacto</label>
-                        <input name="email" type="email" placeholder="juan@email.com" defaultValue={user?.email} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="email" type="email" placeholder="juan@email.com" defaultValue={user?.email} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       <div className="md:col-span-2 space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Teléfono Móvil</label>
-                        <input name="phone" type="tel" placeholder="+56 9 1234 5678" defaultValue={user?.phone} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="phone" type="tel" placeholder="+56 9 1234 5678" defaultValue={user?.phone} className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       
                       <div className="md:col-span-2 pt-6">
                         <div className="h-[1px] bg-white/5 mb-10" />
-                        <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
-                          <span className="w-4 h-[2px] bg-blue-400" />
+                        <h3 className="text-[10px] font-black text-brand-accent-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+                          <span className="w-4 h-[2px] bg-brand-accent-400" />
                           DIRECCIÓN EXACTA
                         </h3>
                       </div>
 
                       <div className="md:col-span-2 space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Calle / Avenida</label>
-                        <input name="street" type="text" placeholder="Av. Siempre Viva" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="street" type="text" placeholder="Av. Siempre Viva" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Número</label>
-                        <input name="number" type="text" placeholder="123" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="number" type="text" placeholder="123" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Depto / Casa</label>
-                        <input name="apartment" type="text" placeholder="Opcional" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="apartment" type="text" placeholder="Opcional" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Comuna</label>
-                        <input name="commune" type="text" placeholder="Santiago" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="commune" type="text" placeholder="Santiago" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Ciudad</label>
-                        <input name="city" type="text" placeholder="Región Metropolitana" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-700" />
+                        <input name="city" type="text" placeholder="Región Metropolitana" className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all placeholder:text-gray-700" />
                       </div>
                     </div>
 
@@ -287,10 +287,10 @@ export default function CheckoutPage() {
                       <div className="grid gap-4">
                         {shippingMethods.map((method) => (
                           <label key={method.id} className={`group relative flex items-center justify-between p-6 border-2 rounded-[24px] cursor-pointer transition-all duration-300 ${
-                            selectedShipping === method.id ? 'border-blue-500 bg-blue-500/5' : 'border-white/5 bg-white/5 hover:border-white/20'
+                            selectedShipping === method.id ? 'border-brand-accent-500 bg-brand-accent-500/5' : 'border-white/5 bg-white/5 hover:border-white/20'
                           }`}>
                             <div className="flex items-center gap-5">
-                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedShipping === method.id ? 'border-blue-500 bg-blue-500' : 'border-white/20'}`}>
+                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedShipping === method.id ? 'border-brand-accent-500 bg-brand-accent-500' : 'border-white/20'}`}>
                                 {selectedShipping === method.id && <div className="w-2 h-2 rounded-full bg-white" />}
                               </div>
                               <input type="radio" name="shipping" value={method.id} checked={selectedShipping === method.id} onChange={() => setSelectedShipping(method.id)} className="hidden" />
@@ -307,23 +307,23 @@ export default function CheckoutPage() {
                       </div>
 
                       {selectedShipping === 'pickup' && (
-                        <div className="mt-6 p-6 glass-card border-blue-500/20 bg-blue-500/5 rounded-3xl overflow-hidden relative">
+                        <div className="mt-6 p-6 glass-card border-brand-accent-500/20 bg-brand-accent-500/5 rounded-3xl overflow-hidden relative">
                           <div className="relative z-10">
                             <div className="flex justify-between items-center mb-4">
-                              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                              <span className="text-[10px] font-black text-brand-accent-400 uppercase tracking-widest">
                                 {subtotal >= 40000 ? '✅ ARMADO PREMIUM INCLUIDO' : `FALTAN ${formatPrice(40000 - subtotal)} PARA ARMADO GRATIS`}
                               </span>
-                              <span className="text-blue-400 font-black text-sm">{Math.round(freePickingProgress)}%</span>
+                              <span className="text-brand-accent-400 font-black text-sm">{Math.round(freePickingProgress)}%</span>
                             </div>
                             <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden mb-4">
-                              <div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${freePickingProgress}%` }} />
+                              <div className="h-full bg-brand-accent-500 transition-all duration-1000 ease-out" style={{ width: `${freePickingProgress}%` }} />
                             </div>
                             <p className="text-[10px] font-bold text-gray-500 italic uppercase">
                               * Nuestro equipo seleccionará personalmente tus productos con el máximo cuidado.
                             </p>
                           </div>
                           <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Package className="w-24 h-24 text-blue-500" />
+                            <Package className="w-24 h-24 text-brand-accent-500" />
                           </div>
                         </div>
                       )}
@@ -345,8 +345,8 @@ export default function CheckoutPage() {
                 {step === 2 && (
                   <div className="glass-card p-8 md:p-12 rounded-[40px] border-white/5 bg-white/5">
                     <div className="flex items-center gap-4 mb-10">
-                      <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                        <Wallet className="w-7 h-7 text-purple-500" />
+                      <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center">
+                        <Wallet className="w-7 h-7 text-brand-500" />
                       </div>
                       <div>
                         <h2 className="text-2xl font-black text-white tracking-tight uppercase">Método de Pago</h2>
@@ -357,12 +357,12 @@ export default function CheckoutPage() {
                     <div className="grid gap-4">
                       {paymentMethods.map((method) => (
                         <label key={method.id} className={`group relative flex items-center gap-6 p-8 border-2 rounded-[32px] cursor-pointer transition-all duration-300 ${
-                          selectedPayment === method.id ? 'border-blue-500 bg-blue-500/5 shadow-lg shadow-blue-500/10' : 'border-white/5 bg-white/5 hover:border-white/20'
+                          selectedPayment === method.id ? 'border-brand-accent-500 bg-brand-accent-500/5 shadow-lg shadow-brand-accent-500/10' : 'border-white/5 bg-white/5 hover:border-white/20'
                         }`}>
                           <input type="radio" name="payment" value={method.id} checked={selectedPayment === method.id} onChange={() => setSelectedPayment(method.id)} className="hidden" />
                           
                           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
-                            selectedPayment === method.id ? 'bg-blue-500 text-white' : 'bg-white/5 text-gray-500 group-hover:bg-white/10'
+                            selectedPayment === method.id ? 'bg-brand-accent-500 text-white' : 'bg-white/5 text-gray-500 group-hover:bg-white/10'
                           }`}>
                             <method.icon className="w-8 h-8" />
                           </div>
@@ -372,7 +372,7 @@ export default function CheckoutPage() {
                             <p className="text-xs text-gray-500 font-bold uppercase mt-1">{method.description}</p>
                           </div>
 
-                          <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${selectedPayment === method.id ? 'border-blue-500 bg-blue-500' : 'border-white/10'}`}>
+                          <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${selectedPayment === method.id ? 'border-brand-accent-500 bg-brand-accent-500' : 'border-white/10'}`}>
                             {selectedPayment === method.id && <div className="w-2 h-2 rounded-full bg-white" />}
                           </div>
                         </label>
@@ -406,7 +406,7 @@ export default function CheckoutPage() {
 
                     <div className="space-y-6">
                       <div className="glass-card p-8 rounded-3xl border-white/5 bg-white/2">
-                        <h3 className="text-xs font-black text-blue-400 uppercase tracking-[0.3em] mb-6">TUS PRODUCTOS</h3>
+                        <h3 className="text-xs font-black text-brand-accent-400 uppercase tracking-[0.3em] mb-6">TUS PRODUCTOS</h3>
                         <div className="space-y-4">
                           {items.map((item: CartItem) => (
                             <div key={item.product.id} className="flex items-center justify-between group">
@@ -429,7 +429,7 @@ export default function CheckoutPage() {
                         <div className="glass-card p-6 rounded-3xl border-white/5 bg-white/2">
                           <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">DESTINO</h3>
                           <p className="text-sm font-black text-white uppercase">{shippingMethods.find(s => s.id === selectedShipping)?.name}</p>
-                          <p className="text-[10px] text-blue-400 font-bold uppercase mt-1">ENTREGA SEGURA</p>
+                          <p className="text-[10px] text-brand-accent-400 font-bold uppercase mt-1">ENTREGA SEGURA</p>
                         </div>
                         <div className="glass-card p-6 rounded-3xl border-white/5 bg-white/2">
                           <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">PAGO</h3>
@@ -450,7 +450,7 @@ export default function CheckoutPage() {
                           <ArrowLeft className="mr-3 w-5 h-5" />
                           Cambiar Pago
                         </Button>
-                        <Button onClick={handleSubmit} disabled={isProcessing} className="h-20 flex-1 bg-blue-600 text-white hover:bg-blue-700 font-black uppercase tracking-widest rounded-3xl shadow-xl shadow-blue-600/20">
+                        <Button onClick={handleSubmit} disabled={isProcessing} className="h-20 flex-1 bg-brand-accent-600 text-white hover:bg-blue-700 font-black uppercase tracking-widest rounded-3xl shadow-xl shadow-brand-accent-600/20">
                           {isProcessing ? (
                             <span className="flex items-center gap-3">
                               <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -474,12 +474,12 @@ export default function CheckoutPage() {
             <div className="lg:col-span-4 sticky top-32">
               <div className="glass-card p-8 rounded-[40px] border-white/5 bg-white/5 relative overflow-hidden group">
                 {/* Decorative mesh inside summary */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 opacity-50 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-accent-500/10 via-transparent to-brand-500/10 opacity-50 pointer-events-none" />
                 
                 <div className="relative z-10">
                   <h2 className="text-2xl font-black text-white tracking-tighter uppercase mb-8 flex items-center justify-between">
                     Resumen
-                    <ShoppingBag className="w-6 h-6 text-blue-500" />
+                    <ShoppingBag className="w-6 h-6 text-brand-accent-500" />
                   </h2>
 
                   <div className="space-y-4">
@@ -494,10 +494,10 @@ export default function CheckoutPage() {
                     {pickingFee > 0 && (
                       <div className="flex justify-between items-center group/item pt-2">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Servicio de Armado</span>
+                          <span className="text-[10px] font-black text-brand-accent-400 uppercase tracking-widest">Servicio de Armado</span>
                           <span className="text-[8px] font-bold text-gray-600 uppercase">EXPERIENCIA PREMIUM</span>
                         </div>
-                        <span className="font-black text-blue-400">{formatPrice(pickingFee)}</span>
+                        <span className="font-black text-brand-accent-400">{formatPrice(pickingFee)}</span>
                       </div>
                     )}
 
@@ -506,7 +506,7 @@ export default function CheckoutPage() {
                     <div className="flex justify-between items-end mb-8">
                       <div>
                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Total Final</span>
-                        <p className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mt-1">IVA INCLUIDO</p>
+                        <p className="text-[8px] font-black text-brand-accent-500 uppercase tracking-[0.2em] mt-1">IVA INCLUIDO</p>
                       </div>
                       <span className="text-4xl font-black text-white tracking-tighter">
                         {formatPrice(subtotal + currentShippingPrice + pickingFee)}

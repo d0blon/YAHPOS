@@ -133,8 +133,8 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); resetState(); } }}>
-      <DialogContent className="max-w-[550px] bg-white dark:bg-slate-900 rounded-[3rem] overflow-hidden border-none shadow-2xl p-0 text-slate-900 dark:text-white animate-in zoom-in-95 duration-500">
-        <DialogHeader className="p-10 bg-patagonia-600 dark:bg-slate-800 text-white relative overflow-hidden shrink-0">
+      <DialogContent className="max-w-[550px] bg-white dark:bg-surface-100 rounded-[3rem] overflow-hidden border-none shadow-2xl p-0 text-slate-900 dark:text-white animate-in zoom-in-95 duration-500">
+        <DialogHeader className="p-10 bg-brand-primary dark:bg-surface-200 text-white relative overflow-hidden shrink-0">
           <div className="relative z-10">
             <DialogTitle className="text-3xl font-black flex items-center gap-4 italic tracking-tighter uppercase">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
@@ -142,7 +142,7 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
               </div>
               Gestión Clientes
             </DialogTitle>
-            <DialogDescription className="text-blue-100 dark:text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px] mt-3">
+            <DialogDescription className="text-blue-100 dark:text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px] mt-3">
               Fidelización y Beneficios Patagonia
             </DialogDescription>
           </div>
@@ -153,13 +153,13 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
           {!foundCustomer && !isRegistering && (
             <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Documento Identidad (RUT)</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-gray-500 ml-6">Documento Identidad (RUT)</label>
                 <div className="flex gap-3">
                   <div className="relative flex-1 group">
-                    <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-patagonia-500 transition-colors" />
+                    <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
                     <Input 
                       placeholder="12.345.678-9" 
-                      className="h-20 pl-16 bg-slate-50 dark:bg-slate-800/50 border-none rounded-[2rem] text-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-patagonia-600/20 transition-all tracking-tight"
+                      className="h-20 pl-16 bg-slate-50 dark:bg-surface-200/50 border-none rounded-[2rem] text-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-brand-primary/20 transition-all tracking-tight"
                       value={rut}
                       onChange={(e) => setRut(formatRut(e.target.value))}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -168,17 +168,17 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
                   <Button 
                     onClick={handleSearch} 
                     disabled={loading || !rut}
-                    className="h-20 w-20 bg-patagonia-600 hover:bg-patagonia-700 text-white rounded-[2rem] shadow-xl shadow-patagonia-600/30 active:scale-95 transition-all p-0"
+                    className="h-20 w-20 bg-brand-primary hover:brightness-90 text-white rounded-[2rem] shadow-xl shadow-brand-primary/30 active:scale-95 transition-all p-0"
                   >
                     {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Search className="w-8 h-8" />}
                   </Button>
                 </div>
               </div>
-              <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex items-start gap-4">
-                <div className="w-10 h-10 bg-patagonia-600/10 rounded-xl flex items-center justify-center shrink-0">
-                    <Award className="w-5 h-5 text-patagonia-600" />
+              <div className="p-8 bg-slate-50 dark:bg-surface-200/50 rounded-[2.5rem] border border-slate-100 dark:border-gray-800 flex items-start gap-4">
+                <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                    <Award className="w-5 h-5 text-brand-primary" />
                 </div>
-                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-gray-400 leading-relaxed uppercase tracking-wider">
                   Identifica al cliente para aplicar descuentos exclusivos y acumular puntos en su cuenta personal.
                 </p>
               </div>
@@ -212,7 +212,7 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
                 <div className="space-y-4">
                     <div className={cn(
                         "p-4 rounded-2xl border-2 flex items-center justify-between",
-                        foundCustomer.is_full_account ? "bg-blue-500/10 border-blue-500/20" : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800"
+                        foundCustomer.is_full_account ? "bg-blue-500/10 border-blue-500/20" : "bg-slate-50 dark:bg-surface-200/50 border-slate-100 dark:border-gray-800"
                     )}>
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Socio Web</span>
                         <span className={cn("text-[10px] font-black uppercase", foundCustomer.is_full_account ? "text-blue-600" : "text-slate-400")}>
@@ -235,19 +235,31 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
                 <Button 
                   onClick={handleVerifyIdentity}
                   disabled={isVerifying}
-                  className="w-full h-16 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all"
+                  className="w-full h-16 bg-slate-900 dark:bg-white dark:text-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all"
                 >
                   {isVerifying ? <Loader2 className="w-5 h-5 animate-spin" /> : <Fingerprint className="w-5 h-5" />}
                   Validar Identidad Presencial
                 </Button>
+              )}
+
+              {!foundCustomer.is_full_account && (
+                <div className="p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-3">
+                  <Award className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Cuenta Pendiente</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      El cliente debe crear su cuenta en la página del negocio para activar su perfil completo y poder canjear puntos.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           )}
 
           {isRegistering && (
             <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
-              <div className="flex items-center gap-4 p-6 bg-patagonia-600/10 rounded-[2rem] text-patagonia-600 dark:text-patagonia-400 border border-patagonia-600/20">
-                <div className="p-3 bg-patagonia-600 rounded-xl text-white">
+              <div className="flex items-center gap-4 p-6 bg-brand-primary/10 rounded-[2rem] text-brand-primary dark:text-brand-primary/80 border border-brand-primary/20">
+                <div className="p-3 bg-brand-primary rounded-xl text-white">
                     <UserPlus className="w-6 h-6" />
                 </div>
                 <div>
@@ -257,12 +269,12 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
               </div>
               
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Nombre Completo</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-gray-500 ml-6">Nombre Completo</label>
                 <div className="relative group">
-                  <User className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-patagonia-500 transition-colors" />
+                  <User className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
                   <Input 
                     placeholder="Ej: Juan Pérez" 
-                    className="h-16 pl-16 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-patagonia-600/20"
+                    className="h-16 pl-16 bg-slate-50 dark:bg-surface-200/50 border-none rounded-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-brand-primary/20"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                   />
@@ -270,12 +282,12 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 ml-6">Correo Electrónico</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-gray-500 ml-6">Correo Electrónico (opcional)</label>
                 <div className="relative group">
-                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-patagonia-500 transition-colors" />
+                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
                   <Input 
                     placeholder="ejemplo@patagonia.cl" 
-                    className="h-16 pl-16 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-patagonia-600/20"
+                    className="h-16 pl-16 bg-slate-50 dark:bg-surface-200/50 border-none rounded-2xl font-black text-slate-900 dark:text-white focus-visible:ring-4 focus-visible:ring-brand-primary/20"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                   />
@@ -289,7 +301,7 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
           <Button 
             variant="ghost" 
             onClick={() => { resetState(); isRegistering ? setIsRegistering(false) : onClose(); }}
-            className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:bg-slate-100 dark:hover:bg-gray-800 transition-all"
           >
             {isRegistering ? '← Volver' : 'Cancelar'}
           </Button>
@@ -307,7 +319,7 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
             <Button 
               onClick={handleRegister}
               disabled={loading || !regName}
-              className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs bg-patagonia-600 hover:bg-patagonia-700 text-white shadow-2xl shadow-patagonia-600/40 active:scale-[0.98] transition-all"
+              className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs bg-brand-primary hover:brightness-90 text-white shadow-2xl shadow-brand-primary/40 active:scale-[0.98] transition-all"
             >
               {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Registrar y Vincular'}
             </Button>

@@ -45,8 +45,8 @@ function FooterPremium({ storeName }: { storeName: string }) {
     <footer ref={root} className="bg-background text-white relative overflow-hidden pt-20 pb-10 md:pb-6 border-t border-white/5">
       {/* Dynamic Background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-accent-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[120px]" />
       </div>
 
       <FooterFX scope={root.current} />
@@ -55,8 +55,8 @@ function FooterPremium({ storeName }: { storeName: string }) {
       <div className="container mx-auto px-4 mb-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { icon: Truck, title: 'ENVÍO ELITE', sub: 'Mismo día garantizado', color: 'text-blue-400' },
-            { icon: CreditCard, title: 'PAGO BLINDADO', sub: 'Seguridad nivel bancario', color: 'text-purple-400' },
+            { icon: Truck, title: 'ENVÍO ELITE', sub: 'Mismo día garantizado', color: 'text-brand-accent-400' },
+            { icon: CreditCard, title: 'PAGO BLINDADO', sub: 'Seguridad nivel bancario', color: 'text-brand-400' },
             { icon: ShieldCheck, title: 'GARANTÍA TOTAL', sub: 'Satisfacción certificada', color: 'text-emerald-400' },
             { icon: Headphones, title: 'SOPORTE 24/7', sub: 'Línea prioritaria miembros', color: 'text-amber-400' },
           ].map(({ icon: Icon, title, sub, color }) => (
@@ -181,7 +181,7 @@ function FooterPremium({ storeName }: { storeName: string }) {
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] mb-2">
                 © 2026 {storeName} / Todos los derechos reservados
               </p>
-              <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2 justify-center md:justify-start">
+              <p className="text-[10px] font-black text-brand-accent-500 uppercase tracking-widest flex items-center gap-2 justify-center md:justify-start">
                 <Zap className="w-3 h-3" /> Powered by YAHPOS! Technology
               </p>
             </div>
@@ -213,22 +213,22 @@ function FooterAustral() {
   return (
     <footer ref={root} className="bg-background text-white relative overflow-hidden py-20 border-t border-white/5">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[140px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-brand-accent-600/5 rounded-full blur-[140px]" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-brand-600/5 rounded-full blur-[140px]" />
       </div>
 
       <FooterFX scope={root.current} />
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto glass-card p-8 md:p-16 rounded-[40px] bg-gradient-to-br from-white/5 to-transparent border border-white/10 text-center">
-          <div className="inline-flex items-center gap-3 mb-8 px-6 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
-            <Zap className="w-4 h-4 text-blue-400" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Unlock Full Potential</span>
+          <div className="inline-flex items-center gap-3 mb-8 px-6 py-2 rounded-full bg-brand-accent-500/10 border border-brand-accent-500/20">
+            <Zap className="w-4 h-4 text-brand-accent-400" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-accent-400">Unlock Full Potential</span>
           </div>
           
           <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight">
             ¿Listo para llevar tu <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">negocio al futuro?</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-accent to-brand-600">negocio al futuro?</span>
           </h2>
           
           <p className="text-gray-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
@@ -242,7 +242,7 @@ function FooterAustral() {
               <p className="text-sm text-gray-500">Ecommerce Completo</p>
             </div>
             <div className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
-              <Crown className="w-8 h-8 text-purple-400 mb-4 mx-auto group-hover:scale-110 transition-transform" />
+              <Crown className="w-8 h-8 text-brand-400 mb-4 mx-auto group-hover:scale-110 transition-transform" />
               <h3 className="font-bold text-lg mb-1">Plan Patagonia</h3>
               <p className="text-sm text-gray-500">Multisucursal & IA</p>
             </div>

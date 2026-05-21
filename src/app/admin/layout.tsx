@@ -1,31 +1,45 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase";
-import AdminLayoutClient from "./AdminLayoutClient";
+'use client'
 
-export default async function AdminLayout({
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import AdminLayoutClient from "./AdminLayoutClient";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const router = useRouter();
 
-  // Redirigir si no hay sesión activa (Doble verificación post-middleware)
-  if (!user) {
-    redirect("/login?next=/admin");
-  }
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
 
-  // Verificar si el usuario tiene un perfil y un rol administrativo básico
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+      if (!user) {
+        router.replace("/login?next=/admin");
+        return;
+      }
 
-  const adminRoles = ["admin", "owner", "developer", "manager", "cashier", "warehouse", "employee"];
-  if (!profile || !adminRoles.includes(profile.role)) {
-    redirect("/?error=unauthorized");
-  }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-  return <AdminLayoutClient>{children}</AdminLayoutClient>;
+      const adminRoles = ["admin", "owner", "developer", "manager", "cashier", "warehouse", "employee"];
+      if (!profile || !adminRoles.includes(profile.role)) {
+        router.replace("/?error=unauthorized");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  return (
+    <ThemeProvider>
+      <AdminLayoutClient>{children}</AdminLayoutClient>
+    </ThemeProvider>
+  );
 }

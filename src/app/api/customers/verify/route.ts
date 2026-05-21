@@ -6,17 +6,25 @@ export async function POST(req: Request) {
     const auth = await withAuth()
     if (auth.error) return auth.error
 
-    const { userId } = await req.json()
+    const { userId, rut } = await req.json()
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    if (!userId && !rut) {
+      return NextResponse.json({ error: 'userId or rut is required' }, { status: 400 })
     }
 
-    const { error } = await auth.supabase
+    let query = auth.supabase
       .from('profiles')
       .update({ identity_verified: true })
-      .eq('id', userId)
       .eq('store_id', auth.storeId)
+
+    if (userId) {
+      query = query.eq('id', userId)
+    } else if (rut) {
+      const cleaned = rut.replace(/[^0-9kK]/g, '').toUpperCase()
+      query = query.eq('rut', cleaned)
+    }
+
+    const { error } = await query
 
     if (error) throw error
 

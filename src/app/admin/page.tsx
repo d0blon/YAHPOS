@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tighter uppercase italic">
-            Dashboard <span className="text-corporate-blue">General</span>
+            Dashboard <span className="text-brand-primary">General</span>
           </h1>
           <p className="text-xs text-gray-500 font-medium mt-1">Rendimiento en tiempo real de tu negocio.</p>
         </div>
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-8 h-8 text-corporate-blue animate-spin" />
+                  <Loader2 className="w-8 h-8 text-brand-primary animate-spin" />
                   <span className="ml-3 font-medium text-gray-500 italic uppercase font-black tracking-tighter">Cargando métricas...</span>
                 </div>
               ) : (
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
                         <SectionCard key={stat.title} className="hover:scale-[1.02] transition-all duration-300">
                           <CardContent className="p-6">
                             <div className="flex items-start justify-between mb-4">
-                              <div className="p-3 bg-corporate-blue/10 text-corporate-blue rounded-2xl group-hover:bg-corporate-blue group-hover:text-white transition-all shadow-inner">
+                              <div className="p-3 bg-brand-primary/10 text-brand-primary rounded-2xl group-hover:bg-brand-primary group-hover:text-white transition-all shadow-inner">
                                 <Icon className="w-6 h-6" />
                               </div>
                               <Badge variant="outline" className={cn(
@@ -175,8 +175,8 @@ export default function AdminDashboard() {
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-xl font-black italic tracking-tighter uppercase flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-corporate-blue" />
-                            Rendimiento <span className="text-corporate-blue">Ventas</span>
+                            <TrendingUp className="w-5 h-5 text-brand-primary" />
+                            Rendimiento <span className="text-brand-primary">Ventas</span>
                           </CardTitle>
                           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none font-black italic text-[10px] uppercase">+12.5% ESTE MES</Badge>
                         </div>
@@ -184,12 +184,12 @@ export default function AdminDashboard() {
                       <CardContent className="pt-4">
                         <div className="h-[300px] w-full">
                           {isMounted && (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height={260}>
                               <AreaChart data={data?.chartData || []}>
                                 <defs>
                                   <linearGradient id="colorPos" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#003399" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#003399" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor="#4b0082" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#4b0082" stopOpacity={0}/>
                                   </linearGradient>
                                   <linearGradient id="colorEcom" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
                                     padding: '12px'
                                   }}
                                   itemStyle={{ fontWeight: 900, fontSize: '12px', textTransform: 'uppercase' }}
-                                  labelStyle={{ fontWeight: 900, marginBottom: '4px', color: '#003399' }}
+                                  labelStyle={{ fontWeight: 900, marginBottom: '4px', color: '#4b0082' }}
                                   formatter={(value: any, name: any) => [`$${value.toLocaleString()}`, name === 'POS' ? 'TIENDA FÍSICA' : name === 'Ecommerce' ? 'VENTAS ONLINE' : name]}
                                 />
                                 <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ paddingBottom: '20px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase' }} />
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
                                   type="monotone" 
                                   dataKey="POS" 
                                   name="POS"
-                                  stroke="#003399" 
+                                  stroke="#4b0082" 
                                   strokeWidth={3}
                                   fillOpacity={1} 
                                   fill="url(#colorPos)" 
@@ -256,8 +256,8 @@ export default function AdminDashboard() {
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-xl font-black italic tracking-tighter uppercase flex items-center gap-2">
-                            <Users className="w-5 h-5 text-corporate-blue" />
-                            Personal <span className="text-corporate-blue">Activo</span>
+                            <Users className="w-5 h-5 text-brand-primary" />
+                            Personal <span className="text-brand-primary">Activo</span>
                           </CardTitle>
                           <div className="flex items-center gap-1">
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -274,9 +274,9 @@ export default function AdminDashboard() {
                             </div>
                           ) : (
                             data.activePersonnel.map((person) => (
-                              <div key={person.name} className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 group hover:border-corporate-blue/30 transition-all shadow-sm">
+                              <div key={person.name} className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10 group hover:border-brand-primary/30 transition-all shadow-sm">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-corporate-blue text-white rounded-xl flex items-center justify-center font-black italic text-xs shadow-lg shadow-corporate-blue/20">
+                                  <div className="w-10 h-10 bg-brand-primary text-white rounded-xl flex items-center justify-center font-black italic text-xs shadow-lg shadow-brand-primary/20">
                                     {person.name.split(' ').map((n: string) => n[0]).join('')}
                                   </div>
                                   <div>
@@ -284,12 +284,12 @@ export default function AdminDashboard() {
                                     <p className="text-[10px] text-gray-500 uppercase font-black mt-1 tracking-widest">{person.role}</p>
                                   </div>
                                 </div>
-                                <Badge className="bg-corporate-blue/10 text-corporate-blue border-none text-[9px] font-black italic uppercase">{person.area}</Badge>
+                                <Badge className="bg-brand-primary/10 text-brand-primary border-none text-[9px] font-black italic uppercase">{person.area}</Badge>
                               </div>
                             ))
                           )}
                         </div>
-                        <Button variant="ghost" className="w-full mt-4 text-[10px] font-black uppercase italic tracking-widest hover:bg-corporate-blue/5 rounded-xl" asChild>
+                        <Button variant="ghost" className="w-full mt-4 text-[10px] font-black uppercase italic tracking-widest hover:bg-brand-primary/5 rounded-xl" asChild>
                           <Link href="/admin/personal">Gestionar Equipo <ArrowUpRight className="w-3 h-3 ml-1" /></Link>
                         </Button>
                       </CardContent>
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
                     <SectionCard className="lg:col-span-2">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-xl font-black italic tracking-tighter uppercase">
-                          Pedidos <span className="text-corporate-blue">Recientes</span>
+                          Pedidos <span className="text-brand-primary">Recientes</span>
                         </CardTitle>
                         <Button variant="outline" size="sm" className="rounded-xl border-none shadow-sm text-[10px] font-black uppercase italic tracking-widest" asChild>
                           <Link href="/admin/pedidos">Ver Historial <ArrowUpRight className="w-4 h-4 ml-1" /></Link>
@@ -325,10 +325,10 @@ export default function AdminDashboard() {
                                 </tr>
                               ) : (
                                 data?.recentOrders.map((order) => (
-                                  <tr key={order.id} className="group hover:bg-corporate-blue/5 transition-colors">
+                                  <tr key={order.id} className="group hover:bg-brand-primary/5 transition-colors">
                                     <td className="py-4 px-4 text-sm font-black italic tracking-tighter">#{order.id}</td>
                                     <td className="py-4 px-4 text-sm font-medium">{order.customer}</td>
-                                    <td className="py-4 px-4 text-sm font-black text-corporate-blue">${order.total.toLocaleString()}</td>
+                                    <td className="py-4 px-4 text-sm font-black text-brand-primary">${order.total.toLocaleString()}</td>
                                     <td className="py-4 px-4 text-right">
                                       <Badge variant={order.status === 'completed' || order.status === 'delivered' ? 'success' : order.status === 'processing' ? 'warning' : order.status === 'shipped' ? 'default' : 'secondary'} 
                                         className="text-[9px] font-black uppercase italic tracking-tighter border-none px-2 py-0.5">
@@ -349,13 +349,13 @@ export default function AdminDashboard() {
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xl font-black italic tracking-tighter uppercase flex items-center gap-2">
                           <DollarSign className="w-5 h-5 text-emerald-500" />
-                          Flujo de <span className="text-corporate-blue">Caja</span>
+                          Flujo de <span className="text-brand-primary">Caja</span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-4">
                         <div className="h-[300px] w-full">
                           {isMounted && data?.paymentMethods && data.paymentMethods.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height={260}>
                               <PieChart>
                                 <Pie
                                   data={data.paymentMethods}
@@ -402,10 +402,10 @@ export default function AdminDashboard() {
                     <SectionCard className="lg:col-span-2">
                       <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-xl font-black italic tracking-tighter uppercase">
-                          Productos <span className="text-corporate-blue">Estrella</span>
+                          Productos <span className="text-brand-primary">Estrella</span>
                         </CardTitle>
                         <Link href="/admin/productos">
-                          <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase italic tracking-widest hover:bg-corporate-blue/5">Inventario Completo</Button>
+                          <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase italic tracking-widest hover:bg-brand-primary/5">Inventario Completo</Button>
                         </Link>
                       </CardHeader>
                       <CardContent>
@@ -414,8 +414,8 @@ export default function AdminDashboard() {
                             <p className="py-8 text-center text-gray-500 italic text-[10px] font-black uppercase col-span-2">No hay ventas registradas</p>
                           ) : (
                             data?.topProducts.map((product, index) => (
-                              <div key={product.name} className="flex items-center gap-4 p-4 bg-white/50 dark:bg-white/5 rounded-3xl border border-white/10 group hover:border-corporate-blue/30 transition-all shadow-sm">
-                                <div className="w-10 h-10 bg-corporate-blue/10 text-corporate-blue rounded-2xl flex items-center justify-center font-black italic shadow-inner">
+                              <div key={product.name} className="flex items-center gap-4 p-4 bg-white/50 dark:bg-white/5 rounded-3xl border border-white/10 group hover:border-brand-primary/30 transition-all shadow-sm">
+                                <div className="w-10 h-10 bg-brand-primary/10 text-brand-primary rounded-2xl flex items-center justify-center font-black italic shadow-inner">
                                   #{index + 1}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -423,7 +423,7 @@ export default function AdminDashboard() {
                                   <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{product.sales} VENTAS</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="font-black italic text-sm text-corporate-blue">${product.revenue.toLocaleString()}</p>
+                                  <p className="font-black italic text-sm text-brand-primary">${product.revenue.toLocaleString()}</p>
                                 </div>
                               </div>
                             ))
@@ -437,12 +437,12 @@ export default function AdminDashboard() {
                       <CardHeader>
                         <CardTitle className="text-xl font-black italic tracking-tighter uppercase flex items-center gap-2">
                           <Zap className="w-5 h-5 text-amber-500" />
-                          Accesos <span className="text-corporate-blue">Rápidos</span>
+                          Accesos <span className="text-brand-primary">Rápidos</span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-col gap-3">
-                          <Button asChild className="w-full justify-between bg-corporate-blue hover:bg-corporate-dark rounded-2xl py-6 shadow-lg shadow-corporate-blue/20 group">
+                          <Button asChild className="w-full justify-between bg-brand-primary hover:bg-brand-700 rounded-2xl py-6 shadow-lg shadow-brand-primary/20 group">
                             <Link href="/admin/productos">
                               <span className="flex items-center font-black italic uppercase tracking-widest text-[11px]"><Package className="w-4 h-4 mr-3" />Inventario</span>
                               <ArrowUpRight className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />

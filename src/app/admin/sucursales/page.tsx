@@ -165,7 +165,7 @@ export default function SucursalesPage() {
           actions={
             <Button 
               onClick={() => handleOpenModal()}
-              className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest shadow-xl shadow-corporate-blue/20 flex items-center gap-3 transition-all hover:scale-105 active:scale-95"
+              className="bg-brand-primary hover:bg-brand-700 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest shadow-xl shadow-brand-primary/20 flex items-center gap-3 transition-all hover:scale-105 active:scale-95"
             >
               <Plus className="w-6 h-6" />
               Nueva Sucursal
@@ -176,7 +176,7 @@ export default function SucursalesPage() {
         {/* Stats Grid - Premium look */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { label: 'Total Locales', value: branches.length, icon: Store, color: 'text-corporate-blue', bg: 'bg-corporate-blue/10' },
+            { label: 'Total Locales', value: branches.length, icon: Store, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
             { label: 'Operativas', value: activeBranches, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
             { label: 'Regiones', value: regionsCount || 0, icon: Map, color: 'text-amber-500', bg: 'bg-amber-500/10' }
           ].map((stat, i) => (
@@ -214,7 +214,7 @@ export default function SucursalesPage() {
         {/* Main Content Area */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 space-y-6">
-            <div className="w-16 h-16 border-4 border-corporate-blue border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-16 h-16 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
             <p className="font-black text-gray-500 uppercase tracking-widest text-sm animate-pulse">Sincronizando Nodos...</p>
           </div>
         ) : filteredBranches.length === 0 ? (
@@ -240,7 +240,7 @@ export default function SucursalesPage() {
                 className="group relative glass-card p-8 rounded-[2.5rem] border-none hover:translate-y-[-8px] transition-all duration-500"
               >
                 <div className="flex justify-between items-start mb-10">
-                  <div className="w-16 h-16 rounded-3xl bg-corporate-blue/10 flex items-center justify-center text-corporate-blue group-hover:bg-corporate-blue group-hover:text-white transition-all duration-500 shadow-lg shadow-corporate-blue/5">
+                  <div className="w-16 h-16 rounded-3xl bg-brand-primary/10 flex items-center justify-center text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-brand-primary/5">
                     <Store className="w-8 h-8" />
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -260,11 +260,11 @@ export default function SucursalesPage() {
 
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white group-hover:text-corporate-blue transition-colors duration-300">
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white group-hover:text-brand-primary transition-colors duration-300">
                       {branch.name}
                     </h3>
                     <div className="flex items-start gap-2 mt-3 text-gray-400">
-                      <MapPin className="w-4 h-4 shrink-0 text-corporate-blue mt-0.5" />
+                      <MapPin className="w-4 h-4 shrink-0 text-brand-primary mt-0.5" />
                       <p className="text-sm font-medium leading-relaxed italic">{branch.address}</p>
                     </div>
                   </div>
@@ -273,14 +273,14 @@ export default function SucursalesPage() {
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Contacto</p>
                       <div className="flex items-center gap-2 text-gray-300">
-                        <Phone className="w-4 h-4 text-corporate-blue" />
+                        <Phone className="w-4 h-4 text-brand-primary" />
                         <span className="text-sm font-black tracking-tight">{branch.phone || 'S/N'}</span>
                       </div>
                     </div>
                     <div className="space-y-1.5 text-right">
                       <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Responsable</p>
                       <div className="flex items-center justify-end gap-2 text-gray-300">
-                        <Users className="w-4 h-4 text-corporate-blue" />
+                        <Users className="w-4 h-4 text-brand-primary" />
                         <span className="text-sm font-black truncate max-w-[120px]">{branch.manager_name || 'Pendiente'}</span>
                       </div>
                     </div>
@@ -291,7 +291,7 @@ export default function SucursalesPage() {
                   <Button 
                     variant="outline" 
                     onClick={() => handleOpenModal(branch)}
-                    className="flex-1 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px] border-white/5 bg-white/5 hover:bg-corporate-blue hover:text-white transition-all shadow-lg"
+                    className="flex-1 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px] border-white/5 bg-white/5 hover:bg-brand-primary hover:text-white transition-all shadow-lg"
                   >
                     <Edit2 className="w-4 h-4 mr-2" />
                     Editar
@@ -313,11 +313,11 @@ export default function SucursalesPage() {
       {/* Modal Sucursal - Premium Glassmorphism */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[550px] bg-[#150024] border-white/10 rounded-[3rem] overflow-hidden p-0 shadow-2xl backdrop-blur-2xl">
-          <div className="h-2 w-full bg-gradient-to-r from-corporate-blue to-purple-500" />
+          <div className="h-2 w-full bg-gradient-to-r from-brand-primary to-brand-500" />
           
           <DialogHeader className="p-10 pb-0">
             <DialogTitle className="text-4xl font-black text-white tracking-tighter uppercase italic">
-              {editingBranch ? 'Actualizar' : 'Registrar'} <span className="text-corporate-blue">Sucursal</span>
+              {editingBranch ? 'Actualizar' : 'Registrar'} <span className="text-brand-primary">Sucursal</span>
             </DialogTitle>
             <DialogDescription className="text-gray-500 font-medium text-base mt-2">
               Configura los parámetros operativos de tu unidad de negocio.
@@ -329,14 +329,14 @@ export default function SucursalesPage() {
               <div className="space-y-3">
                 <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">Identificador Público</Label>
                 <div className="relative group">
-                  <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-corporate-blue transition-transform group-focus-within:scale-110" />
+                  <Store className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary transition-transform group-focus-within:scale-110" />
                   <Input 
                     id="name"
                     placeholder="Ej: YAHPOS! Central"
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     required
-                    className="pl-14 py-8 bg-white/5 border-white/10 rounded-2xl font-black text-white placeholder:text-gray-700 focus:border-corporate-blue/50 transition-all"
+                    className="pl-14 py-8 bg-white/5 border-white/10 rounded-2xl font-black text-white placeholder:text-gray-700 focus:border-brand-primary/50 transition-all"
                   />
                 </div>
               </div>
@@ -344,14 +344,14 @@ export default function SucursalesPage() {
               <div className="space-y-3">
                 <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">Ubicación Geo-Referencial</Label>
                 <div className="relative group">
-                  <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-corporate-blue transition-transform group-focus-within:scale-110" />
+                  <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary transition-transform group-focus-within:scale-110" />
                   <Input 
                     id="address"
                     placeholder="Dirección exacta, Ciudad"
                     value={formData.address}
                     onChange={e => setFormData({...formData, address: e.target.value})}
                     required
-                    className="pl-14 py-8 bg-white/5 border-white/10 rounded-2xl font-black text-white placeholder:text-gray-700 focus:border-corporate-blue/50 transition-all"
+                    className="pl-14 py-8 bg-white/5 border-white/10 rounded-2xl font-black text-white placeholder:text-gray-700 focus:border-brand-primary/50 transition-all"
                   />
                 </div>
               </div>
@@ -360,13 +360,13 @@ export default function SucursalesPage() {
                 <div className="space-y-3">
                   <Label htmlFor="phone" className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">Canal Telefónico</Label>
                   <div className="relative group">
-                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-corporate-blue" />
+                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary" />
                     <Input 
                       id="phone"
                       placeholder="+56 9 ..."
                       value={formData.phone}
                       onChange={e => setFormData({...formData, phone: e.target.value})}
-                      className="pl-14 py-8 bg-white/5 border-white/10 rounded-2xl font-black text-white placeholder:text-gray-700 focus:border-corporate-blue/50 transition-all"
+                      className="pl-14 py-8 bg-white/5 border-white/10 rounded-2xl font-black text-white placeholder:text-gray-700 focus:border-brand-primary/50 transition-all"
                     />
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export default function SucursalesPage() {
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
-                className="w-full bg-corporate-blue hover:bg-corporate-dark text-white rounded-[1.5rem] py-10 font-black text-xl uppercase tracking-widest shadow-2xl shadow-corporate-blue/20 transition-all hover:scale-[1.02] active:scale-95 border-t border-white/20"
+                className="w-full bg-brand-primary hover:bg-brand-700 text-white rounded-[1.5rem] py-10 font-black text-xl uppercase tracking-widest shadow-2xl shadow-brand-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-t border-white/20"
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-4">

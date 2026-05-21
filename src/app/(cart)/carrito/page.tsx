@@ -85,7 +85,7 @@ export default function CartPage() {
                 <ShoppingCart className="w-12 h-12 text-blue-400" />
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tighter">
-                Tu carrito está <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">totalmente vacío</span>
+                Tu carrito está <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-brand-400">totalmente vacío</span>
               </h1>
               <p className="text-gray-400 text-lg md:text-xl mb-12 leading-relaxed">
                 Parece que aún no has encontrado nada que te encante. <br />

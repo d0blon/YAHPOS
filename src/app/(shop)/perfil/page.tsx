@@ -113,16 +113,16 @@ function ProfileContent() {
           {/* Sidebar / Menu */}
           <div className="lg:col-span-4 space-y-4">
             {/* User Info Card */}
-            <Card className="border-none shadow-xl shadow-blue-500/5 overflow-hidden rounded-3xl bg-white dark:bg-gray-900">
+            <Card className="border-none shadow-xl shadow-brand-accent-500/5 overflow-hidden rounded-3xl bg-white dark:bg-gray-900">
               <CardContent className="p-0">
                 <div className="p-8 text-center border-b border-gray-100 dark:border-gray-800">
                   <div className="relative inline-block group mb-4">
-                    <div className="w-28 h-28 bg-gradient-to-br from-corporate-blue to-blue-700 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/20 ring-4 ring-white dark:ring-gray-800">
+                    <div className="w-28 h-28 bg-gradient-to-br from-brand-primary to-brand-accent-700 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-brand-accent-500/20 ring-4 ring-white dark:ring-gray-800">
                       <span className="text-white text-4xl font-black">
                         {(currentUser.name || currentUser.firstName || 'U').charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <button className="absolute bottom-1 right-1 w-9 h-9 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-corporate-blue shadow-lg transition-transform hover:scale-110 active:scale-95">
+                    <button className="absolute bottom-1 right-1 w-9 h-9 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-brand-primary shadow-lg transition-transform hover:scale-110 active:scale-95">
                       <Camera className="h-4 w-4" />
                     </button>
                   </div>
@@ -135,26 +135,26 @@ function ProfileContent() {
                       <div className={cn(
                         "flex items-center gap-1.5 py-1 px-3 rounded-full",
                         currentUser.role === 'admin' ? "bg-rose-50 dark:bg-rose-900/30" :
-                        currentUser.role === 'developer' ? "bg-purple-50 dark:bg-purple-900/30" :
-                        currentUser.role === 'owner' ? "bg-blue-50 dark:bg-blue-900/30" :
+                        currentUser.role === 'developer' ? "bg-brand-50 dark:bg-brand-900/30" :
+                        currentUser.role === 'owner' ? "bg-brand-accent-50 dark:bg-brand-accent-900/30" :
                         "bg-gray-50 dark:bg-gray-800/50"
                       )}>
                         {isSyncing ? (
-                          <Loader className="w-3 h-3 animate-spin text-corporate-blue" />
+                          <Loader className="w-3 h-3 animate-spin text-brand-primary" />
                         ) : (
                           <ShieldCheck className={cn(
                             "w-3.5 h-3.5",
                             currentUser.role === 'admin' ? "text-rose-500" :
-                            currentUser.role === 'developer' ? "text-purple-500" :
-                            currentUser.role === 'owner' ? "text-blue-500" :
+                            currentUser.role === 'developer' ? "text-brand-500" :
+                            currentUser.role === 'owner' ? "text-brand-accent-500" :
                             "text-gray-500"
                           )} />
                         )}
                         <span className={cn(
                           "text-[10px] font-black uppercase tracking-wider",
                           currentUser.role === 'admin' ? "text-rose-600" :
-                          currentUser.role === 'developer' ? "text-purple-600" :
-                          currentUser.role === 'owner' ? "text-blue-600" :
+                          currentUser.role === 'developer' ? "text-brand-600" :
+                          currentUser.role === 'owner' ? "text-brand-accent-600" :
                           "text-gray-600"
                         )}>
                           {isSyncing ? 'Sincronizando...' : (
@@ -203,17 +203,17 @@ function ProfileContent() {
                       onClick={() => setActiveTab(item.id)}
                       className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all group ${
                         activeTab === item.id
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-corporate-blue shadow-sm'
+                        ? 'bg-brand-accent-50 dark:bg-brand-accent-900/20 text-brand-primary shadow-sm'
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <item.icon className={`h-5 w-5 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-corporate-blue' : 'text-gray-400'}`} />
+                        <item.icon className={`h-5 w-5 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-brand-primary' : 'text-gray-400'}`} />
                         <span className={`font-bold transition-colors ${activeTab === item.id ? 'text-gray-900 dark:text-white' : ''}`}>
                           {item.label}
                         </span>
                       </div>
-                      {activeTab === item.id && <div className="w-1.5 h-1.5 bg-corporate-blue rounded-full" />}
+                      {activeTab === item.id && <div className="w-1.5 h-1.5 bg-brand-primary rounded-full" />}
                     </button>
                   ))}
                   
@@ -236,7 +236,7 @@ function ProfileContent() {
             <div className="space-y-6">
               {activeTab === 'profile' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <Card className="border-none shadow-xl shadow-blue-500/5 rounded-3xl overflow-hidden">
+                  <Card className="border-none shadow-xl shadow-brand-accent-500/5 rounded-3xl overflow-hidden">
                     <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
                       <div>
                         <CardTitle className="text-2xl font-black tracking-tight">Información Personal</CardTitle>
@@ -309,11 +309,17 @@ function ProfileContent() {
                              )}
                              placeholder="12.345.678-9"
                            />
-                           {currentUser.identityVerified && (
-                             <p className="text-[10px] text-gray-400 font-medium ml-1">
-                               Este RUT ha sido validado físicamente con tu cédula y no puede ser modificado.
-                             </p>
-                           )}
+                            {currentUser.identityVerified && (
+                              <p className="text-[10px] text-gray-400 font-medium ml-1">
+                                Este RUT ha sido validado físicamente con tu cédula y no puede ser modificado.
+                              </p>
+                            )}
+                            {!currentUser.identityVerified && (
+                              <p className="text-[10px] text-amber-600 font-medium ml-1 flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3" />
+                                En tu próxima compra presencial, muestra tu carnet para verificar tu identidad y poder canjear tus puntos.
+                              </p>
+                            )}
                          </div>
                         <div className="space-y-2 md:col-span-2">
                           <Label className="font-bold text-xs uppercase tracking-widest text-gray-400">Dirección</Label>
@@ -332,7 +338,7 @@ function ProfileContent() {
 
               {activeTab === 'orders' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <Card className="border-none shadow-xl shadow-blue-500/5 rounded-3xl overflow-hidden">
+                  <Card className="border-none shadow-xl shadow-brand-accent-500/5 rounded-3xl overflow-hidden">
                     <CardHeader className="p-8 pb-4">
                       <CardTitle className="text-2xl font-black tracking-tight">Historial de Compras</CardTitle>
                       <p className="text-sm text-gray-500 mt-1">Revisa tus pedidos anteriores y su estado</p>
@@ -344,8 +350,8 @@ function ProfileContent() {
                             <div key={order.id} className="group p-5 border border-gray-100 dark:border-gray-800 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
-                                    <Package className="w-6 h-6 text-corporate-blue" />
+                                  <div className="w-12 h-12 bg-brand-accent-50 dark:bg-brand-accent-900/20 rounded-xl flex items-center justify-center">
+                                    <Package className="w-6 h-6 text-brand-primary" />
                                   </div>
                                   <div>
                                     <p className="font-black text-gray-900 dark:text-white">Pedido #{order.id}</p>
@@ -380,7 +386,7 @@ function ProfileContent() {
 
               {activeTab === 'wishlist' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <Card className="border-none shadow-xl shadow-blue-500/5 rounded-3xl overflow-hidden">
+                  <Card className="border-none shadow-xl shadow-brand-accent-500/5 rounded-3xl overflow-hidden">
                     <CardHeader className="p-8 pb-4">
                       <CardTitle className="text-2xl font-black tracking-tight">Mis Favoritos</CardTitle>
                       <p className="text-sm text-gray-500 mt-1">Productos que te interesan para después</p>
@@ -394,9 +400,9 @@ function ProfileContent() {
                                 <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-corporate-blue transition-colors">{product.name}</p>
+                                <p className="font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-brand-primary transition-colors">{product.name}</p>
                                 <p className="text-xl font-black text-rose-500 mt-1">${product.price.toLocaleString('es-CL')}</p>
-                                <Button size="sm" variant="ghost" className="mt-2 text-xs font-bold text-corporate-blue hover:bg-blue-50 rounded-full px-4" onClick={() => navigate.push(`/producto/${product.slug || product.id}`)}>
+                                <Button size="sm" variant="ghost" className="mt-2 text-xs font-bold text-brand-primary hover:bg-brand-accent-50 rounded-full px-4" onClick={() => navigate.push(`/producto/${product.slug || product.id}`)}>
                                   Ver Detalles
                                 </Button>
                               </div>
@@ -417,7 +423,7 @@ function ProfileContent() {
 
               {activeTab === 'questions' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <Card className="border-none shadow-xl shadow-blue-500/5 rounded-3xl overflow-hidden">
+                  <Card className="border-none shadow-xl shadow-brand-accent-500/5 rounded-3xl overflow-hidden">
                     <CardHeader className="p-8 pb-4">
                       <CardTitle className="text-2xl font-black tracking-tight">Mis Preguntas</CardTitle>
                       <p className="text-sm text-gray-500 mt-1">Historial de tus consultas sobre productos</p>
@@ -435,7 +441,7 @@ function ProfileContent() {
 
               {activeTab === 'opinions' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <Card className="border-none shadow-xl shadow-blue-500/5 rounded-3xl overflow-hidden">
+                  <Card className="border-none shadow-xl shadow-brand-accent-500/5 rounded-3xl overflow-hidden">
                     <CardHeader className="p-8 pb-4">
                       <CardTitle className="text-2xl font-black tracking-tight">Mis Opiniones</CardTitle>
                       <p className="text-sm text-gray-500 mt-1">Reseñas y valoraciones que has compartido</p>

@@ -9,9 +9,15 @@ export default async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
   const host = (request.headers.get('host') || '').toLowerCase()
   const isRootDomain = host === 'yahpos.cl' || host === 'localhost:3000' || host === '127.0.0.1:3000' || host === 'www.yahpos.cl'
-  
+
+  // Anti-loop: si llegó _mw_loop a un redirect que no sea /login, cortar
+  if (request.nextUrl.searchParams.has('_mw_loop') && !path.startsWith('/login')) {
+    console.error(`[Middleware] Loop detectado en ${host}${path}`)
+    return new NextResponse('Loop detectado. Limpia cookies e intenta de nuevo.', { status: 500 })
+  }
+
   const cookies = request.cookies.getAll()
-  // console.log(`[Middleware] Request: ${host}${path} | Cookies: ${cookies.length}`)
+  console.log(`[Middleware Log] Request: ${host}${path} | Cookie names: ${cookies.map(c => c.name).join(', ')}`)
   
   // 0. Fail-safe para OAuth: Si llega un code al root (/) en lugar de /api/auth/callback
   // Esto pasa si la configuración de Supabase Site URL apunta al root.
@@ -57,7 +63,7 @@ export default async function middleware(request: NextRequest) {
   const isAudit = request.nextUrl.searchParams.get('audit') === 'true'
 
   // 2. Supabase Client Initialization
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: { headers: request.headers },
   })
 
@@ -112,6 +118,10 @@ export default async function middleware(request: NextRequest) {
       response.headers.set('x-store-tier', s.tier)
       response.headers.set('x-store-slug', s.slug)
       response.headers.set('x-store-name', s.name)
+      const config = (s as { config?: Record<string, unknown> }).config || {}
+      response.headers.set('x-store-primary-color', (config.appearance_primary_color as string) || '#4b0082')
+      response.headers.set('x-store-accent-color', (config.accent_color as string) || '#FFD100')
+      response.headers.set('x-store-surface-color', (config.surface_color as string) || '')
     } else {
       // Si no hay tienda y no es el root, redirigir al landing o 404
       console.warn(`[Proxy] Dominio no reconocido: ${host}. Redirigiendo a root.`)
@@ -163,7 +173,10 @@ export default async function middleware(request: NextRequest) {
   if (!user && !isAudit && !isPublicRoute && (isAdminRoute || isPosRoute || isProtectedRoute || path.startsWith('/developer'))) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('redirect', path)
+    // Sanitizar: eliminar trailing dots del redirect path
+    const cleanPath = path.replace(/\.+$/, '')
+    redirectUrl.searchParams.set('redirect', cleanPath)
+    redirectUrl.searchParams.set('_mw_loop', '1')
     
     const redirectResponse = NextResponse.redirect(redirectUrl)
     

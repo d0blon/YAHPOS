@@ -96,7 +96,7 @@ ${dd}
       const signature = await cryptoProvider.subtle.sign(
         'RSASSA-PKCS1-v1_5',
         key,
-        data
+        new Uint8Array(data)
       );
 
       // 3. Retornar Base64 compatible con ambos entornos

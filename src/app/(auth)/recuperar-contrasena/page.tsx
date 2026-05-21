@@ -39,18 +39,18 @@ export default function RecuperarContrasenaPage() {
       <div className="w-full max-w-md">
         <Link 
           href="/login" 
-          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-corporate-blue transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-brand-primary transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" /> Volver al inicio de sesión
         </Link>
 
         <div className="glass-card p-8 md:p-10">
-          <div className="w-16 h-16 bg-corporate-blue/10 rounded-2xl flex items-center justify-center mb-6">
-            <KeyRound className="w-8 h-8 text-corporate-blue" />
+          <div className="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mb-6">
+            <KeyRound className="w-8 h-8 text-brand-primary" />
           </div>
 
           <h1 className="text-3xl font-black tracking-tighter uppercase italic mb-2">
-            ¿Olvidaste tu <span className="text-corporate-blue">contraseña?</span>
+            ¿Olvidaste tu <span className="text-brand-primary">contraseña?</span>
           </h1>
           <p className="text-gray-500 text-sm font-medium mb-8">
             No te preocupes, dinos tu correo y te enviaremos las instrucciones para recuperarla.
@@ -71,7 +71,7 @@ export default function RecuperarContrasenaPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-12 h-14 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-corporate-blue/20"
+                    className="pl-12 h-14 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-brand-primary/20"
                   />
                 </div>
               </div>
@@ -79,7 +79,7 @@ export default function RecuperarContrasenaPage() {
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full h-14 bg-corporate-blue hover:bg-corporate-dark text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-corporate-blue/20 transition-all"
+                className="w-full h-14 bg-brand-primary hover:bg-brand-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-brand-primary/20 transition-all"
               >
                 {isLoading ? (
                   <Loader2 className="w-6 h-6 animate-spin" />

@@ -4094,7 +4094,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-120-gran-edicion-syrah-cabernet/",
-    "name": "Vino 120 gan Edición Syrah-Cabernet Sauvignon 125° 15L",
+    "name": "Vino 120 gan Edición Syrah-Cabernet Sauvignon 125° 1.5L",
     "sku": "7804330004355",
     "brand": "120",
     "price": 4290,
@@ -4274,7 +4274,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-120-gran-botellon-blanco-12-1-5-lts/",
-    "name": "Vino 120 gan Botellón Blanco 12° 15L",
+    "name": "Vino 120 gan Botellón Blanco 12° 1.5L",
     "sku": "7804330352210",
     "brand": "120",
     "price": 4290,
@@ -4454,7 +4454,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-120-gran-botellon-merlot-12-5-1-5-lts/",
-    "name": "Vino 120 gan Botellón Merlot 125° 15L",
+    "name": "Vino 120 gan Botellón Merlot 125° 1.5L",
     "sku": "7804330003730",
     "brand": "120",
     "price": 4290,
@@ -5497,7 +5497,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-exportacion-merlot-1-5-l/",
-    "name": "Vino Exportación Selecto Merlot 125° 15L",
+    "name": "Vino Exportación Selecto Merlot 125° 1.5L",
     "sku": "7804320365831",
     "brand": "Exportación",
     "price": 3690,
@@ -5673,7 +5673,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-exportacion-blanco-1-5-l/",
-    "name": "Vino Exportación Selecto Sauvignon Blanc 12° 15L",
+    "name": "Vino Exportación Selecto Sauvignon Blanc 12° 1.5L",
     "sku": "7804320646732",
     "brand": "Exportación",
     "price": 3690,
@@ -8258,7 +8258,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-exportacion-tinto-san-pedro-1-5-l/",
-    "name": "Vino Exportación Tinto San Pedro 12° 15L",
+    "name": "Vino Exportación Tinto San Pedro 12° 1.5L",
     "sku": "7804300133238",
     "brand": "Exportación",
     "price": 4290,
@@ -8434,7 +8434,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-exportacion-san-pedro-blanco-12-1-5l/",
-    "name": "Vino Exportación San Pedro Blanco 12° 15L",
+    "name": "Vino Exportación San Pedro Blanco 12° 1.5L",
     "sku": "7804300133221",
     "brand": "Exportación",
     "price": 4290,
@@ -26740,7 +26740,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-exportacion-cabernet-selecto-1-5lt/",
-    "name": "Vino Exportación Selecto Cabernet Sauvignon 12° 15L",
+    "name": "Vino Exportación Selecto Cabernet Sauvignon 12° 1.5L",
     "sku": "7804320365848",
     "brand": "Exportación",
     "price": 3690,
@@ -30384,7 +30384,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-gato-tintobotellon-1-5-lt/",
-    "name": "Vino Gato Tinto 12° Botellón 15L",
+    "name": "Vino Gato Tinto 12° Botellón 1.5L",
     "sku": "7804300122928",
     "brand": "Gato",
     "price": 4290,
@@ -33837,7 +33837,7 @@
   },
   {
     "url": "https://cugat.cl/producto/vino-gato-botellon-merlot-1-5-lt/",
-    "name": "Vino Gato Tinto Merlot 12° Botellón 15L",
+    "name": "Vino Gato Tinto Merlot 12° Botellón 1.5L",
     "sku": "7804300131715",
     "brand": "Gato",
     "price": 4290,
@@ -39982,7 +39982,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-durazno-1-5-lt-light/",
-    "name": "Néctar Andina Del Valle Sabor Durazno 0% Azúcar 15L",
+    "name": "Néctar Andina Del Valle Sabor Durazno 0% Azúcar 1.5L",
     "sku": "7802820645859-1",
     "brand": "Andina",
     "price": 1590,
@@ -40229,7 +40229,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-pina-lg-1-5-lt/",
-    "name": "Néctar Andina Del Valle Sabor Piña 0% Azúcar 15L",
+    "name": "Néctar Andina Del Valle Sabor Piña 0% Azúcar 1.5L",
     "sku": "7802820645859",
     "brand": "Andina",
     "price": 1590,
@@ -40476,7 +40476,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-naranja-lg-1-5-lt/",
-    "name": "Néctar Andina Del Valle Sabor Naranja 0% Azúcar 15L",
+    "name": "Néctar Andina Del Valle Sabor Naranja 0% Azúcar 1.5L",
     "sku": "7802820700633",
     "brand": "Andina",
     "price": 1590,
@@ -40715,7 +40715,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-kiwi-lg-1-5-lt/",
-    "name": "Néctar Andina Del Valle Sabor Kiwi 0% Azúcar 15L",
+    "name": "Néctar Andina Del Valle Sabor Kiwi 0% Azúcar 1.5L",
     "sku": "7802820559002",
     "brand": "Andina",
     "price": 1590,
@@ -40962,7 +40962,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-damasco-1-5-lt/",
-    "name": "Néctar Andina Del Valle Sabor Damasco 15L",
+    "name": "Néctar Andina Del Valle Sabor Damasco 1.5L",
     "sku": "7802820000030",
     "brand": "Andina",
     "price": 1590,
@@ -42739,7 +42739,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-sprite-desechable-2-5-l/",
-    "name": "Bebida Sprite Original Desechable 25L",
+    "name": "Bebida Sprite Original Desechable 2.5L",
     "sku": "7801610005521",
     "brand": "Sprite",
     "price": 2379,
@@ -52957,7 +52957,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-tonica-canada-dry-zero-1-5-l/",
-    "name": "Agua Tónica Canada Dry Zero desechable 15L",
+    "name": "Agua Tónica Canada Dry Zero desechable 1.5L",
     "sku": "7801620007171",
     "brand": "Canada Dry",
     "price": 2169,
@@ -54216,7 +54216,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-cachantun-mas-limon-jengibre-sin-gas-1-6-l/",
-    "name": "Agua Cachantun Mas Limón Jengibre Sin Gas 16L",
+    "name": "Agua Cachantun Mas Limón Jengibre Sin Gas 1.6L",
     "sku": "7801620008314",
     "brand": "Cachantun",
     "price": 1199,
@@ -54455,7 +54455,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-cachantun-mas-uva-sin-gas-1-6-l/",
-    "name": "Agua Cachantun Más Uva Sin Gas 16L",
+    "name": "Agua Cachantun Más Uva Sin Gas 1.6L",
     "sku": "7801620006648",
     "brand": "Cachantun",
     "price": 1199,
@@ -54699,7 +54699,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-cachantun-mas-pina-sin-gas-1-6-l/",
-    "name": "Agua Cachantun Más Piña Sin Gas 16L",
+    "name": "Agua Cachantun Más Piña Sin Gas 1.6L",
     "sku": "7801620008338",
     "brand": "Cachantun",
     "price": 1199,
@@ -55288,7 +55288,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-livean-naranja-0-azucar-1-5-l/",
-    "name": "Néctar Livean Sabor Naranja 0% Azúcar 15L",
+    "name": "Néctar Livean Sabor Naranja 0% Azúcar 1.5L",
     "sku": "7802800544615",
     "brand": "Livean",
     "price": 1790,
@@ -55551,7 +55551,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-livean-manzana-0-azucar-1-5-l/",
-    "name": "Néctar Livean Sabor Manzana 0% Azúcar 15L",
+    "name": "Néctar Livean Sabor Manzana 0% Azúcar 1.5L",
     "sku": "7802800544639",
     "brand": "Livean",
     "price": 1790,
@@ -55814,7 +55814,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-livean-durazno-0-azucar-1-5/",
-    "name": "Néctar Livean Sabor Durazno 0% Azúcar 15L",
+    "name": "Néctar Livean Sabor Durazno 0% Azúcar 1.5L",
     "sku": "7802800544622",
     "brand": "Livean",
     "price": 1790,
@@ -56076,7 +56076,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-livean-arandano-0-azucar-1-5-l/",
-    "name": "Néctar Livean Sabor Fruti-Arándano 0% Azúcar 15L",
+    "name": "Néctar Livean Sabor Fruti-Arándano 0% Azúcar 1.5L",
     "sku": "7802800544653",
     "brand": "Livean",
     "price": 1790,
@@ -56339,7 +56339,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-livean-pina-0-azucar-1-5-l/",
-    "name": "Néctar Livean Sabor Piña 0% Azúcar 15L",
+    "name": "Néctar Livean Sabor Piña 0% Azúcar 1.5L",
     "sku": "7802800544684",
     "brand": "Livean",
     "price": 1790,
@@ -56586,7 +56586,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-seven-up-des-1-5-l/",
-    "name": "Bebida Seven Up Original De Limón Desechable 15L",
+    "name": "Bebida Seven Up Original De Limón Desechable 1.5L",
     "sku": "7801620034511",
     "brand": "Seven Up",
     "price": 2169,
@@ -56825,7 +56825,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-pap-zero-des-1-5-l/",
-    "name": "Bebida Pap Zero Desechable 15L",
+    "name": "Bebida Pap Zero Desechable 1.5L",
     "sku": "7801620004910",
     "brand": "Pap",
     "price": 2169,
@@ -57064,7 +57064,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-pap-dese-1-5-l/",
-    "name": "Bebida Pap Desechable 15L",
+    "name": "Bebida Pap Desechable 1.5L",
     "sku": "7801620300180",
     "brand": "Pap",
     "price": 2169,
@@ -57303,7 +57303,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-canada-dry-limon-soda-lg-des-1-5-l/",
-    "name": "Bebida Canada Dry Limón Soda Light 15L",
+    "name": "Bebida Canada Dry Limón Soda Light 1.5L",
     "sku": "7801620002787",
     "brand": "Canada Dry",
     "price": 2169,
@@ -57797,7 +57797,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-kem-zero-desechable-1-5-l/",
-    "name": "Bebida Kem Zero Desechable 15L",
+    "name": "Bebida Kem Zero Desechable 1.5L",
     "sku": "7801620005306",
     "brand": "Kem",
     "price": 2169,
@@ -58044,7 +58044,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-kem-xtreme-des-1-5-l/",
-    "name": "Bebida Kem Xtreme Desechable 15L",
+    "name": "Bebida Kem Xtreme Desechable 1.5L",
     "sku": "7801620001988",
     "brand": "Kem",
     "price": 1869,
@@ -58283,7 +58283,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-kem-pina-desechable-1-5-l/",
-    "name": "Bebida Kem Piña Desechable 15L",
+    "name": "Bebida Kem Piña Desechable 1.5L",
     "sku": "7801620350185",
     "brand": "Kem",
     "price": 2169,
@@ -58522,7 +58522,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-canada-dry-gin-a-zero-des-1-5-l/",
-    "name": "Bebida Canada Dry Ginger Ale Zero Desechable 15L",
+    "name": "Bebida Canada Dry Ginger Ale Zero Desechable 1.5L",
     "sku": "7801620008048",
     "brand": "Canada Dry",
     "price": 1869,
@@ -58761,7 +58761,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-canada-dry-gin-a-lg-des-1-5-l/",
-    "name": "Bebida Canada Dry Ginger Ale Zero Desechable 15L",
+    "name": "Bebida Canada Dry Ginger Ale Zero Desechable 1.5L",
     "sku": "7801620151058",
     "brand": "Canada Dry",
     "price": 1869,
@@ -59008,7 +59008,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-canada-dry-gin-ale-des-1-5-l/",
-    "name": "Bebida Canada Dry Ginger Ale Desechable 15L",
+    "name": "Bebida Canada Dry Ginger Ale Desechable 1.5L",
     "sku": "7801620360184",
     "brand": "Canada Dry",
     "price": 1869,
@@ -59247,7 +59247,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-orange-crush-zero-des-1-5-l/",
-    "name": "Bebida Orange Crush Zero Desechable 15L",
+    "name": "Bebida Orange Crush Zero Desechable 1.5L",
     "sku": "7801620853204",
     "brand": "Orange Crush",
     "price": 2169,
@@ -59494,7 +59494,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-orange-crush-des-1-5-l/",
-    "name": "Bebida Orange Crush Desechable 15L",
+    "name": "Bebida Orange Crush Desechable 1.5L",
     "sku": "7801620330217",
     "brand": "Orange Crush",
     "price": 2169,
@@ -59733,7 +59733,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-bilz-zero-desechable-1-5-l/",
-    "name": "Bebida Bilz Zero Desechable 15L",
+    "name": "Bebida Bilz Zero Desechable 1.5L",
     "sku": "7801620004958",
     "brand": "Bilz",
     "price": 2169,
@@ -59972,7 +59972,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-bilz-desechable-1-5-l/",
-    "name": "Bebida Bilz Desechable 15L",
+    "name": "Bebida Bilz Desechable 1.5L",
     "sku": "7801620290160",
     "brand": "Bilz",
     "price": 2169,
@@ -60211,7 +60211,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-tonica-canada-dry-desechable-1-5-l/",
-    "name": "Agua Tónica Canada Dry Desechable 15L",
+    "name": "Agua Tónica Canada Dry Desechable 1.5L",
     "sku": "7801620370107",
     "brand": "Canada Dry",
     "price": 1869,
@@ -62809,7 +62809,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-pepsi-orig-des-1-5-lt/",
-    "name": "Bebida Pepsi Original Desechable15L",
+    "name": "Bebida Pepsi Original Desechable 1.5L",
     "sku": "7801620014513",
     "brand": "Pepsi",
     "price": 2090,
@@ -63056,7 +63056,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-pepsi-zero-desechable-1-5-lt/",
-    "name": "Bebida Pepsi Zero Desechable 15L",
+    "name": "Bebida Pepsi Zero Desechable 1.5L",
     "sku": "7801620006860",
     "brand": "Pepsi",
     "price": 2090,
@@ -63303,7 +63303,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-tutti-frutilla-1-5lt/",
-    "name": "Néctar Watts Sabor Tutti Frutilla 15L",
+    "name": "Néctar Watts Sabor Tutti Frutilla 1.5L",
     "sku": "7801620001841",
     "brand": "Watts",
     "price": 1690,
@@ -63558,7 +63558,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-tutti-arandano-1-5-lt/",
-    "name": "Néctar Watts Sabor Tuttiarándano 15L",
+    "name": "Néctar Watts Sabor Tuttiarándano 1.5L",
     "sku": "7801620003500",
     "brand": "Watts",
     "price": 1690,
@@ -63813,7 +63813,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-pina-1-5-lt/",
-    "name": "Néctar Watts Sabor Piña 15L",
+    "name": "Néctar Watts Sabor Piña 1.5L",
     "sku": "7801620011635",
     "brand": "Watts",
     "price": 1690,
@@ -64060,7 +64060,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-naranja-1-5-lt/",
-    "name": "Néctar Watts Sabor Naranja 15L",
+    "name": "Néctar Watts Sabor Naranja 1.5L",
     "sku": "7801620011604",
     "brand": "Watts",
     "price": 1690,
@@ -64315,7 +64315,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-durazno-1-5-lt/",
-    "name": "Néctar Watts Sabor Durazno 15L",
+    "name": "Néctar Watts Sabor Durazno 1.5L",
     "sku": "7801620011611",
     "brand": "Watts",
     "price": 1690,
@@ -64562,7 +64562,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-damasco-1-5-lt/",
-    "name": "Néctar Watts Sabor Damasco 15L",
+    "name": "Néctar Watts Sabor Damasco 1.5L",
     "sku": "7801620011628",
     "brand": "Watts",
     "price": 1690,
@@ -64809,7 +64809,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-pina-1-5-lt-2/",
-    "name": "Néctar Andina Del Valle Sabor Piña 15L",
+    "name": "Néctar Andina Del Valle Sabor Piña 1.5L",
     "sku": "7802820700251",
     "brand": "Andina",
     "price": 1590,
@@ -65055,7 +65055,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-naranja-1-5-lt-2/",
-    "name": "Néctar Andina Del Valle Sabor Naranja 15L",
+    "name": "Néctar Andina Del Valle Sabor Naranja 1.5L",
     "sku": "7802820700053",
     "brand": "Andina",
     "price": 1590,
@@ -65302,7 +65302,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-frutilla-lg-1-5-lt/",
-    "name": "Néctar Andina Del Valle Sabor Multi-frutilla 0% Azúcar 15L",
+    "name": "Néctar Andina Del Valle Sabor Multi-frutilla 0% Azúcar 1.5L",
     "sku": "7802820001082",
     "brand": "Andina",
     "price": 1590,
@@ -65549,7 +65549,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-andina-del-valle-durazno-1-5-lt/",
-    "name": "Néctar Andina Del Valle Sabor Durazno 15L",
+    "name": "Néctar Andina Del Valle Sabor Durazno 1.5L",
     "sku": "7802820500035",
     "brand": "Andina",
     "price": 1590,
@@ -66290,7 +66290,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-mineral-cachantun-lg-gas-1-6-lt/",
-    "name": "Agua Mineral Cachantun con Gas Light 16L",
+    "name": "Agua Mineral Cachantun con Gas Light 1.6L",
     "sku": "7801620015855",
     "brand": "Cachantun",
     "price": 1090,
@@ -66537,7 +66537,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-mineral-cachantun-con-gas-1-6-lt/",
-    "name": "Agua Mineral Cachantun Con Gas 16L",
+    "name": "Agua Mineral Cachantun Con Gas 1.6L",
     "sku": "7801620852955",
     "brand": "Cachantun",
     "price": 1090,
@@ -67028,7 +67028,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-pina-light-1-5-lt/",
-    "name": "Néctar Watts Sabor Piña 0% Azúcar 15L",
+    "name": "Néctar Watts Sabor Piña 0% Azúcar 1.5L",
     "sku": "7801620006341",
     "brand": "Watts",
     "price": 1690,
@@ -67275,7 +67275,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-lg-tuttifrutilla-1-5-lt/",
-    "name": "Néctar Watts Sabor Tuttifrutilla 0% Azúcar 15L",
+    "name": "Néctar Watts Sabor Tuttifrutilla 0% Azúcar 1.5L",
     "sku": "7801620002916",
     "brand": "Watts",
     "price": 1690,
@@ -67522,7 +67522,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-lg-naranja-1-5-lt/",
-    "name": "Néctar Watts Sabor Naranja 0% Azúcar 15L",
+    "name": "Néctar Watts Sabor Naranja 0% Azúcar 1.5L",
     "sku": "7801620853396",
     "brand": "Watts",
     "price": 1690,
@@ -67777,7 +67777,7 @@
   },
   {
     "url": "https://cugat.cl/producto/nectar-watts-lg-durazno-1-5-lt/",
-    "name": "Néctar Watts Sabor Durazno 0% Azúcar 15L",
+    "name": "Néctar Watts Sabor Durazno 0% Azúcar 1.5L",
     "sku": "7801620000738",
     "brand": "Watts",
     "price": 1690,
@@ -68757,7 +68757,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-cachantun-mas-pera-sin-gas-1-6-lt/",
-    "name": "Agua Cachantun Más Pera Sin Gas 16L",
+    "name": "Agua Cachantun Más Pera Sin Gas 1.6L",
     "sku": "7801620006655",
     "brand": "Cachantun",
     "price": 1199,
@@ -69004,7 +69004,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-cachantun-mas-manzana-sin-gas-1-6-lt/",
-    "name": "Agua Cachantun Más Manzana Sin Gas16L",
+    "name": "Agua Cachantun Más Manzana Sin Gas 1.6L",
     "sku": "7801620006624",
     "brand": "Cachantun",
     "price": 1199,
@@ -69251,7 +69251,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-cachantun-mas-granada-sin-gas-1-6-lt/",
-    "name": "Agua Cachantun Más ganada Sin Gas 16L",
+    "name": "Agua Cachantun Más ganada Sin Gas 1.6L",
     "sku": "7801620006631",
     "brand": "Cachantun",
     "price": 1199,
@@ -69877,7 +69877,7 @@
   },
   {
     "url": "https://cugat.cl/producto/powerade-bebida-isotomica-naranja-1-1-lt/",
-    "name": "Powerade Bebida Isotónica Naranja 11L",
+    "name": "Powerade Bebida Isotónica Naranja 1.1L",
     "sku": "7802820678062",
     "brand": "Powerade",
     "price": 1790,
@@ -73959,7 +73959,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-coca-cola-zero-des-1-5-lt/",
-    "name": "Bebida Coca Cola Zero Sin Azúcar Desechable 15L",
+    "name": "Bebida Coca Cola Zero Sin Azúcar Desechable 1.5L",
     "sku": "7801610350409",
     "brand": "Coca Cola",
     "price": 1990,
@@ -74214,7 +74214,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-coca-cola-sin-az-des-2-5-lt/",
-    "name": "Bebida Coca Cola Sin Azúcar Desechable 25L",
+    "name": "Bebida Coca Cola Sin Azúcar Desechable 2.5L",
     "sku": "7801610350850",
     "brand": "Coca Cola",
     "price": 2379,
@@ -74469,7 +74469,7 @@
   },
   {
     "url": "https://cugat.cl/producto/bebida-coca-cola-des-2-5-lt/",
-    "name": "Bebida Coca Cola Original Desechable 25L",
+    "name": "Bebida Coca Cola Original Desechable 2.5L",
     "sku": "7801610001523",
     "brand": "Coca Cola",
     "price": 2379,
@@ -74955,7 +74955,7 @@
   },
   {
     "url": "https://cugat.cl/producto/agua-mineral-benedictinos-con-gas-1-5-lt/",
-    "name": "Agua Mineral Benedictinos con Gas 15L",
+    "name": "Agua Mineral Benedictinos con Gas 1.5L",
     "sku": "7802820441529",
     "brand": "Benedictinos",
     "price": 1290,
@@ -272603,7 +272603,7 @@
   },
   {
     "url": "https://cugat.cl/producto/detergente-liquido-doble-poder-ariel-1-8lt-copia/",
-    "name": "Detergente Liquido Downy Ariel 18lt",
+    "name": "Detergente Liquido Downy Ariel 1.8lt",
     "sku": "7500435182225",
     "brand": "Ariel",
     "price": 9890,
@@ -272640,7 +272640,7 @@
   },
   {
     "url": "https://cugat.cl/producto/detergente-liquido-doble-poder-ariel-1-8lt/",
-    "name": "Detergente Liquido Doble Poder Ariel 18lt",
+    "name": "Detergente Liquido Doble Poder Ariel 1.8lt",
     "sku": "7500435160544",
     "brand": "Ariel",
     "price": 9890,
@@ -272866,7 +272866,7 @@
   },
   {
     "url": "https://cugat.cl/producto/detergente-omo-polvo-matic-soft-27kg/",
-    "name": "Detergente Omo Polvo Matic Soft 27Kg",
+    "name": "Detergente Omo Polvo Matic Soft 2.7kg",
     "sku": "7805000321321",
     "brand": "Omo",
     "price": 7190,
@@ -276688,7 +276688,7 @@
   },
   {
     "url": "https://cugat.cl/producto/clorogel-clorinda-limpiador-menta-1-5lt/",
-    "name": "Clorogel Clorinda Limpiador Menta 15lt",
+    "name": "Clorogel Clorinda Limpiador Menta 1.5lt",
     "sku": "7805080695268",
     "brand": "Clorinda",
     "price": 3190,
@@ -276712,7 +276712,7 @@
   },
   {
     "url": "https://cugat.cl/producto/clorogel-clorinda-limpiador-flores-silvestres-1-5lt/",
-    "name": "Clorogel Clorinda Limpiador Flores Silvestres 15lt",
+    "name": "Clorogel Clorinda Limpiador Flores Silvestres 1.5lt",
     "sku": "7805080695275",
     "brand": "",
     "price": 3190,
@@ -282411,7 +282411,7 @@
   },
   {
     "url": "https://cugat.cl/producto/helado-chamonix-chocolate-trisabor-2-5lts/",
-    "name": "Helado Chamonix Chocolate Trisabor 25L",
+    "name": "Helado Chamonix Chocolate Trisabor 2.5L",
     "sku": "8445290091635",
     "brand": "Chamonix",
     "price": 4990,
@@ -282442,7 +282442,7 @@
   },
   {
     "url": "https://cugat.cl/producto/helado-chamonix-3-leches-chocolate-2-5lts/",
-    "name": "Helado Chamonix 3 Leches Chocolate 25L",
+    "name": "Helado Chamonix 3 Leches Chocolate 2.5L",
     "sku": "8445290864666",
     "brand": "Chamonix",
     "price": 4990,
@@ -282475,7 +282475,7 @@
   },
   {
     "url": "https://cugat.cl/producto/helado-chamonix-pina-2-5lts/",
-    "name": "Helado Chamonix Piña 25L",
+    "name": "Helado Chamonix Piña 2.5L",
     "sku": "8445290091833",
     "brand": "Chamonix",
     "price": 4990,
@@ -282506,7 +282506,7 @@
   },
   {
     "url": "https://cugat.cl/producto/helado-chamonix-chocolate-manjar-flan-vainilla-2-5lts/",
-    "name": "Helado Chamonix Chocolate Manjar Flan Vainilla 25L",
+    "name": "Helado Chamonix Chocolate Manjar Flan Vainilla 2.5L",
     "sku": "8445290864833",
     "brand": "Chamonix",
     "price": 4990,

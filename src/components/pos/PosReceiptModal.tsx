@@ -2,11 +2,14 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Printer, X, AlertCircle } from 'lucide-react';
+import { Printer, X, AlertCircle, Usb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPrice, cn } from '@/lib/utils';
 import { PosItem, usePosStore } from '@/stores/posStore';
 import { useSaaS } from '@/providers/SaaSProvider';
+import { printerManager } from '@/lib/hardware/printer';
+import { useHardwareStore } from '@/lib/hardware/hardwareStore';
+import { toast } from 'sonner';
 
 interface PosReceiptModalProps {
   isOpen: boolean;
@@ -30,6 +33,7 @@ interface PosReceiptModalProps {
 export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalProps) {
   const { isTrainingMode } = usePosStore();
   const { config } = useSaaS();
+  const printerConnected = useHardwareStore(s => s.printer.connected);
   
   if (!isOpen || !orderData) return null;
 
@@ -49,6 +53,43 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
       }
     } catch (error) {
       console.error('Error al imprimir boleta:', error);
+    }
+  };
+
+  const handleUsbPrint = async () => {
+    if (!orderData || isTrainingMode) return;
+
+    const items = orderData.items.map(i => ({
+      name: i.product.name,
+      quantity: i.product.unit === 'kg'
+        ? `${i.quantity.toFixed(3)}kg x ${formatPrice(i.product.price)}`
+        : `${i.quantity} x ${formatPrice(i.product.price)}`,
+      total: formatPrice(i.product.price * i.quantity),
+    }));
+
+    const ok = await printerManager.sendReceipt({
+      title: config.store_name || 'YAHPOS!',
+      subtitle: orderData.siiSkipped ? 'COMPROBANTE DE PAGO' : 'BOLETA ELECTRÓNICA',
+      headerLines: [
+        `N°: ${orderData.id}`,
+        `Folio: ${orderData.id}`,
+        `Fecha: ${orderData.date ?? new Date().toLocaleString('es-CL')}`,
+        `Cajero: ${usePosStore.getState().currentUser?.firstName || ''}`,
+        orderData.customerRut ? `Cliente: ${orderData.customerName || orderData.customerRut}` : '',
+      ].filter(Boolean),
+      items,
+      total: formatPrice(orderData.total),
+      paymentMethod: orderData.paymentMethod,
+      footer: [
+        'Gracias por su preferencia',
+        'YAHPOS! © 2026',
+      ],
+    });
+
+    if (ok) {
+      toast.success('Impreso en impresora térmica');
+    } else {
+      toast.error('Error al imprimir. Verifica la conexión USB.');
     }
   };
 
@@ -168,7 +209,7 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
         </div>
 
         {/* Actions */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-3 print:hidden">
+        <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 print:hidden">
             <Button variant="outline" className="flex-1 border-gray-300 text-slate-700 hover:bg-gray-100 font-bold" onClick={onClose}>
               Cerrar
             </Button>
@@ -177,13 +218,27 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
                 "flex-1 gap-2 font-black shadow-lg",
                 isTrainingMode 
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
-                  : "bg-corporate-blue text-white"
+                  : "bg-brand-primary text-white"
               )} 
               onClick={isTrainingMode ? undefined : handlePrint}
               disabled={isTrainingMode}
             >
               <Printer className="w-4 h-4"/> 
-              {isTrainingMode ? 'NO PRINT' : 'Imprimir'}
+              {isTrainingMode ? 'NO PRINT' : 'PDF'}
+            </Button>
+            <Button 
+              className={cn(
+                "flex-1 gap-2 font-black shadow-lg min-w-0",
+                isTrainingMode || !printerConnected
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+                  : "bg-emerald-600 text-white hover:bg-emerald-700"
+              )} 
+              onClick={isTrainingMode || !printerConnected ? undefined : handleUsbPrint}
+              disabled={isTrainingMode || !printerConnected}
+              title={printerConnected ? 'Imprimir en térmica USB' : 'Conectá una impresora en Ajustes'}
+            >
+              <Usb className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Térmica</span>
             </Button>
         </div>
       </div>

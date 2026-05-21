@@ -110,7 +110,7 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="bg-white/90 backdrop-blur-xl p-12 rounded-[3rem] shadow-2xl flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 text-patagonia-600 animate-spin" />
+          <Loader2 className="w-12 h-12 text-brand-primary animate-spin" />
           <p className="text-gray-500 font-medium">Calculando totales en tiempo real...</p>
         </div>
       </div>
@@ -119,12 +119,12 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl max-h-[90vh] rounded-[3rem] shadow-2xl border border-white/20 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-2xl max-h-[90vh] rounded-[3rem] shadow-2xl border border-white/20 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
         {/* Header */}
-        <div className="p-8 pb-4 text-center border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 relative">
+        <div className="p-8 pb-4 text-center border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-gray-800/50 relative">
           <button 
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 bg-white dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:scale-110 active:scale-95"
+            className="absolute top-6 right-6 p-2 bg-white dark:bg-gray-800 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:scale-110 active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -140,23 +140,23 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
               {/* Session Info Grid */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2 mb-1">
-                    <Monitor className="w-3 h-3 text-patagonia-500" />
+                    <Monitor className="w-3 h-3 text-brand-500" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Terminal</span>
                   </div>
                   <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{sessionData?.session.terminal_name}</p>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2 mb-1">
-                    <User className="w-3 h-3 text-patagonia-500" />
+                    <User className="w-3 h-3 text-brand-500" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Cajero</span>
                   </div>
                   <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{sessionData?.session.cashier_name}</p>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                <div className="bg-slate-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2 mb-1">
-                    <Clock className="w-3 h-3 text-patagonia-500" />
+                    <Clock className="w-3 h-3 text-brand-500" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Abierto</span>
                   </div>
                   <p className="text-sm font-black text-slate-800 dark:text-slate-200">{timeOpen}</p>
@@ -165,14 +165,14 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
 
               {/* Totals Summary */}
               <div className="grid grid-cols-2 gap-4">
-                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+                  <div className="p-6 bg-slate-50 dark:bg-gray-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
                       <div className="flex items-center gap-2 mb-2 text-slate-400">
                           <TrendingUp className="w-4 h-4" />
                           <span className="text-[10px] font-black uppercase tracking-widest">Ventas Totales</span>
                       </div>
                       <p className="text-2xl font-black text-slate-900 dark:text-white">{formatPrice(sessionData?.totals.total || 0)}</p>
                   </div>
-                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+                  <div className="p-6 bg-slate-50 dark:bg-gray-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
                       <div className="flex items-center gap-2 mb-2 text-slate-400">
                           <Receipt className="w-4 h-4" />
                           <span className="text-[10px] font-black uppercase tracking-widest">Documentos</span>
@@ -187,7 +187,7 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
                 
                 <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                     <div className="flex items-center gap-3">
-                        <DollarSign className="w-6 h-6 text-patagonia-400" />
+                        <DollarSign className="w-6 h-6 text-brand-400" />
                         <span className="font-black text-xl uppercase tracking-tight">Arqueo de Valores</span>
                     </div>
                 </div>
@@ -217,7 +217,7 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
                     </div>
                     
                     <div className="pt-4 border-t border-white/10 flex justify-between items-center bg-white/5 -mx-4 px-6 py-3 rounded-2xl">
-                        <span className="font-black uppercase tracking-[0.2em] text-[10px] text-patagonia-400">Efectivo Esperado</span>
+                        <span className="font-black uppercase tracking-[0.2em] text-[10px] text-brand-400">Efectivo Esperado</span>
                         <span className="text-3xl font-black">{formatPrice(sessionData?.expected_cash || 0)}</span>
                     </div>
 
@@ -241,7 +241,7 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
                   <FileText className="absolute left-5 top-5 w-5 h-5 text-slate-400" />
                   <Textarea 
                     placeholder="Indique el motivo del cierre si es necesario..."
-                    className="pl-12 min-h-[100px] bg-slate-50 dark:bg-slate-800/50 border-none rounded-3xl focus:ring-2 focus:ring-patagonia-500/20 resize-none text-sm p-5 dark:text-white"
+                    className="pl-12 min-h-[100px] bg-slate-50 dark:bg-gray-800/50 border-none rounded-3xl focus:ring-2 focus:ring-brand-500/20 resize-none text-sm p-5 dark:text-white"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
@@ -250,7 +250,7 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
 
               <Button 
                 onClick={() => setStep(2)}
-                className="w-full h-20 rounded-[2rem] bg-patagonia-600 hover:bg-patagonia-700 text-white font-black text-xl shadow-xl shadow-patagonia-600/20 transition-all active:scale-[0.98]"
+                className="w-full h-20 rounded-[2rem] bg-brand-primary hover:brightness-90 text-white font-black text-xl shadow-xl shadow-brand-primary/20 transition-all active:scale-[0.98]"
               >
                 Siguiente Paso
                 <ChevronRight className="w-6 h-6 ml-2" />
@@ -271,7 +271,7 @@ export function ForceClosureModal({ session, onClose, onSuccess }: ForceClosureM
                 </div>
                 
                 {/* Visual Data Summary Card */}
-                <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-8 w-full border border-red-100 dark:border-red-900/30 shadow-sm space-y-6">
+                <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 w-full border border-red-100 dark:border-red-900/30 shadow-sm space-y-6">
                   <div className="grid grid-cols-2 gap-8">
                     <div className="text-left">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ventas Totales</p>

@@ -9,11 +9,11 @@ export default function TerminosPage() {
       <div className="max-w-4xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-corporate-blue/10 text-corporate-blue text-xs font-black uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-black uppercase tracking-widest mb-4">
             <ShieldCheck className="w-4 h-4" /> Legal & Transparencia
           </div>
           <h1 className="text-5xl font-black tracking-tighter uppercase italic mb-4">
-            Términos y <span className="text-corporate-blue">Condiciones</span>
+            Términos y <span className="text-brand-primary">Condiciones</span>
           </h1>
           <p className="text-gray-500 max-w-2xl mx-auto font-medium">
             Última actualización: 30 de Abril, 2026. Por favor, lee atentamente estos términos antes de utilizar nuestros servicios.
@@ -24,8 +24,8 @@ export default function TerminosPage() {
         <div className="glass-card p-10 space-y-12">
           <section className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-corporate-blue/5 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-corporate-blue" />
+              <div className="w-10 h-10 rounded-xl bg-brand-primary/5 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-brand-primary" />
               </div>
               <h2 className="text-xl font-black uppercase italic tracking-tight">1. Aceptación de los Términos</h2>
             </div>
@@ -36,8 +36,8 @@ export default function TerminosPage() {
 
           <section className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-corporate-blue/5 flex items-center justify-center">
-                <Scale className="w-5 h-5 text-corporate-blue" />
+              <div className="w-10 h-10 rounded-xl bg-brand-primary/5 flex items-center justify-center">
+                <Scale className="w-5 h-5 text-brand-primary" />
               </div>
               <h2 className="text-xl font-black uppercase italic tracking-tight">2. Uso del Servicio</h2>
             </div>
@@ -53,8 +53,8 @@ export default function TerminosPage() {
 
           <section className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-corporate-blue/5 flex items-center justify-center">
-                <Lock className="w-5 h-5 text-corporate-blue" />
+              <div className="w-10 h-10 rounded-xl bg-brand-primary/5 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-brand-primary" />
               </div>
               <h2 className="text-xl font-black uppercase italic tracking-tight">3. Propiedad Intelectual</h2>
             </div>
@@ -65,8 +65,8 @@ export default function TerminosPage() {
 
           <section className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-corporate-blue/5 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-corporate-blue" />
+              <div className="w-10 h-10 rounded-xl bg-brand-primary/5 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-brand-primary" />
               </div>
               <h2 className="text-xl font-black uppercase italic tracking-tight">4. Limitación de Responsabilidad</h2>
             </div>
@@ -79,7 +79,7 @@ export default function TerminosPage() {
             <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
               <Mail className="w-4 h-4" /> contacto@yahpos.com
             </div>
-            <button className="px-8 py-3 bg-corporate-blue text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-corporate-blue/20 hover:bg-corporate-dark transition-all">
+            <button className="px-8 py-3 bg-brand-primary text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-brand-primary/20 hover:bg-brand-700 transition-all">
               Descargar PDF
             </button>
           </div>

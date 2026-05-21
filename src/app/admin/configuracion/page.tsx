@@ -34,7 +34,6 @@ const TABS = [
   { id: 'payments', label: 'Pagos Online', icon: CreditCard },
   { id: 'sii', label: 'Facturación SII', icon: Receipt },
   { id: 'loyalty', label: 'Fidelización', icon: Award },
-  { id: 'appearance', label: 'Branding', icon: Palette },
   { id: 'design', label: 'Editor Visual', icon: Monitor },
 ]
 
@@ -163,7 +162,7 @@ function SubscriptionTab() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-corporate-blue" />
+        <Loader2 className="w-10 h-10 animate-spin text-brand-primary" />
         <p className="text-sm font-medium text-gray-500 animate-pulse uppercase tracking-widest">Cargando planes...</p>
       </div>
     )
@@ -172,21 +171,21 @@ function SubscriptionTab() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Current Plan Summary */}
-      <div className="glass-card p-8 bg-gradient-to-br from-corporate-blue/5 via-transparent to-corporate-blue/10 relative overflow-hidden group">
+      <div className="glass-card p-8 bg-gradient-to-br from-brand-primary/5 via-transparent to-brand-primary/10 relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
-          <Shield className="w-48 h-48 text-corporate-blue" />
+          <Shield className="w-48 h-48 text-brand-primary" />
         </div>
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <Badge className="bg-corporate-blue text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+              <Badge className="bg-brand-primary text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                 Tu Plan Actual
               </Badge>
               <span className="text-xs text-gray-400 font-bold uppercase tracking-tighter">ID: {storeId?.substring(0, 8)}...</span>
             </div>
             <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">
-              YAHPOS! <span className="text-corporate-blue">{config.tier}</span>
+              YAHPOS! <span className="text-brand-primary">{config.tier}</span>
             </h2>
             <p className="text-gray-500 font-medium max-w-md leading-relaxed">
               Disfruta de todas las herramientas necesarias para hacer crecer tu negocio con el respaldo de YAHPOS!.
@@ -194,7 +193,7 @@ function SubscriptionTab() {
           </div>
           
           <div className="flex flex-col items-end gap-2">
-            <div className="bg-white/80 dark:bg-white/5 backdrop-blur px-6 py-4 rounded-2xl border border-white/20 shadow-xl shadow-corporate-blue/5">
+            <div className="bg-white/80 dark:bg-white/5 backdrop-blur px-6 py-4 rounded-2xl border border-white/20 shadow-xl shadow-brand-primary/5">
               <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Estado de cuenta</p>
               <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-black text-lg">
                 <CheckCircle className="w-5 h-5" />
@@ -213,12 +212,12 @@ function SubscriptionTab() {
             className={cn(
               "glass-card p-8 flex flex-col relative transition-all duration-500",
               config.tier?.toLowerCase() === tier.name.toLowerCase() 
-                ? "ring-2 ring-corporate-blue border-transparent bg-corporate-blue/[0.02]" 
-                : "hover:translate-y-[-4px] hover:shadow-2xl hover:shadow-corporate-blue/10"
+                ? "ring-2 ring-brand-primary border-transparent bg-brand-primary/[0.02]" 
+                : "hover:translate-y-[-4px] hover:shadow-2xl hover:shadow-brand-primary/10"
             )}
           >
             {config.tier?.toLowerCase() === tier.name.toLowerCase() && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-corporate-blue text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-corporate-blue/30 flex items-center gap-2">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-primary text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-primary/30 flex items-center gap-2">
                 <Check className="w-3 h-3" />
                 Plan Activo
               </div>
@@ -227,7 +226,7 @@ function SubscriptionTab() {
             <div className="mb-6">
               <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">{tier.name}</h3>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-corporate-blue">${tier.price_clp?.toLocaleString('es-CL')}</span>
+                <span className="text-3xl font-black text-brand-primary">${tier.price_clp?.toLocaleString('es-CL')}</span>
                 <span className="text-xs text-gray-400 font-bold uppercase">/ mes</span>
               </div>
             </div>
@@ -266,7 +265,7 @@ function SubscriptionTab() {
                 "w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
                 config.tier?.toLowerCase() === tier.name.toLowerCase()
                   ? "bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed"
-                  : "bg-corporate-blue hover:bg-corporate-dark text-white shadow-xl shadow-corporate-blue/10"
+                  : "bg-brand-primary hover:bg-brand-700 text-white shadow-xl shadow-brand-primary/10"
               )}
             >
               {updating === tier.id ? (
@@ -282,9 +281,9 @@ function SubscriptionTab() {
       </div>
 
       {/* Security Notice */}
-      <div className="flex items-center gap-4 p-6 rounded-2xl border border-corporate-blue/10 bg-corporate-blue/[0.01]">
-        <div className="w-12 h-12 rounded-xl bg-corporate-blue/10 flex items-center justify-center flex-shrink-0">
-          <ShieldCheck className="w-6 h-6 text-corporate-blue" />
+      <div className="flex items-center gap-4 p-6 rounded-2xl border border-brand-primary/10 bg-brand-primary/[0.01]">
+        <div className="w-12 h-12 rounded-xl bg-brand-primary/10 flex items-center justify-center flex-shrink-0">
+          <ShieldCheck className="w-6 h-6 text-brand-primary" />
         </div>
         <div>
           <h4 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white mb-1">Pagos Procesados de forma segura</h4>
@@ -297,10 +296,10 @@ function SubscriptionTab() {
 
 function SectionCard({ title, description, children, icon: Icon }: { title: string, description?: string, children: React.ReactNode, icon?: any }) {
   return (
-    <div className="glass-card overflow-hidden group hover:border-corporate-blue/30 transition-all duration-300">
+    <div className="glass-card overflow-hidden group hover:border-brand-primary/30 transition-all duration-300">
       <div className="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 flex items-center gap-4">
         {Icon && (
-          <div className="w-10 h-10 rounded-xl bg-corporate-blue/10 flex items-center justify-center text-corporate-blue">
+          <div className="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
             <Icon className="w-5 h-5" />
           </div>
         )}
@@ -341,12 +340,12 @@ function SecretInput({ value, onChange, placeholder }: { value: string, onChange
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder ?? '••••••••••••'}
-        className="rounded-xl h-12 bg-white/50 dark:bg-black/20 border-gray-200 dark:border-white/10 focus:ring-corporate-blue/20 transition-all pr-12 font-mono"
+        className="rounded-xl h-12 bg-white/50 dark:bg-black/20 border-gray-200 dark:border-white/10 focus:ring-brand-primary/20 transition-all pr-12 font-mono"
       />
       <button
         type="button"
         onClick={() => setShow(!show)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-corporate-blue hover:bg-corporate-blue/10 transition-all"
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 transition-all"
       >
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
@@ -359,7 +358,7 @@ function Toggle({ checked, onCheckedChange, label, description }: { checked: boo
     <div 
       className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
         checked 
-          ? 'bg-corporate-blue/5 border-corporate-blue/20 ring-1 ring-corporate-blue/20' 
+          ? 'bg-brand-primary/5 border-brand-primary/20 ring-1 ring-brand-primary/20' 
           : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10'
       }`}
       onClick={() => onCheckedChange(!checked)}
@@ -369,7 +368,7 @@ function Toggle({ checked, onCheckedChange, label, description }: { checked: boo
           checked={checked} 
           onCheckedChange={v => onCheckedChange(!!v)} 
           id={label}
-          className="rounded-md border-gray-300 data-[state=checked]:bg-corporate-blue data-[state=checked]:border-corporate-blue"
+          className="rounded-md border-gray-300 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
         />
       </div>
       <div className="flex-1 space-y-1">
@@ -406,7 +405,7 @@ export default function AdminConfiguracion() {
   })
   const [payments, setPayments] = useState({ flowEnabled: false, flowApiKey: '', flowApiSecret: '', webpayEnabled: false, webpayCommerceCode: '', freeShippingMin: 30000 })
   const [loyalty, setLoyalty] = useState({ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' })
-  const [appearance, setAppearance] = useState({ logoUrl: '', primaryColor: '#1e3a6e', secondaryColor: '#f5c518', darkMode: false })
+  const [appearance, setAppearance] = useState({ logoUrl: '', primaryColor: '#4b0082', secondaryColor: '#FFD100', darkMode: false })
   const [design, setDesign] = useState({
     heroImage: '',
     heroTitle: '',
@@ -454,7 +453,9 @@ export default function AdminConfiguracion() {
           setPos(settings.pos)
           setPayments(settings.payments)
           setLoyalty(settings.loyalty ? { ...{ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' }, ...settings.loyalty } : { enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' })
-          setAppearance(settings.appearance)
+          if (settings.appearance) {
+            setAppearance(prev => ({...prev, ...settings.appearance}))
+          }
           setReceiptSettings(settings.receipt || {
             message: '¡Gracias por su compra!',
             colorMode: 'bw',
@@ -516,8 +517,6 @@ export default function AdminConfiguracion() {
         loyalty_redemption_rate: String(loyalty.redemptionRate),
         loyalty_require_id_verification: String(loyalty.requireIdVerification),
         loyalty_name: loyalty.name || 'Puntos',
-        appearance_logo_url: appearance.logoUrl, appearance_primary_color: appearance.primaryColor,
-        appearance_secondary_color: appearance.secondaryColor, appearance_dark_mode: String(appearance.darkMode),
         receipt_message: receiptSettings.message,
         receipt_color_mode: receiptSettings.colorMode,
         receipt_show_powered_by: String(receiptSettings.showPoweredBy),
@@ -558,7 +557,7 @@ export default function AdminConfiguracion() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-corporate-blue" />
+        <Loader2 className="w-10 h-10 animate-spin text-brand-primary" />
         <p className="text-sm font-black uppercase tracking-widest text-gray-400 animate-pulse">Cargando Configuración...</p>
       </div>
     )
@@ -573,7 +572,7 @@ export default function AdminConfiguracion() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                   <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-                    Configuración <span className="text-corporate-blue">General</span>
+                    Configuración <span className="text-brand-primary">General</span>
                   </h1>
                   <p className="text-gray-500 text-sm font-medium">Administra todos los parámetros del sistema</p>
                 </div>
@@ -609,7 +608,7 @@ export default function AdminConfiguracion() {
                   <Button
                     onClick={handleSave}
                     disabled={saveStatus === 'saving'}
-                    className="bg-corporate-blue hover:bg-corporate-dark text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-corporate-blue/20 flex items-center gap-3"
+                    className="bg-brand-primary hover:bg-brand-700 text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest shadow-lg shadow-brand-primary/20 flex items-center gap-3"
                   >
                     {saveStatus === 'saving' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     {saveStatus === 'saving' ? 'Guardando...' : 'Guardar Cambios'}
@@ -625,7 +624,7 @@ export default function AdminConfiguracion() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-3 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all ${
                       activeTab === tab.id 
-                        ? 'bg-corporate-blue text-white shadow-lg shadow-corporate-blue/20' 
+                        ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' 
                         : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
                     }`}
                   >
@@ -726,7 +725,7 @@ export default function AdminConfiguracion() {
                         <select 
                           value={pos.region || 'REGIONES'}
                           onChange={(e) => setPos({...pos, region: e.target.value})}
-                          className="mt-2 w-full h-12 rounded-xl border bg-white dark:bg-slate-800 font-bold text-sm px-4 outline-none focus:ring-2 focus:ring-patagonia-600/20 transition-all"
+                          className="mt-2 w-full h-12 rounded-xl border bg-white dark:bg-slate-800 font-bold text-sm px-4 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
                         >
                           <option value="REGIONES">PROVINCIAS / REGIONES (Sodexo/Edenred habilitado)</option>
                           <option value="RM">SANTIAGO / RM (Sodexo/Edenred deshabilitado)</option>
@@ -747,7 +746,7 @@ export default function AdminConfiguracion() {
                     <div className="space-y-4">
                       <div className="flex gap-2">
                         <Input placeholder="Nombre de categoría (ej: Panadería)" className="rounded-xl h-11" />
-                        <Button className="bg-patagonia-600 text-white rounded-xl px-6">Agregar</Button>
+                        <Button className="bg-brand-primary text-white rounded-xl px-6">Agregar</Button>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {['Abarrotes', 'Bebidas', 'Carnes', 'Frutas y Verduras', 'Limpieza', 'Lácteos', 'Congelados'].map(c => (
@@ -801,7 +800,7 @@ export default function AdminConfiguracion() {
                               toast.success('Caja creada')
                             }
                           }}
-                          className="bg-corporate-blue text-white rounded-xl px-6"
+                          className="bg-brand-primary text-white rounded-xl px-6"
                         >
                           Agregar
                         </Button>
@@ -812,7 +811,7 @@ export default function AdminConfiguracion() {
                           <div key={t.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
                             <div className="flex items-center gap-4">
                               <div className="w-10 h-10 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                                <Monitor className="w-5 h-5 text-corporate-blue" />
+                                <Monitor className="w-5 h-5 text-brand-primary" />
                               </div>
                               <div>
                                 <p className="font-bold text-gray-900 dark:text-white">{t.name}</p>
@@ -871,7 +870,7 @@ export default function AdminConfiguracion() {
                               onClick={() => setReceiptSettings({...receiptSettings, colorMode: 'bw'})}
                               className={cn(
                                 "p-4 rounded-2xl border text-left transition-all",
-                                receiptSettings.colorMode === 'bw' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                                receiptSettings.colorMode === 'bw' ? "border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
                               )}
                             >
                               <div className="w-full h-8 bg-gray-300 dark:bg-gray-700 rounded mb-2" />
@@ -881,7 +880,7 @@ export default function AdminConfiguracion() {
                               onClick={() => setReceiptSettings({...receiptSettings, colorMode: 'color'})}
                               className={cn(
                                 "p-4 rounded-2xl border text-left transition-all",
-                                receiptSettings.colorMode === 'color' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                                receiptSettings.colorMode === 'color' ? "border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
                               )}
                             >
                               <div className="w-full h-8 bg-gradient-to-r from-red-500 via-blue-500 to-yellow-500 rounded mb-2" />
@@ -934,7 +933,7 @@ export default function AdminConfiguracion() {
                   <div className="sticky top-24 space-y-4">
                     <div className="flex items-center justify-between px-2">
                       <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Vista Previa en Vivo</h3>
-                      <Badge variant="outline" className="text-[8px] font-bold border-corporate-blue/30 text-corporate-blue">80mm THERMAL</Badge>
+                      <Badge variant="outline" className="text-[8px] font-bold border-brand-primary/30 text-brand-primary">80mm THERMAL</Badge>
                     </div>
                     <ReceiptPreview settings={receiptSettings} store={store} appearance={appearance} />
                     <p className="text-[10px] text-center text-gray-400 font-medium italic">
@@ -989,12 +988,12 @@ export default function AdminConfiguracion() {
               {/* Tab: SII */}
               {activeTab === 'sii' && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-corporate-blue/5 rounded-xl border border-corporate-blue/20 flex gap-4 items-center">
-                    <div className="w-12 h-12 bg-corporate-blue/10 rounded-xl flex items-center justify-center text-corporate-blue shrink-0">
+                  <div className="p-4 bg-brand-primary/5 rounded-xl border border-brand-primary/20 flex gap-4 items-center">
+                    <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary shrink-0">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-sm font-black uppercase tracking-tighter text-corporate-blue">Integración SII Oficial</p>
+                      <p className="text-sm font-black uppercase tracking-tighter text-brand-primary">Integración SII Oficial</p>
                       <p className="text-xs text-gray-500 font-medium">Configura los datos tributarios y el certificado digital para la emisión de boletas electrónicas.</p>
                     </div>
                   </div>
@@ -1245,55 +1244,16 @@ export default function AdminConfiguracion() {
                 </div>
               )}
 
-              {/* Tab: Apariencia */}
-              {activeTab === 'appearance' && (
-                <div className="space-y-4">
-                  <SectionCard title="Logotipo y Branding" description="Personaliza la imagen visual de la tienda.">
-                    <Field label="URL del Logo" hint="Imagen cuadrada recomendada (PNG o SVG con fondo transparente)">
-                      <Input className="rounded-xl h-11" value={appearance.logoUrl} onChange={e => setAppearance({...appearance, logoUrl: e.target.value})} placeholder="https://..." />
-                    </Field>
-                    {appearance.logoUrl && (
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center gap-4">
-                        <img src={appearance.logoUrl} alt="Logo preview" className="w-16 h-16 object-contain rounded-lg border border-gray-200" onError={e => (e.currentTarget.style.display = 'none')} />
-                        <p className="text-sm text-gray-500">Vista previa del logo</p>
-                      </div>
-                    )}
-                  </SectionCard>
-
-                  <SectionCard title="Colores" description="Paleta de colores del sistema.">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <Field label="Color Primario (azul corporativo)">
-                        <div className="flex gap-3">
-                          <input type="color" value={appearance.primaryColor} onChange={e => setAppearance({...appearance, primaryColor: e.target.value})} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 p-1" />
-                          <Input className="rounded-xl h-11 font-mono flex-1" value={appearance.primaryColor} onChange={e => setAppearance({...appearance, primaryColor: e.target.value})} placeholder="#1e3a6e" />
-                        </div>
-                      </Field>
-                      <Field label="Color Secundario (amarillo acento)">
-                        <div className="flex gap-3">
-                          <input type="color" value={appearance.secondaryColor} onChange={e => setAppearance({...appearance, secondaryColor: e.target.value})} className="w-14 h-11 rounded-xl cursor-pointer border border-gray-200 p-1" />
-                          <Input className="rounded-xl h-11 font-mono flex-1" value={appearance.secondaryColor} onChange={e => setAppearance({...appearance, secondaryColor: e.target.value})} placeholder="#f5c518" />
-                        </div>
-                      </Field>
-                    </div>
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl flex gap-3 items-center">
-                      <div className="w-10 h-10 rounded-lg" style={{ backgroundColor: appearance.primaryColor }} />
-                      <div className="w-10 h-10 rounded-lg" style={{ backgroundColor: appearance.secondaryColor }} />
-                      <span className="text-sm text-gray-500">Vista previa de la paleta</span>
-                    </div>
-                  </SectionCard>
-                </div>
-              )}
-
               {/* Tab: Diseño (Visual Editor) */}
               {activeTab === 'design' && (
                 <div className="space-y-6">
-                  <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-2xl border border-purple-100 dark:border-purple-900/50 flex gap-4">
-                    <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0 border border-purple-200">
-                      <Sparkles className="w-6 h-6 text-purple-600" />
+                  <div className="p-4 bg-brand-50 dark:bg-brand-950/30 rounded-2xl border border-brand-100 dark:border-brand-900/50 flex gap-4">
+                    <div className="w-12 h-12 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shrink-0 border border-brand-200">
+                      <Sparkles className="w-6 h-6 text-brand-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-black italic uppercase text-purple-900 dark:text-purple-100 tracking-tighter">Editor Visual Inteligente</p>
-                      <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                      <p className="text-sm font-black italic uppercase text-brand-900 dark:text-brand-100 tracking-tighter">Editor Visual Inteligente</p>
+                      <p className="text-xs text-brand-700 dark:text-brand-300 mt-1">
                         Personaliza cómo se ve tu tienda online. Sigue las guías de imagen para mantener un aspecto premium y profesional.
                       </p>
                     </div>
@@ -1334,7 +1294,7 @@ export default function AdminConfiguracion() {
                           <a 
                             href="https://squoosh.app/" 
                             target="_blank" 
-                            className="flex items-center gap-1.5 text-[10px] font-bold text-corporate-blue hover:underline mt-2"
+                            className="flex items-center gap-1.5 text-[10px] font-bold text-brand-primary hover:underline mt-2"
                           >
                             Optimizar tamaño de imagen sin perder calidad <ExternalLink className="w-3 h-3" />
                           </a>
@@ -1365,7 +1325,7 @@ export default function AdminConfiguracion() {
                               onClick={() => setDesign({...design, productCardStyle: 'glass'})}
                               className={cn(
                                 "p-4 rounded-2xl border text-left transition-all",
-                                design.productCardStyle === 'glass' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                                design.productCardStyle === 'glass' ? "border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
                               )}
                             >
                               <div className="w-full aspect-square bg-white/50 dark:bg-white/10 rounded-lg mb-2 shadow-sm border border-white/20" />
@@ -1375,7 +1335,7 @@ export default function AdminConfiguracion() {
                               onClick={() => setDesign({...design, productCardStyle: 'minimal'})}
                               className={cn(
                                 "p-4 rounded-2xl border text-left transition-all",
-                                design.productCardStyle === 'minimal' ? "border-corporate-blue bg-corporate-blue/5 ring-1 ring-corporate-blue/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
+                                design.productCardStyle === 'minimal' ? "border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary/10" : "border-gray-100 dark:border-white/5 bg-gray-50/50"
                               )}
                             >
                               <div className="w-full aspect-square bg-gray-200 dark:bg-gray-800 rounded-lg mb-2" />
@@ -1419,7 +1379,7 @@ export default function AdminConfiguracion() {
                               // Por ahora mostramos un toast informativo
                               toast.info('Solicita la activación en el Centro de Innovación IA (Arriba a la derecha)')
                            }}
-                           className="bg-corporate-blue rounded-xl px-8 uppercase font-black italic text-xs tracking-widest"
+                           className="bg-brand-primary rounded-xl px-8 uppercase font-black italic text-xs tracking-widest"
                         >
                            Solicitar Implementación
                         </Button>

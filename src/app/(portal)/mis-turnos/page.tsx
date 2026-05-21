@@ -117,7 +117,7 @@ export default function MisTurnosPage() {
         <div className="container mx-auto px-4 max-w-4xl">
           
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 bg-gradient-to-br from-corporate-blue to-blue-700 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-14 h-14 bg-gradient-to-br from-brand-primary to-brand-accent-700 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-accent-500/20">
               <Briefcase className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -130,16 +130,16 @@ export default function MisTurnosPage() {
             
             {/* Lado Izquierdo: Resumen Actual */}
             <div className="md:col-span-1 space-y-6">
-              <Card className="border-2 border-corporate-blue/20 bg-blue-50/50 dark:bg-blue-900/10 shadow-lg shadow-blue-500/5">
+              <Card className="border-2 border-brand-primary/20 bg-brand-accent-50/50 dark:bg-brand-accent-900/10 shadow-lg shadow-brand-accent-500/5">
                 <CardHeader className="pb-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-corporate-blue">Ubicación Asignada Hoy</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-brand-primary">Ubicación Asignada Hoy</p>
                   <CardTitle className="text-3xl font-black text-gray-900 dark:text-white">{currentArea}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Tu administrador o encargado te ha posicionado en esta área de la sucursal. 
                   </p>
-                  <div className="mt-4 border-t border-blue-200/50 dark:border-blue-800/50 pt-4">
+                  <div className="mt-4 border-t border-brand-accent-200/50 dark:border-brand-accent-800/50 pt-4">
                     <button
                       onClick={toggleShift}
                       disabled={isSyncing}

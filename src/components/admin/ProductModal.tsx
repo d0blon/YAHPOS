@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { SqlModal } from '@/components/modals/SqlModal'
+import SqlModal from '@/components/modals/SqlModal'
 
 interface ProductModalProps {
   isOpen: boolean
@@ -233,8 +233,8 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
       <div className="bg-white dark:bg-gray-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-corporate-blue/10 rounded-xl flex items-center justify-center">
-              <Package className="w-5 h-5 text-corporate-blue" />
+            <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center">
+              <Package className="w-5 h-5 text-brand-primary" />
             </div>
             <div>
               <h2 className="text-xl font-black text-gray-900 dark:text-white">
@@ -253,7 +253,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             {/* Nombre */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-bold">
-                <Info className="w-4 h-4 text-corporate-blue" /> Nombre del Producto
+                <Info className="w-4 h-4 text-brand-primary" /> Nombre del Producto
               </Label>
               <Input 
                 required
@@ -267,7 +267,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             {/* SKU */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-bold">
-                <Barcode className="w-4 h-4 text-corporate-blue" /> SKU / Código de Barras
+                <Barcode className="w-4 h-4 text-brand-primary" /> SKU / Código de Barras
               </Label>
               <div className="relative">
                 <Input 
@@ -278,7 +278,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
                 />
                 {isSearchingBarcode && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <Loader2 className="w-4 h-4 animate-spin text-corporate-blue" />
+                    <Loader2 className="w-4 h-4 animate-spin text-brand-primary" />
                   </div>
                 )}
               </div>
@@ -305,11 +305,11 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             {/* Categoría */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-bold">
-                <Tag className="w-4 h-4 text-corporate-blue" /> Categoría
+                <Tag className="w-4 h-4 text-brand-primary" /> Categoría
               </Label>
               <select 
                 required
-                className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-corporate-blue/20"
+                className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                 value={formData.category}
                 onChange={e => setFormData({...formData, category: e.target.value})}
               >
@@ -323,7 +323,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             {/* Unidad */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-bold">
-                <Scale className="w-4 h-4 text-corporate-blue" /> Unidad de Venta
+                <Scale className="w-4 h-4 text-brand-primary" /> Unidad de Venta
               </Label>
               <select 
                 className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white dark:bg-gray-900 text-sm"
@@ -340,7 +340,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             {/* Precio */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-bold">
-                <DollarSign className="w-4 h-4 text-corporate-blue" /> Precio de Venta ($)
+                <DollarSign className="w-4 h-4 text-brand-primary" /> Precio de Venta ($)
               </Label>
               <Input 
                 type="number"
@@ -356,7 +356,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             {/* 
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-bold">
-                <Info className="w-4 h-4 text-corporate-blue" /> Descuento (%)
+                <Info className="w-4 h-4 text-brand-primary" /> Descuento (%)
               </Label>
               <Input 
                 type="number"
@@ -373,7 +373,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             <div className="col-span-full">
               <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
                 <Label className="flex items-center gap-2 text-sm font-bold mb-4">
-                  <Archive className="w-4 h-4 text-corporate-blue" /> Control de Inventario
+                  <Archive className="w-4 h-4 text-brand-primary" /> Control de Inventario
                 </Label>
                 
                 {!isMultiBranch ? (
@@ -455,7 +455,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
                   size="sm"
                   onClick={generateWithAI}
                   disabled={isGenerating}
-                  className="text-xs font-black text-purple-600 hover:text-purple-700 hover:bg-purple-50 gap-2 h-8 px-3 rounded-lg border border-purple-100 animate-pulse-slow"
+                  className="text-xs font-black text-brand-primary hover:text-brand-accent hover:bg-brand-primary/10 gap-2 h-8 px-3 rounded-lg border border-brand-primary/20 animate-pulse-slow"
                 >
                   {isGenerating ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -515,7 +515,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
             <Button 
               type="submit" 
               disabled={isSaving}
-              className="flex-[2] h-12 bg-corporate-blue hover:bg-corporate-dark text-white rounded-xl font-bold shadow-lg shadow-corporate-blue/20"
+              className="flex-[2] h-12 bg-brand-primary hover:bg-brand-700 text-white rounded-xl font-bold shadow-lg shadow-brand-primary/20"
             >
               {isSaving ? (
                 <>

@@ -89,7 +89,7 @@ export default function CatalogViewer() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-white/60">
-        <div className="w-12 h-12 border-4 border-corporate-blue border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="animate-pulse font-medium">Sincronizando Catálogo Maestro...</p>
         <p className="text-xs mt-2 opacity-40 italic">Esto puede tardar unos segundos debido al volumen de datos (1.7k+)</p>
       </div>
@@ -118,7 +118,7 @@ export default function CatalogViewer() {
       {/* Header & Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Resultados / Total', value: `${stats.filtered.toLocaleString()} / ${stats.total.toLocaleString()}`, icon: Database, color: 'text-corporate-blue' },
+          { label: 'Resultados / Total', value: `${stats.filtered.toLocaleString()} / ${stats.total.toLocaleString()}`, icon: Database, color: 'text-brand-primary' },
           { label: 'Categorías', value: stats.categories, icon: Tag, color: 'text-accent-gold' },
           { label: 'Marcas Únicas', value: stats.brands, icon: Package, color: 'text-green-400' }
         ].map((stat, i) => (
@@ -142,17 +142,17 @@ export default function CatalogViewer() {
             <input 
               type="text" 
               placeholder="Buscar por nombre o SKU..."
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-corporate-blue transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-brand-primary transition-all"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <select 
-            className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-corporate-blue min-w-[200px] cursor-pointer"
+            className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary min-w-[200px] cursor-pointer"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
-            {categories.map(cat => <option key={cat} value={cat} className="bg-corporate-darker text-white">{cat}</option>)}
+            {categories.map(cat => <option key={cat} value={cat} className="bg-brand-900 text-white">{cat}</option>)}
           </select>
         </div>
 
@@ -173,7 +173,7 @@ export default function CatalogViewer() {
               >
                 <ChevronLeft size={18} /> Anterior
               </button>
-              <div className="bg-corporate-blue/10 px-4 py-2 rounded-xl border border-corporate-blue/20 text-sm font-bold min-w-[120px] text-center text-corporate-blue">
+              <div className="bg-brand-primary/10 px-4 py-2 rounded-xl border border-brand-primary/20 text-sm font-bold min-w-[120px] text-center text-brand-primary">
                 Página {currentPage} de {totalPages}
               </div>
               <button 
@@ -182,7 +182,7 @@ export default function CatalogViewer() {
                   setCurrentPage(prev => prev + 1);
                   document.querySelector('.product-grid-scroll')?.scrollTo(0, 0);
                 }}
-                className="flex items-center gap-1 px-4 py-2 bg-corporate-blue border border-corporate-blue/50 rounded-xl hover:bg-corporate-blue/80 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+                className="flex items-center gap-1 px-4 py-2 bg-brand-primary border border-brand-primary/50 rounded-xl hover:bg-brand-primary/80 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
               >
                 Siguiente <ChevronRight size={18} />
               </button>
@@ -197,7 +197,7 @@ export default function CatalogViewer() {
               <div 
                 key={`${p.sku}-${i}`} 
                 onClick={() => setSelectedProduct(p)}
-                className="group bg-white/5 border border-white/5 hover:border-corporate-blue/50 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/10 flex flex-col h-full"
+                className="group bg-white/5 border border-white/5 hover:border-brand-primary/50 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/10 flex flex-col h-full"
               >
                 <div className="aspect-square rounded-xl bg-black/20 mb-3 overflow-hidden border border-white/5">
                   {p.images?.[0] ? (
@@ -206,8 +206,8 @@ export default function CatalogViewer() {
                     <div className="w-full h-full flex items-center justify-center text-white/10"><Package size={40} /></div>
                   )}
                 </div>
-                <p className="text-[10px] text-corporate-blue font-bold uppercase tracking-widest mb-1 opacity-60">{p.brand || 'Genérico'}</p>
-                <h3 className="text-sm font-medium leading-tight h-10 overflow-hidden line-clamp-2 mb-2 group-hover:text-corporate-blue transition-colors">{p.name}</h3>
+                <p className="text-[10px] text-brand-primary font-bold uppercase tracking-widest mb-1 opacity-60">{p.brand || 'Genérico'}</p>
+                <h3 className="text-sm font-medium leading-tight h-10 overflow-hidden line-clamp-2 mb-2 group-hover:text-brand-primary transition-colors">{p.name}</h3>
                 <div className="mt-auto flex justify-between items-center text-[11px] text-white/40 border-t border-white/5 pt-2">
                   <span className="font-mono">SKU: {p.sku || 'N/A'}</span>
                   <span className="text-accent-gold font-bold text-sm">${p.price.toLocaleString()}</span>
@@ -227,14 +227,14 @@ export default function CatalogViewer() {
       {/* Detail Overlay */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" onClick={() => setSelectedProduct(null)}>
-          <div className="bg-corporate-darker border border-white/10 w-full max-w-2xl rounded-3xl p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+          <div className="bg-brand-900 border border-white/10 w-full max-w-2xl rounded-3xl p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
             {/* Header Content */}
             <div className="flex gap-8 flex-col md:flex-row mb-8">
               <div className="w-full md:w-1/2 aspect-square bg-black/40 rounded-3xl p-6 border border-white/5 shadow-inner">
                 <img src={selectedProduct.images?.[0]} className="w-full h-full object-contain" alt={selectedProduct.name} />
               </div>
               <div className="flex-1 space-y-4">
-                <p className="text-corporate-blue font-bold tracking-widest text-sm uppercase">{selectedProduct.brand}</p>
+                <p className="text-brand-primary font-bold tracking-widest text-sm uppercase">{selectedProduct.brand}</p>
                 <h2 className="text-2xl font-bold leading-tight">{selectedProduct.name}</h2>
                 <div className="inline-flex flex-col">
                   <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Precio Distribuidor</span>
@@ -245,11 +245,11 @@ export default function CatalogViewer() {
                 <div className="space-y-2 pt-4 border-t border-white/5">
                   <div className="flex justify-between text-xs">
                     <span className="text-white/40 font-bold uppercase tracking-tighter">SKU Oficial</span>
-                    <span className="font-mono text-corporate-blue">{selectedProduct.sku}</span>
+                    <span className="font-mono text-brand-primary">{selectedProduct.sku}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-white/40 font-bold uppercase tracking-tighter">Categoría</span>
-                    <span className="bg-corporate-blue/10 text-corporate-blue px-2 py-0.5 rounded text-[10px]">{selectedProduct.category_main}</span>
+                    <span className="bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded text-[10px]">{selectedProduct.category_main}</span>
                   </div>
                 </div>
               </div>
@@ -260,7 +260,7 @@ export default function CatalogViewer() {
               {selectedProduct.specs && Object.keys(selectedProduct.specs).length > 0 && (
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
                   <h4 className="flex items-center gap-2 text-sm font-bold mb-4 uppercase tracking-widest text-white/60">
-                    <Info size={16} className="text-corporate-blue" /> Especificaciones Técnicas
+                    <Info size={16} className="text-brand-primary" /> Especificaciones Técnicas
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-xs">
                     {Object.entries(selectedProduct.specs).map(([k, v]) => (
@@ -303,7 +303,7 @@ export default function CatalogViewer() {
             </div>
 
             <button 
-              className="w-full mt-8 bg-corporate-blue py-4 rounded-2xl font-bold hover:bg-corporate-blue/80 transition-all shadow-lg shadow-corporate-blue/20"
+              className="w-full mt-8 bg-brand-primary py-4 rounded-2xl font-bold hover:bg-brand-primary/80 transition-all shadow-lg shadow-brand-primary/20"
               onClick={() => setSelectedProduct(null)}
             >
               Cerrar Detalle del Producto

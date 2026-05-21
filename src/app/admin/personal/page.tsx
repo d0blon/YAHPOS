@@ -22,12 +22,12 @@ type StaffProfile = {
 }
 
 const AREAS = [
-  { id: 'Caja 1', icon: Store, color: 'text-blue-500', bg: 'bg-blue-50 border-blue-200' },
-  { id: 'Caja 2', icon: Store, color: 'text-indigo-500', bg: 'bg-indigo-50 border-indigo-200' },
+  { id: 'Caja 1', icon: Store, color: 'text-brand-accent-500', bg: 'bg-brand-accent-50 border-brand-accent-200' },
+  { id: 'Caja 2', icon: Store, color: 'text-brand-500', bg: 'bg-brand-50 border-brand-200' },
   { id: 'Carnicería', icon: Beef, color: 'text-red-500', bg: 'bg-red-50 border-red-200' },
   { id: 'Bodega', icon: Package, color: 'text-amber-500', bg: 'bg-amber-50 border-amber-200' },
   { id: 'Reposición', icon: ShoppingCart, color: 'text-emerald-500', bg: 'bg-emerald-50 border-emerald-200' },
-  { id: 'Supervisión', icon: ShieldAlert, color: 'text-purple-500', bg: 'bg-purple-50 border-purple-200' },
+  { id: 'Supervisión', icon: ShieldAlert, color: 'text-brand-500', bg: 'bg-brand-50 border-brand-200' },
   { id: 'Ausente', icon: Clock, color: 'text-gray-400', bg: 'bg-gray-50 border-gray-200 text-gray-400 opacity-75' },
 ]
 
@@ -168,7 +168,7 @@ export default function PersonalDashboard() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-            Gestión de <span className="text-blue-500">Personal</span>
+            Gestión de <span className="text-brand-accent-500">Personal</span>
           </h1>
           <p className="text-white/50 text-sm font-medium">Asignación y monitoreo de áreas de trabajo en vivo</p>
         </div>
@@ -195,12 +195,12 @@ export default function PersonalDashboard() {
             placeholder="Buscar trabajador por nombre o RUT..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-black/20 border border-white/5 rounded-2xl text-lg font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/20"
+            className="w-full pl-12 pr-4 py-4 bg-black/20 border border-white/5 rounded-2xl text-lg font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-brand-accent-500/50 transition-all text-white placeholder:text-white/20"
           />
         </div>
         <Button 
           onClick={() => setIsAddModalOpen(true)}
-          className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-blue-500/20 flex items-center gap-2 transition-all hover:scale-105 border-none"
+          className="w-full md:w-auto bg-brand-accent-600 hover:bg-brand-accent-500 text-white rounded-2xl px-8 h-14 font-black uppercase tracking-widest text-xs shadow-xl shadow-brand-accent-500/20 flex items-center gap-2 transition-all hover:scale-105 border-none"
         >
           <Plus className="w-4 h-4" />
           Nuevo Trabajador
@@ -210,7 +210,7 @@ export default function PersonalDashboard() {
       {/* Staff Grid */}
       {isLoading ? (
         <div className="flex items-center justify-center p-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-accent-500"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -221,7 +221,7 @@ export default function PersonalDashboard() {
             const isRecentlyUpdated = new Date().getTime() - new Date(worker.updated_at).getTime() < 3600000;
 
             return (
-              <Card key={worker.id} className="overflow-hidden border border-white/5 bg-white/5 backdrop-blur-xl hover:border-blue-500/30 transition-all duration-300 shadow-xl group rounded-3xl">
+              <Card key={worker.id} className="overflow-hidden border border-white/5 bg-white/5 backdrop-blur-xl hover:border-brand-accent-500/30 transition-all duration-300 shadow-xl group rounded-3xl">
                 <div className="p-5 flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center font-bold text-white/70 text-lg border border-white/10">
@@ -233,7 +233,7 @@ export default function PersonalDashboard() {
                         <select 
                           value={worker.role}
                           onChange={(e) => handleRoleChange(worker.id, e.target.value)}
-                          className="text-[10px] font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 focus:ring-1 focus:ring-blue-500/40"
+                          className="text-[10px] font-bold uppercase tracking-widest text-brand-accent-400 bg-brand-accent-500/10 px-2 py-0.5 rounded border border-brand-accent-500/20 focus:ring-1 focus:ring-brand-accent-500/40"
                         >
                           {ROLES.map(role => (
                             <option key={role.id} value={role.id}>{role.label}</option>
@@ -263,15 +263,15 @@ export default function PersonalDashboard() {
                       value={worker.current_area || 'Ausente'}
                       onChange={(e) => handleAreaChange(worker.id, e.target.value)}
                       className={cn(
-                        "w-full appearance-none px-4 py-3 pl-11 rounded-2xl text-sm font-bold transition-all border border-white/5 cursor-pointer focus:outline-none focus:ring-4 focus:ring-blue-500/20",
-                        currentAreaConfig.id === 'Ausente' ? "bg-white/5 text-white/40" : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        "w-full appearance-none px-4 py-3 pl-11 rounded-2xl text-sm font-bold transition-all border border-white/5 cursor-pointer focus:outline-none focus:ring-4 focus:ring-brand-accent-500/20",
+                        currentAreaConfig.id === 'Ausente' ? "bg-white/5 text-white/40" : "bg-brand-accent-500/10 text-brand-accent-400 border-brand-accent-500/20"
                       )}
                     >
                       {AREAS.map(area => (
                         <option key={area.id} value={area.id} className="bg-gray-900 text-white">{area.id}</option>
                       ))}
                     </select>
-                    <AreaIcon className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", currentAreaConfig.id === 'Ausente' ? "text-white/30" : "text-blue-400")} />
+                    <AreaIcon className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", currentAreaConfig.id === 'Ausente' ? "text-white/30" : "text-brand-accent-400")} />
                   </div>
                 </div>
               </Card>
@@ -330,7 +330,7 @@ export default function PersonalDashboard() {
                 id="role"
                 value={newStaff.role}
                 onChange={e => setNewStaff({...newStaff, role: e.target.value})}
-                className="w-full flex h-10 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500/50"
+                className="w-full flex h-10 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-brand-accent-500/50"
               >
                 {ROLES.map(role => (
                   <option key={role.id} value={role.id} className="bg-gray-900">{role.label}</option>
@@ -341,7 +341,7 @@ export default function PersonalDashboard() {
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-6 font-bold text-lg shadow-xl shadow-blue-500/20 border-none"
+                className="w-full bg-brand-accent-600 hover:bg-brand-accent-500 text-white rounded-xl py-6 font-bold text-lg shadow-xl shadow-brand-accent-500/20 border-none"
               >
                 {isSubmitting ? 'Guardando...' : 'Crear Trabajador'}
               </Button>

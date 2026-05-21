@@ -45,8 +45,8 @@ export default function PointsSlide() {
     <section id="points" className="relative w-full h-full flex items-center justify-center overflow-hidden bg-background">
       {/* Background Ornaments */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[30%] right-[20%] w-[40vw] h-[40vw] bg-fuchsia-600/10 rounded-full blur-[100px] mix-blend-screen" />
-        <div className="absolute bottom-[10%] left-[20%] w-[30vw] h-[30vw] bg-purple-600/10 rounded-full blur-[100px] mix-blend-screen" />
+        <div className="absolute top-[30%] right-[20%] w-[40vw] h-[40vw] bg-brand-accent-600/10 rounded-full blur-[100px] mix-blend-screen" />
+        <div className="absolute bottom-[10%] left-[20%] w-[30vw] h-[30vw] bg-brand-600/10 rounded-full blur-[100px] mix-blend-screen" />
         <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }} />
       </div>
 
@@ -61,9 +61,9 @@ export default function PointsSlide() {
             viewport={{ once: false, amount: 0.3 }}
           >
             <motion.div variants={itemVariants} className="mb-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 backdrop-blur-md">
-                <Gift className="w-4 h-4 text-fuchsia-400" />
-                <span className="text-xs font-bold uppercase tracking-widest text-fuchsia-300">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-accent-500/10 border border-brand-accent-500/20 backdrop-blur-md">
+                <Gift className="w-4 h-4 text-brand-accent-400" />
+                <span className="text-xs font-bold uppercase tracking-widest text-brand-accent-300">
                   Beneficios Premium
                 </span>
               </div>
@@ -78,7 +78,7 @@ export default function PointsSlide() {
                 field="points.accentTitle" 
                 value={content.accentTitle} 
                 as="span" 
-                className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400" 
+                className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-400 to-brand-400" 
               />
             </motion.h2>
             
@@ -142,8 +142,8 @@ export default function PointsSlide() {
                     </div>
                   )}
 
-                  <div className="w-16 h-16 rounded-2xl bg-fuchsia-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Icon className="w-8 h-8 text-fuchsia-400" />
+                  <div className="w-16 h-16 rounded-2xl bg-brand-accent-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Icon className="w-8 h-8 text-brand-accent-400" />
                   </div>
                   <EditableText 
                     field={`points.benefits.${idx}.title`} 
@@ -173,7 +173,7 @@ export default function PointsSlide() {
                   }
                   editor.updateField('points.benefits', [...content.benefits, newBenefit])
                 }}
-                className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-white/10 hover:border-fuchsia-500/50 hover:bg-fuchsia-500/5 transition-all p-8"
+                className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-white/10 hover:border-brand-accent-500/50 hover:bg-brand-accent-500/5 transition-all p-8"
               >
                 <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
                   <Plus className="text-white w-6 h-6" />
@@ -191,7 +191,7 @@ export default function PointsSlide() {
             transition={{ delay: 0.5 }}
           >
             <Link href="/registro" className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest overflow-hidden transition-transform hover:scale-105 active:scale-95">
-              <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-accent-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
               <span className="relative">Unirme Ahora</span>
               <ArrowRight className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>

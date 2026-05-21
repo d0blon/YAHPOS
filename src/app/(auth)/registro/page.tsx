@@ -115,7 +115,7 @@ export default function Register() {
           </p>
         </div>
 
-        <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800/50 shadow-2xl shadow-blue-100/50 dark:shadow-black/40">
+        <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800/50 shadow-2xl shadow-brand-accent-100/50 dark:shadow-black/40">
           <CardHeader>
             <CardTitle>Registro</CardTitle>
             <CardDescription>

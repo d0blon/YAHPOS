@@ -8,11 +8,11 @@ export default function EcommerceUpgradePage() {
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4 py-16">
       
       {/* YAHPOS! badge */}
-      <div className="flex items-center gap-2 mb-8 px-4 py-2 bg-corporate-blue/10 border border-corporate-blue/20 rounded-full">
-        <div className="w-6 h-6 bg-corporate-blue rounded-lg flex items-center justify-center">
+      <div className="flex items-center gap-2 mb-8 px-4 py-2 bg-brand-primary/10 border border-brand-primary/20 rounded-full">
+        <div className="w-6 h-6 bg-brand-primary rounded-lg flex items-center justify-center">
           <span className="text-white font-black text-xs italic">P</span>
         </div>
-        <span className="text-xs font-black text-corporate-blue uppercase tracking-widest">YAHPOS!</span>
+        <span className="text-xs font-black text-brand-primary uppercase tracking-widest">YAHPOS!</span>
       </div>
 
       {/* Lock icon */}
@@ -23,7 +23,7 @@ export default function EcommerceUpgradePage() {
       {/* Heading */}
       <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-center mb-4 max-w-2xl">
         La tienda online no está{' '}
-        <span className="text-corporate-blue">activada</span>
+        <span className="text-brand-primary">activada</span>
       </h1>
       <p className="text-gray-400 text-center max-w-lg mb-12 text-lg font-medium">
         Este negocio opera con el <strong className="text-white">Plan Austral</strong>. Para tener un ecommerce público, catálogo online y recibir pedidos, necesita el Plan Archipiélago.
@@ -32,10 +32,10 @@ export default function EcommerceUpgradePage() {
       {/* Plans comparison */}
       <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl mb-12">
         {/* Plan Archipiélago */}
-        <div className="p-6 bg-fuchsia-500/5 border border-fuchsia-500/30 rounded-3xl">
+        <div className="p-6 bg-brand-accent-500/5 border border-brand-accent-500/30 rounded-3xl">
           <div className="flex items-center gap-2 mb-4">
-            <Star className="w-5 h-5 text-fuchsia-400" />
-            <h3 className="font-black uppercase tracking-widest text-sm text-fuchsia-400">Plan Archipiélago</h3>
+            <Star className="w-5 h-5 text-brand-accent-400" />
+            <h3 className="font-black uppercase tracking-widest text-sm text-brand-accent-400">Plan Archipiélago</h3>
           </div>
           <ul className="space-y-3">
             {[
@@ -45,7 +45,7 @@ export default function EcommerceUpgradePage() {
               { icon: Zap, text: 'Todo del Plan Austral' },
             ].map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-center gap-2 text-sm text-gray-300 font-medium">
-                <Icon className="w-4 h-4 text-fuchsia-400 shrink-0" />
+                <Icon className="w-4 h-4 text-brand-accent-400 shrink-0" />
                 {text}
               </li>
             ))}
@@ -79,7 +79,7 @@ export default function EcommerceUpgradePage() {
         {/* CTA principal — ir al POS */}
         <Link
           href="/pos"
-          className="flex-1 flex items-center justify-center gap-3 py-4 px-6 bg-corporate-blue hover:bg-blue-700 text-white font-black uppercase tracking-widest text-sm rounded-2xl transition-all duration-200 shadow-[0_8px_20px_rgba(0,51,153,0.4)] hover:shadow-[0_12px_28px_rgba(0,51,153,0.5)] hover:-translate-y-0.5 group"
+          className="flex-1 flex items-center justify-center gap-3 py-4 px-6 bg-brand-primary hover:bg-brand-accent-700 text-white font-black uppercase tracking-widest text-sm rounded-2xl transition-all duration-200 shadow-[0_8px_20px_rgba(0,51,153,0.4)] hover:shadow-[0_12px_28px_rgba(0,51,153,0.5)] hover:-translate-y-0.5 group"
         >
           <Monitor className="w-5 h-5 transition-transform group-hover:rotate-12" />
           Ir al POS

@@ -22,7 +22,7 @@ export default function PointsClubSection() {
               
               <h2 className="text-5xl md:text-7xl font-black text-white leading-tight mb-8 tracking-tighter">
                 Únete al Club <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Acumula Puntos</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-400 to-brand-400">Acumula Puntos</span>
               </h2>
               
               <p className="text-xl text-gray-400 mb-12 max-w-md leading-relaxed">
@@ -59,7 +59,7 @@ export default function PointsClubSection() {
                   icon: Star,
                   title: "Nivel Elite",
                   desc: "Acceso a ofertas antes que nadie",
-                  color: "text-purple-400"
+                  color: "text-brand-400"
                 },
                 {
                   icon: Gift,

@@ -18,7 +18,7 @@ export default function AdminLayout({
   const isDeveloperRoute = pathname?.includes('/developer')
 
   return (
-    <div className="min-h-screen flex bg-[#0a0a0c] text-white selection:bg-purple-500/30 transition-colors duration-500">
+    <div className="min-h-screen flex bg-[#0a0a0c] text-white selection:bg-brand-500/30 transition-colors duration-500">
       {/* Sidebar - Fixed on Large Screens - Hidden in Developer Route */}
       {!isDeveloperRoute && (
         <div 

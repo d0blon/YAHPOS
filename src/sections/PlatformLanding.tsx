@@ -171,7 +171,7 @@ const PlatformLanding = () => {
   ]
 
   return (
-    <div ref={mainRef} className="bg-white overflow-x-hidden selection:bg-corporate-blue selection:text-white">
+    <div ref={mainRef} className="bg-white overflow-x-hidden selection:bg-brand-primary selection:text-white">
       <PlatformHeader />
 
       {/* Hero Section */}
@@ -186,14 +186,14 @@ const PlatformLanding = () => {
             priority
           />
           {/* Advanced Overlays for Contrast */}
-          <div className="absolute inset-0 bg-gradient-to-b from-corporate-darker/70 via-transparent to-white"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-corporate-darker/40 via-transparent to-corporate-darker/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-900/70 via-transparent to-white"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-900/40 via-transparent to-brand-900/40"></div>
           <div className="absolute inset-0 backdrop-blur-[2px]"></div>
         </div>
 
         <div className="relative z-10 text-center px-6 max-w-6xl">
           <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full">
-            <span className="w-2 h-2 bg-accent-yellow rounded-full animate-pulse"></span>
+            <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse"></span>
             <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Nueva Era Digital Austral</span>
           </div>
 
@@ -202,7 +202,7 @@ const PlatformLanding = () => {
               <span className="inline-block">COMERCIO</span>
             </div>
             <div className="hero-title-line overflow-hidden py-2">
-              <span className="inline-block text-accent-yellow drop-shadow-[0_0_50px_rgba(255,209,0,0.4)] italic">INTELIGENTE</span>
+              <span className="inline-block text-brand-accent drop-shadow-[0_0_50px_rgba(255,209,0,0.4)] italic">INTELIGENTE</span>
             </div>
             <div className="hero-title-line overflow-hidden py-2">
               <span className="inline-block">DESDE EL SUR.</span>
@@ -216,7 +216,7 @@ const PlatformLanding = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link 
               href="/login" 
-              className="hero-cta-btn magnetic-btn w-full sm:w-auto px-12 py-7 bg-corporate-blue text-white rounded-2xl font-black text-xl hover:bg-corporate-dark transition-all shadow-[0_20px_50px_rgba(119,0,204,0.4)] flex items-center justify-center gap-3 group ring-1 ring-white/20"
+              className="hero-cta-btn magnetic-btn w-full sm:w-auto px-12 py-7 bg-brand-primary text-white rounded-2xl font-black text-xl hover:bg-brand-700 transition-all shadow-[0_20px_50px_rgba(119,0,204,0.4)] flex items-center justify-center gap-3 group ring-1 ring-white/20"
             >
               Empezar Ahora <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -231,25 +231,25 @@ const PlatformLanding = () => {
 
         {/* Floating Scroll Indicator */}
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-6">
-          <div className="w-[1px] h-24 bg-gradient-to-b from-accent-yellow via-accent-yellow/50 to-transparent"></div>
+          <div className="w-[1px] h-24 bg-gradient-to-b from-brand-accent via-brand-accent/50 to-transparent"></div>
           <span className="text-white/30 text-[10px] font-black tracking-[0.5em] uppercase vertical-text">Explorar</span>
         </div>
       </section>
 
       {/* Features Section */}
       <section ref={featuresRef} id="features" className="py-40 px-6 bg-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-corporate-blue/5 rounded-full blur-[150px] -mr-96 -mt-96 animate-float-slow"></div>
-        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-accent-yellow/5 rounded-full blur-[150px] -ml-96 -mb-96 animate-float"></div>
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-primary/5 rounded-full blur-[150px] -mr-96 -mt-96 animate-float-slow"></div>
+        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-brand-accent/5 rounded-full blur-[150px] -ml-96 -mb-96 animate-float"></div>
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col lg:flex-row items-end justify-between mb-24 gap-12">
             <div className="max-w-3xl">
-              <h2 className="text-sm font-black text-corporate-blue uppercase tracking-[0.6em] mb-6 block">Tecnología de Punta</h2>
-              <h3 className="text-5xl md:text-8xl font-black text-corporate-darker tracking-tighter leading-[0.9]">
-                Herramientas hechas para el <span className="text-corporate-blue">crecimiento.</span>
+              <h2 className="text-sm font-black text-brand-primary uppercase tracking-[0.6em] mb-6 block">Tecnología de Punta</h2>
+              <h3 className="text-5xl md:text-8xl font-black text-brand-900 tracking-tighter leading-[0.9]">
+                Herramientas hechas para el <span className="text-brand-primary">crecimiento.</span>
               </h3>
             </div>
-            <p className="text-xl text-gray-500 font-medium max-w-sm leading-relaxed border-l-4 border-accent-yellow pl-8">
+            <p className="text-xl text-gray-500 font-medium max-w-sm leading-relaxed border-l-4 border-brand-accent pl-8">
               Diseñado específicamente para las necesidades del comercio regional en Chile.
             </p>
           </div>
@@ -258,19 +258,19 @@ const PlatformLanding = () => {
             {features.map((f, i) => (
               <div 
                 key={i} 
-                className="feature-card group bg-gray-50/50 p-12 rounded-[3rem] border border-gray-100 hover:border-corporate-blue/20 transition-all duration-700 hover:shadow-3xl hover:bg-white relative overflow-hidden"
+                className="feature-card group bg-gray-50/50 p-12 rounded-[3rem] border border-gray-100 hover:border-brand-primary/20 transition-all duration-700 hover:shadow-3xl hover:bg-white relative overflow-hidden"
               >
                 <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-10 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 
-                  ${f.color === 'purple' ? 'bg-corporate-blue/10 text-corporate-blue' : 
-                    f.color === 'yellow' ? 'bg-accent-yellow/10 text-accent-gold' : 
+                  ${f.color === 'purple' ? 'bg-brand-primary/10 text-brand-primary' : 
+                    f.color === 'yellow' ? 'bg-brand-accent/10 text-brand-accent-600' : 
                     'bg-blue-500/10 text-blue-600'}`}
                 >
                   <f.icon className="w-10 h-10" />
                 </div>
-                <h4 className="text-3xl font-black text-corporate-darker mb-6 tracking-tight">{f.title}</h4>
+                <h4 className="text-3xl font-black text-brand-900 mb-6 tracking-tight">{f.title}</h4>
                 <p className="text-gray-500 leading-relaxed font-medium text-lg mb-8">{f.desc}</p>
                 
-                <Link href="/login" className="flex items-center gap-2 text-corporate-blue font-black text-sm uppercase tracking-widest group/link">
+                <Link href="/login" className="flex items-center gap-2 text-brand-primary font-black text-sm uppercase tracking-widest group/link">
                   Saber más <ChevronRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
                 </Link>
 
@@ -284,7 +284,7 @@ const PlatformLanding = () => {
       </section>
 
       {/* Pricing Section */}
-      <section ref={pricingRef} id="pricing" className="py-40 px-6 bg-corporate-darker relative overflow-hidden">
+      <section ref={pricingRef} id="pricing" className="py-40 px-6 bg-brand-900 relative overflow-hidden">
         {/* Background Visuals */}
         <div className="absolute inset-0 z-0 opacity-10">
           <Image 
@@ -294,11 +294,11 @@ const PlatformLanding = () => {
             className="object-cover grayscale"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-corporate-darker via-corporate-darker/90 to-corporate-darker"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-900 via-brand-900/90 to-brand-900"></div>
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-24">
-            <h2 className="text-sm font-black text-accent-yellow uppercase tracking-[0.5em] mb-6">Planes & Precios</h2>
+            <h2 className="text-sm font-black text-brand-accent uppercase tracking-[0.5em] mb-6">Planes & Precios</h2>
             <h3 className="text-5xl md:text-7xl font-black text-white tracking-tighter">Inversión para tu éxito.</h3>
           </div>
 
@@ -308,11 +308,11 @@ const PlatformLanding = () => {
                 key={i} 
                 className={`pricing-card relative p-12 rounded-[3.5rem] border transition-all duration-700 hover:-translate-y-6 
                   ${p.highlight 
-                    ? 'bg-corporate-blue text-white border-white/20 shadow-3xl scale-105 z-20' 
+                    ? 'bg-brand-primary text-white border-white/20 shadow-3xl scale-105 z-20' 
                     : 'bg-white/5 text-white border-white/10 hover:bg-white/10'}`}
               >
                 {p.highlight && (
-                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-accent-yellow text-corporate-darker text-[10px] font-black rounded-full uppercase tracking-[0.3em] shadow-2xl">
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-brand-accent text-brand-900 text-[10px] font-black rounded-full uppercase tracking-[0.3em] shadow-2xl">
                     Recomendado
                   </div>
                 )}
@@ -328,7 +328,7 @@ const PlatformLanding = () => {
                 <ul className="space-y-6 mb-12">
                   {p.features.map((feat, j) => (
                     <li key={j} className="flex items-center gap-4 text-sm font-bold tracking-tight">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${p.highlight ? 'bg-white text-corporate-blue' : 'bg-accent-yellow text-corporate-darker'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${p.highlight ? 'bg-white text-brand-primary' : 'bg-brand-accent text-brand-900'}`}>
                         <Check size={14} strokeWidth={4} />
                       </div>
                       {feat}
@@ -340,8 +340,8 @@ const PlatformLanding = () => {
                   href="/login" 
                   className={`block w-full py-6 text-center font-black rounded-[2rem] transition-all text-sm uppercase tracking-[0.2em] shadow-xl
                     ${p.highlight 
-                      ? 'bg-white text-corporate-blue hover:bg-gray-100' 
-                      : 'bg-accent-yellow text-corporate-darker hover:bg-accent-gold'}`}
+                      ? 'bg-white text-brand-primary hover:bg-gray-100' 
+                      : 'bg-brand-accent text-brand-900 hover:bg-brand-accent-600'}`}
                 >
                   Seleccionar
                 </Link>
@@ -354,21 +354,21 @@ const PlatformLanding = () => {
       {/* Final CTA */}
       <section className="py-40 px-6 bg-white text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto relative z-10">
-          <h2 className="text-sm font-black text-corporate-blue uppercase tracking-[0.6em] mb-10">Comienza hoy mismo</h2>
-          <h3 className="text-6xl md:text-[9rem] font-black text-corporate-darker tracking-tighter leading-[0.8] mb-16">
-            EL FUTURO ES <span className="text-corporate-blue italic">AHORA.</span>
+          <h2 className="text-sm font-black text-brand-primary uppercase tracking-[0.6em] mb-10">Comienza hoy mismo</h2>
+          <h3 className="text-6xl md:text-[9rem] font-black text-brand-900 tracking-tighter leading-[0.8] mb-16">
+            EL FUTURO ES <span className="text-brand-primary italic">AHORA.</span>
           </h3>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
             <Link 
               href="/login" 
-              className="magnetic-btn px-16 py-8 bg-corporate-blue text-white rounded-[2rem] font-black text-2xl hover:bg-corporate-dark transition-all shadow-3xl flex items-center gap-4 group"
+              className="magnetic-btn px-16 py-8 bg-brand-primary text-white rounded-[2rem] font-black text-2xl hover:bg-brand-700 transition-all shadow-3xl flex items-center gap-4 group"
             >
               Crear mi Cuenta <ArrowRight className="group-hover:translate-x-2 transition-transform" />
             </Link>
             <Link 
               href="https://wa.me/569XXXXXXXX" 
-              className="magnetic-btn px-16 py-8 bg-gray-100 text-corporate-darker rounded-[2rem] font-black text-2xl hover:bg-gray-200 transition-all"
+              className="magnetic-btn px-16 py-8 bg-gray-100 text-brand-900 rounded-[2rem] font-black text-2xl hover:bg-gray-200 transition-all"
             >
               Hablemos
             </Link>
@@ -388,14 +388,14 @@ const PlatformLanding = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-10 mb-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-corporate-blue rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center">
                 <Store size={20} className="text-white" />
               </div>
-              <span className="text-2xl font-black tracking-tighter text-corporate-darker">YAHPOS<span className="text-accent-yellow">!</span></span>
+              <span className="text-2xl font-black tracking-tighter text-brand-900">YAHPOS<span className="text-brand-accent">!</span></span>
             </div>
             <div className="flex gap-8">
               {['Privacidad', 'Términos', 'Ayuda', 'Blog'].map(link => (
-                <Link key={link} href="#" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-corporate-blue transition-colors">{link}</Link>
+                <Link key={link} href="#" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-brand-primary transition-colors">{link}</Link>
               ))}
             </div>
           </div>

@@ -28,7 +28,7 @@ export const ecommerceConfig = {
         slug: 'alimentos',
         description: 'Esenciales premium seleccionados para el paladar más exigente.',
         image: '/cat_alimentos_premium_1777248248786.png',
-        color: 'from-blue-500/20 to-purple-500/20',
+        color: 'from-brand-accent-500/20 to-brand-500/20',
       },
       {
         id: '2',
@@ -44,7 +44,7 @@ export const ecommerceConfig = {
         slug: 'lacteos',
         description: 'Pureza y nutrición desde las praderas del sur.',
         image: '/cat_lacteos_premium_1777248273407.png',
-        color: 'from-blue-400/20 to-indigo-500/20',
+        color: 'from-brand-accent-400/20 to-brand-500/20',
       },
       {
         id: '4',
@@ -52,7 +52,7 @@ export const ecommerceConfig = {
         slug: 'limpieza',
         description: 'Eficiencia absoluta para un entorno impecable.',
         image: '/cat_limpieza_premium_1777248288359.png',
-        color: 'from-purple-400/20 to-pink-500/20',
+        color: 'from-brand-400/20 to-brand-accent-500/20',
       },
       {
         id: '5',
@@ -76,7 +76,7 @@ export const ecommerceConfig = {
         slug: 'bebidas',
         description: 'Bodega reservada y selección de destilados elite.',
         image: '/cat_bebidas_premium_1777248330158.png',
-        color: 'from-teal-400/20 to-cyan-500/20',
+        color: 'from-teal-400/20 to-brand-accent-500/20',
       },
       {
         id: '8',
@@ -84,7 +84,7 @@ export const ecommerceConfig = {
         slug: 'bebes',
         description: 'Cuidado tierno con la máxima seguridad certificada.',
         image: '/cat_bebes_premium_1777248344381.png',
-        color: 'from-pink-300/20 to-rose-400/20',
+        color: 'from-brand-accent-300/20 to-brand-accent-400/20',
       },
     ]
   }

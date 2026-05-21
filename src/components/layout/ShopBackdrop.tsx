@@ -27,9 +27,9 @@ export default function ShopBackdrop() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(149,0,255,0.03),transparent_50%),radial-gradient(ellipse_at_bottom,rgba(59,130,246,0.05),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(149,0,255,0.08),transparent_60%),radial-gradient(ellipse_at_bottom,rgba(30,0,51,0.2),transparent_70%)]" />
 
       {/* Orbs - Unified Patagonia Palette */}
-      <div data-orb="a" className="absolute -top-24 -right-24 h-[520px] w-[520px] rounded-full bg-patagonia-600/10 blur-[100px] dark:bg-patagonia-500/15" />
-      <div data-orb="b" className="absolute top-[35%] -left-32 h-[520px] w-[520px] rounded-full bg-blue-500/5 blur-[120px] dark:bg-patagonia-700/20" />
-      <div data-orb="c" className="absolute -bottom-40 right-[10%] h-[560px] w-[560px] rounded-full bg-purple-500/5 blur-[110px] dark:bg-patagonia-900/30" />
+      <div data-orb="a" className="absolute -top-24 -right-24 h-[520px] w-[520px] rounded-full bg-brand-primary/10 blur-[100px] dark:bg-brand-500/15" />
+      <div data-orb="b" className="absolute top-[35%] -left-32 h-[520px] w-[520px] rounded-full bg-brand-accent-500/5 blur-[120px] dark:bg-brand-700/20" />
+      <div data-orb="c" className="absolute -bottom-40 right-[10%] h-[560px] w-[560px] rounded-full bg-brand-500/5 blur-[110px] dark:bg-brand-900/30" />
 
       {/* CSS noise (no asset) */}
       <div

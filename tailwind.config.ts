@@ -42,9 +42,6 @@ const config = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-          yellow: "#FFD100",
-          gold: "#E6BC00",
-          copper: "#B87333",
         },
 
         popover: {
@@ -55,11 +52,31 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // YAHPOS! Custom Colors
-        corporate: {
-          blue: "#7700cc",
-          dark: "#3b0066",
-          darker: "#150024",
+        // Brand dynamic colors (injected via CSS variables)
+        brand: {
+          primary: "var(--brand-primary, #4b0082)",
+          accent: "var(--brand-accent, #FFD100)",
+          50: "var(--brand-50, #f2e6ff)",
+          100: "var(--brand-100, #d9b3ff)",
+          200: "var(--brand-200, #bf80ff)",
+          300: "var(--brand-300, #a64dff)",
+          400: "var(--brand-400, #8c1aff)",
+          500: "var(--brand-500, #4b0082)",
+          600: "var(--brand-600, #5c00a3)",
+          700: "var(--brand-700, #400073)",
+          800: "var(--brand-800, #25004a)",
+          900: "var(--brand-900, #15002b)",
+          "accent-50": "var(--brand-accent-50, #fffde6)",
+          "accent-100": "var(--brand-accent-100, #fff9b3)",
+          "accent-200": "var(--brand-accent-200, #fff580)",
+          "accent-300": "var(--brand-accent-300, #fff14d)",
+          "accent-400": "var(--brand-accent-400, #ffed1a)",
+          "accent-500": "var(--brand-accent-500, #ffd100)",
+          "accent-600": "var(--brand-accent-600, #cca800)",
+          "accent-700": "var(--brand-accent-700, #997e00)",
+          "accent-800": "var(--brand-accent-800, #665400)",
+          "accent-900": "var(--brand-accent-900, #3d3300)",
+          logo: "var(--brand-logo)",
         },
         dark: {
           bg: "#1F2937",

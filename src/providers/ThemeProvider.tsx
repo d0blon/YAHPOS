@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+
 type Theme = 'light' | 'dark'
 
 type ThemeProviderProps = {
@@ -34,7 +35,6 @@ function temporarilyDisableTransitions() {
     )
   )
   document.head.appendChild(style)
-  // next paint
   requestAnimationFrame(() => {
     style.remove()
   })
@@ -49,7 +49,6 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(defaultTheme)
 
-  // Initial load
   React.useEffect(() => {
     try {
       const stored = window.localStorage.getItem(storageKey)
@@ -60,7 +59,6 @@ export function ThemeProvider({
       }
     } catch {}
 
-    // If system is enabled, pick it once on mount
     if (enableSystem) {
       const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches
       const initial: Theme = prefersDark ? 'dark' : 'light'
@@ -86,7 +84,11 @@ export function ThemeProvider({
 
   const value = React.useMemo(() => ({ theme, setTheme }), [theme, setTheme])
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  )
 }
 
 export function useTheme() {

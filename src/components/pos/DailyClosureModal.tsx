@@ -89,44 +89,44 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-hidden">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-slate-100 dark:border-slate-800 flex flex-col">
+      <div className="bg-white dark:bg-surface-100 w-full max-w-2xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-slate-100 dark:border-gray-800 flex flex-col">
         
         {/* State: Summary / Closing */}
         {!isFinished ? (
           <>
-            <div className="p-8 pb-4 text-center border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 relative">
+            <div className="p-8 pb-4 text-center border-b border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-surface-200/50 relative">
               <button 
                 onClick={onClose} 
                 disabled={isClosing}
-                className="absolute top-6 right-6 p-2 bg-white dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:scale-110 active:scale-95"
+                className="absolute top-6 right-6 p-2 bg-white dark:bg-surface-200 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white shadow-sm border border-slate-200 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
               >
                 <X className="w-5 h-5" />
               </button>
-              <div className="w-16 h-16 bg-patagonia-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Calculator className="w-8 h-8 text-patagonia-600" />
+              <div className="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Calculator className="w-8 h-8 text-brand-primary" />
               </div>
               <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Cierre de Caja</h2>
-              <p className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">Reporte Fiscal Z de Turno</p>
+              <p className="text-slate-500 dark:text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Reporte Fiscal Z de Turno</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                 {isDeclaring ? (
-                  <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
-                    <p className="text-sm font-black text-patagonia-600 dark:text-patagonia-400 uppercase tracking-widest mb-4">Declaración de Efectivo</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 font-bold">Ingrese el monto total de efectivo contado físicamente.</p>
+                  <div className="p-8 bg-slate-50 dark:bg-surface-200/50 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-gray-700 text-center">
+                    <p className="text-sm font-black text-brand-primary dark:text-brand-primary/80 uppercase tracking-widest mb-4">Declaración de Efectivo</p>
+                    <p className="text-xs text-slate-600 dark:text-gray-400 mb-6 font-bold">Ingrese el monto total de efectivo contado físicamente.</p>
                     <div className="relative max-w-xs mx-auto">
                         <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">$</span>
                         <input 
                           type="number"
                           value={cashDeclared}
                           onChange={(e) => setCashDeclared(e.target.value)}
-                          className="w-full h-20 pl-12 pr-6 rounded-3xl text-4xl font-black text-patagonia-600 border-none focus:ring-2 focus:ring-patagonia-600/50 shadow-inner bg-white dark:bg-slate-900 text-center"
+                          className="w-full h-20 pl-12 pr-6 rounded-3xl text-4xl font-black text-brand-primary border-none focus:ring-2 focus:ring-brand-primary/50 shadow-inner bg-white dark:bg-surface-100 text-center"
                           placeholder="0"
                           autoFocus
                         />
                     </div>
                     <Button 
-                      className="mt-8 w-full h-16 bg-patagonia-600 hover:bg-patagonia-700 text-white rounded-2xl font-black text-lg shadow-lg shadow-patagonia-600/20 active:scale-95 transition-all"
+                      className="mt-8 w-full h-16 bg-brand-primary hover:brightness-90 text-white rounded-2xl font-black text-lg shadow-lg shadow-brand-primary/20 active:scale-95 transition-all"
                       onClick={() => setIsDeclaring(false)}
                       disabled={!cashDeclared}
                     >
@@ -136,14 +136,14 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
                 ) : (
                   <>
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+                        <div className="p-6 bg-slate-50 dark:bg-surface-200/50 rounded-[2rem] border border-slate-100 dark:border-gray-800 shadow-inner">
                             <div className="flex items-center gap-2 mb-2 text-slate-400">
                                <TrendingUp className="w-4 h-4" />
                                <span className="text-[10px] font-black uppercase tracking-widest">Ventas Totales</span>
                             </div>
                             <p className="text-2xl font-black text-slate-900 dark:text-white">{formatPrice(totals.total)}</p>
                         </div>
-                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+                        <div className="p-6 bg-slate-50 dark:bg-surface-200/50 rounded-[2rem] border border-slate-100 dark:border-gray-800 shadow-inner">
                             <div className="flex items-center gap-2 mb-2 text-slate-400">
                                <Receipt className="w-4 h-4" />
                                <span className="text-[10px] font-black uppercase tracking-widest">Documentos</span>
@@ -155,11 +155,11 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
                     <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white shadow-xl shadow-slate-900/40">
                         <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                             <div className="flex items-center gap-3">
-                                <DollarSign className="w-6 h-6 text-patagonia-400" />
+                                <DollarSign className="w-6 h-6 text-brand-primary/80" />
                                 <span className="font-black text-xl uppercase tracking-tight">Arqueo de Valores</span>
                             </div>
                             {settings.blindClosureEnabled && (
-                              <div className="text-[8px] bg-patagonia-600 px-2 py-1 rounded-lg font-black uppercase tracking-widest">Caja Ciega</div>
+                              <div className="text-[8px] bg-brand-primary px-2 py-1 rounded-lg font-black uppercase tracking-widest">Caja Ciega</div>
                             )}
                         </div>
                         <div className="space-y-4">
@@ -181,7 +181,7 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
                             </div>
                             
                             <div className="pt-4 border-t border-white/10 flex justify-between items-center bg-white/5 -mx-4 px-6 py-3 rounded-2xl">
-                                <span className="font-black uppercase tracking-[0.2em] text-[10px] text-patagonia-400">Efectivo Esperado</span>
+                                <span className="font-black uppercase tracking-[0.2em] text-[10px] text-brand-primary/80">Efectivo Esperado</span>
                                 <span className="text-3xl font-black">{formatPrice(expectedCash)}</span>
                             </div>
 
@@ -220,12 +220,12 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
             </div>
 
             {!isDeclaring && (
-              <div className="p-8 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex gap-4">
+              <div className="p-8 bg-slate-50 dark:bg-surface-200/50 border-t border-slate-100 dark:border-gray-800 flex gap-4">
                   <Button variant="ghost" className="h-16 flex-1 rounded-2xl font-black text-slate-400 uppercase tracking-widest text-xs" onClick={onClose} disabled={isClosing}>
                       Cancelar
                   </Button>
                   <Button 
-                    className="h-16 flex-[2] bg-patagonia-600 hover:bg-patagonia-700 text-white rounded-2xl font-black text-lg gap-3 shadow-xl shadow-patagonia-600/20 transition-all active:scale-95"
+                    className="h-16 flex-[2] bg-brand-primary hover:brightness-90 text-white rounded-2xl font-black text-lg gap-3 shadow-xl shadow-brand-primary/20 transition-all active:scale-95"
                     onClick={handleFinalClosure}
                     disabled={isClosing || sales.length === 0}
                   >
@@ -240,12 +240,12 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
               <CheckCircle2 className="w-12 h-12 text-emerald-500" />
             </div>
             <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Cierre Exitoso</h2>
-            <p className="text-slate-500 dark:text-slate-400 font-bold text-base mt-4 max-w-xs mx-auto">El Reporte Z ha sido generado y la caja ha sido reiniciada correctamente.</p>
+            <p className="text-slate-500 dark:text-gray-400 font-bold text-base mt-4 max-w-xs mx-auto">El Reporte Z ha sido generado y la caja ha sido reiniciada correctamente.</p>
             
             <div className="mt-12">
                <Button 
                 onClick={handleFinish}
-                className="w-full h-20 bg-patagonia-600 hover:bg-patagonia-700 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-patagonia-600/30 active:scale-95 transition-all"
+                className="w-full h-20 bg-brand-primary hover:brightness-90 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-brand-primary/30 active:scale-95 transition-all"
                >
                  FINALIZAR Y SALIR
                </Button>

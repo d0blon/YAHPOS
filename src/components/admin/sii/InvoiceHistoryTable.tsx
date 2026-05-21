@@ -113,7 +113,7 @@ export function InvoiceHistoryTable() {
             placeholder="Buscar por Folio, RUT o Tipo..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 h-12 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 ring-corporate-blue/20 transition-all"
+            className="w-full pl-12 pr-4 h-12 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl text-sm focus:ring-2 ring-brand-primary/20 transition-all"
           />
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -121,7 +121,7 @@ export function InvoiceHistoryTable() {
             <Filter className="w-4 h-4" />
             Filtrar
           </Button>
-          <Button onClick={loadHistory} className="h-12 px-6 rounded-2xl bg-corporate-blue text-white hover:bg-corporate-dark text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-corporate-blue/20">
+          <Button onClick={loadHistory} className="h-12 px-6 rounded-2xl bg-brand-primary text-white hover:bg-brand-700 text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-brand-primary/20">
             Actualizar
           </Button>
         </div>
@@ -166,8 +166,8 @@ export function InvoiceHistoryTable() {
                   <tr key={doc.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors group">
                     <td className="p-8">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 bg-corporate-blue/5 rounded-2xl group-hover:scale-110 transition-transform">
-                          <FileText className="w-5 h-5 text-corporate-blue" />
+                        <div className="p-3 bg-brand-primary/5 rounded-2xl group-hover:scale-110 transition-transform">
+                          <FileText className="w-5 h-5 text-brand-primary" />
                         </div>
                         <div>
                           <p className="font-black text-gray-900 dark:text-white uppercase tracking-tight">{getDteLabel(doc.tipo_dte)}</p>
@@ -209,7 +209,7 @@ export function InvoiceHistoryTable() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48 p-2 rounded-2xl border-none shadow-2xl bg-white dark:bg-gray-800">
                             <DropdownMenuItem className="p-3 rounded-xl cursor-pointer flex items-center gap-3 group">
-                              <Download className="w-4 h-4 text-gray-400 group-hover:text-corporate-blue transition-colors" />
+                              <Download className="w-4 h-4 text-gray-400 group-hover:text-brand-primary transition-colors" />
                               <span className="text-xs font-bold">Descargar XML</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem 

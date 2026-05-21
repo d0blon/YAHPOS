@@ -188,7 +188,7 @@ export default function Header() {
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="rounded-full hover:bg-gray-100 dark:hover:bg-white/5"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-accent-yellow" /> : <Moon className="w-4 h-4 text-gray-600" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-brand-accent" /> : <Moon className="w-4 h-4 text-gray-600" />}
             </Button>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1 hidden sm:block" />

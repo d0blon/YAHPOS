@@ -8,15 +8,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-corporate-blue text-white hover:bg-corporate-dark shadow hover:shadow-glow",
+        default: "bg-brand-primary text-white hover:bg-brand-700 shadow hover:shadow-glow",
         destructive: "bg-red-500 text-white hover:bg-red-600",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-accent-yellow text-corporate-dark hover:bg-accent-gold font-semibold",
+        secondary: "bg-brand-accent text-brand-700 hover:bg-brand-accent-600 font-semibold",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-corporate-blue underline-offset-4 hover:underline",
+        link: "text-brand-primary underline-offset-4 hover:underline",
         glass: "bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 hover:border-white/40",
-        "glass-primary": "bg-corporate-blue/80 backdrop-blur-sm border border-corporate-blue/50 text-white hover:bg-corporate-blue hover:shadow-glow",
-        "glass-accent": "bg-accent-yellow/90 backdrop-blur-sm text-corporate-dark font-bold hover:bg-accent-yellow hover:shadow-glow-yellow",
+        "glass-primary": "bg-brand-primary/80 backdrop-blur-sm border border-brand-primary/50 text-white hover:bg-brand-primary hover:shadow-glow",
+        "glass-accent": "bg-brand-accent/90 backdrop-blur-sm text-brand-700 font-bold hover:bg-brand-accent hover:shadow-glow-yellow",
       },
       size: {
         default: "h-10 px-4 py-2",

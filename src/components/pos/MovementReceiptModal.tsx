@@ -87,7 +87,7 @@ export function MovementReceiptModal({ isOpen, onClose, movement }: MovementRece
 
             <div className="relative z-10 space-y-4">
                 <div className="text-center pb-4 border-b border-gray-200 border-dashed">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-corporate-blue">AustralMarket POS</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand-primary">AustralMarket POS</p>
                   <p className="text-sm font-bold text-gray-800">Comprobante de {movement.type === 'IN' ? 'Ingreso' : 'Egreso'}</p>
                 </div>
 

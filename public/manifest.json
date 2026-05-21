@@ -2,10 +2,10 @@
   "name": "YAHPOS! | Punto de Venta Inteligente",
   "short_name": "YAHPOS!",
   "description": "Plataforma oficial de YAHPOS! - Smart POS & E-commerce",
-  "start_url": "/pos",
+  "start_url": "/login?redirect=/pos",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#7700cc",
+  "theme_color": "#4b0082",
   "orientation": "landscape",
   "icons": [
     {

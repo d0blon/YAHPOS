@@ -27,7 +27,7 @@ export default function ProductCard({ product }: { product: Product }) {
     }
     if (categoryName.includes('carnicería')) {
       return (
-        <Badge className="bg-indigo-500 hover:bg-indigo-600 text-white border-0 shadow-lg px-3 py-1 font-black rounded-full text-[10px] uppercase tracking-tighter">
+        <Badge className="bg-brand-500 hover:bg-brand-600 text-white border-0 shadow-lg px-3 py-1 font-black rounded-full text-[10px] uppercase tracking-tighter">
           ¡Cortes Frescos!
         </Badge>
       );
@@ -58,7 +58,7 @@ export default function ProductCard({ product }: { product: Product }) {
     addItem(product)
     toast.success(`${product.name} agregado`, {
       description: "Revisa tu carrito para finalizar la compra",
-      className: "glass-card border-corporate-blue/20 dark:border-accent-yellow/20 font-bold",
+      className: "glass-card border-brand-primary/20 dark:border-brand-accent/20 font-bold",
     })
   }
 
@@ -104,7 +104,7 @@ export default function ProductCard({ product }: { product: Product }) {
         
         {/* Quick Add Overlay */}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center pointer-events-none">
-          <div className="w-16 h-16 rounded-full bg-white dark:bg-accent-yellow text-corporate-blue dark:text-corporate-dark flex items-center justify-center scale-50 group-hover:scale-100 transition-transform duration-500 delay-100">
+          <div className="w-16 h-16 rounded-full bg-white dark:bg-brand-accent text-brand-primary dark:text-brand-700 flex items-center justify-center scale-50 group-hover:scale-100 transition-transform duration-500 delay-100">
             <Plus className="w-8 h-8" />
           </div>
         </div>
@@ -114,19 +114,19 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="p-6 md:p-8 flex flex-col h-full">
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-corporate-blue/50 dark:text-accent-yellow/50">
+            <span className="text-[10px] font-black uppercase tracking-widest text-brand-primary/50 dark:text-brand-accent/50">
               {product.category?.name || 'Curated'}
             </span>
             {product.rating && (
               <div className="flex items-center gap-1 ml-auto">
-                <Star className="w-3 h-3 fill-accent-yellow text-accent-yellow" />
+                <Star className="w-3 h-3 fill-brand-accent text-brand-accent" />
                 <span className="text-[10px] font-bold text-gray-500">{product.rating}</span>
               </div>
             )}
           </div>
           
           <Link href={`/producto/${product.slug || product.id}`}>
-            <h3 className="text-lg md:text-xl font-black text-gray-900 dark:text-white leading-tight mb-2 line-clamp-1 hover:text-corporate-blue dark:hover:text-accent-yellow transition-colors tracking-tight">
+            <h3 className="text-lg md:text-xl font-black text-gray-900 dark:text-white leading-tight mb-2 line-clamp-1 hover:text-brand-primary dark:hover:text-brand-accent transition-colors tracking-tight">
               {product.name}
             </h3>
           </Link>
@@ -140,7 +140,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 {formatPrice(product.originalPrice)}
               </span>
             )}
-            <span className="text-2xl font-black text-corporate-blue dark:text-white tracking-tighter">
+            <span className="text-2xl font-black text-brand-primary dark:text-white tracking-tighter">
               {formatPrice(product.price)}
             </span>
           </div>
@@ -148,7 +148,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <Button 
             onClick={handleAddToCart}
             size="icon"
-            className="w-14 h-14 rounded-[1.25rem] bg-corporate-blue dark:bg-accent-yellow text-white dark:text-corporate-dark shadow-xl shadow-corporate-blue/20 dark:shadow-accent-yellow/20 hover:scale-110 active:scale-95 transition-all group/btn shrink-0"
+            className="w-14 h-14 rounded-[1.25rem] bg-brand-primary dark:bg-brand-accent text-white dark:text-brand-700 shadow-xl shadow-brand-primary/20 dark:shadow-brand-accent/20 hover:scale-110 active:scale-95 transition-all group/btn shrink-0"
             disabled={product.stock === 0}
           >
             <ShoppingCart className="w-6 h-6" />

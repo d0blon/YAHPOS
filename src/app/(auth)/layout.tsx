@@ -17,7 +17,7 @@ export default function AuthLayout({
         <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-blue-600/40 dark:bg-blue-600/40 blur-[100px] animate-pulse" style={{ animationDuration: '8s' }} />
         
         {/* Blob 2 - Bottom Right */}
-        <div className="absolute -bottom-[10%] -right-[10%] w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-purple-600/40 dark:bg-purple-600/40 blur-[100px] animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }} />
+        <div className="absolute -bottom-[10%] -right-[10%] w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-brand-600/40 dark:bg-brand-600/40 blur-[100px] animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }} />
         
         {/* Blob 3 - Center Right */}
         <div className="absolute top-[20%] right-[10%] w-[50vw] h-[50vw] max-w-[600px] max-h-[600px] rounded-full bg-emerald-500/30 dark:bg-emerald-500/30 blur-[100px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />

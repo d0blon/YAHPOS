@@ -1,9 +1,9 @@
 'use client'
 
 import { SaaSProvider } from "@/providers/SaaSProvider";
-import { ThemeProvider } from "@/providers/ThemeProvider";
 import { EditorProvider } from "@/providers/EditorProvider";
 import { EditorToggle } from "@/components/editor/EditorToggle";
+import { BrandThemeSetter } from "@/providers/BrandThemeSetter";
 import type { ReactNode } from "react";
 
 export default function AppProviders({ 
@@ -16,18 +16,12 @@ export default function AppProviders({
   initialConfig?: any | null
 }) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem={false}
-      disableTransitionOnChange
-    >
-      <SaaSProvider initialStoreId={initialStoreId} initialConfig={initialConfig}>
-        <EditorProvider>
-          {children}
-          <EditorToggle />
-        </EditorProvider>
-      </SaaSProvider>
-    </ThemeProvider>
+    <SaaSProvider initialStoreId={initialStoreId} initialConfig={initialConfig}>
+      <BrandThemeSetter />
+      <EditorProvider>
+        {children}
+        <EditorToggle />
+      </EditorProvider>
+    </SaaSProvider>
   );
 }

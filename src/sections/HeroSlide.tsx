@@ -107,8 +107,8 @@ export default function HeroSlide() {
     <section className="relative w-full h-full flex items-center justify-center overflow-hidden bg-background group/hero">
       {/* Background Ornaments */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10s]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-purple-600/20 rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-brand-accent-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10s]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-brand-600/20 rounded-full blur-[120px] mix-blend-screen" />
         <div className="absolute top-[20%] right-[20%] w-[30vw] h-[30vw] bg-pink-500/10 rounded-full blur-[100px] mix-blend-screen" />
         
         {/* Floating Particles */}
@@ -200,13 +200,13 @@ export default function HeroSlide() {
               <motion.div variants={itemVariants} className="mb-6">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
                   <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-accent-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
                   </span>
                   <EditableText
                     field={`hero.slides.${currentIndex}.badge`}
                     value={slide.badge}
-                    className="text-xs font-bold uppercase tracking-widest text-blue-200"
+                    className="text-xs font-bold uppercase tracking-widest text-brand-accent-200"
                   />
                 </div>
               </motion.div>
@@ -224,7 +224,7 @@ export default function HeroSlide() {
                     field={`hero.slides.${currentIndex}.titleAccent`}
                     value={slide.titleAccent}
                     as="span"
-                    className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 block"
+                    className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-400 via-brand-400 to-pink-400 block"
                   />
                 )}
                 {slide.titleSecondary && (
@@ -248,7 +248,7 @@ export default function HeroSlide() {
                   href="#categories" 
                   className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest overflow-hidden transition-transform hover:scale-105 active:scale-95"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-accent-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   <EditableText field={`hero.slides.${currentIndex}.ctaPrimary`} value={slide.ctaPrimary} className="relative" />
                   <ShoppingBag className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -258,7 +258,7 @@ export default function HeroSlide() {
                   className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 hover:border-white/20 transition-all active:scale-95 backdrop-blur-md"
                 >
                   <EditableText field={`hero.slides.${currentIndex}.ctaSecondary`} value={slide.ctaSecondary} />
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-purple-400" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-brand-400" />
                 </Link>
               </motion.div>
               
@@ -358,7 +358,7 @@ export default function HeroSlide() {
                   </div>
                 ) : (
                   <>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-purple-500/30 rounded-full blur-[80px] animate-pulse duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-brand-accent-500/30 to-brand-500/30 rounded-full blur-[80px] animate-pulse duration-700" />
                     <div className="absolute inset-4 rounded-[3rem] border border-white/20 bg-white/5 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col">
                       <div className="h-12 border-b border-white/10 flex items-center px-6 gap-2 bg-white/5">
                         <div className="w-3 h-3 rounded-full bg-red-400/80" />
@@ -376,11 +376,11 @@ export default function HeroSlide() {
                             y: [0, -10, 0]
                           }}
                           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                          className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-400 to-purple-500 shadow-[0_20px_40px_rgba(59,130,246,0.3)] self-end mb-4" 
+                          className="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-accent-400 to-brand-500 shadow-[0_20px_40px_rgba(59,130,246,0.3)] self-end mb-4" 
                         />
                         <div className="space-y-6">
                           <div className="w-48 h-20 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md transform -rotate-3 p-4 flex flex-col justify-between">
-                            <div className="h-2 w-1/2 bg-blue-400/50 rounded-full" />
+                            <div className="h-2 w-1/2 bg-brand-accent-400/50 rounded-full" />
                             <div className="h-2 w-3/4 bg-white/20 rounded-full" />
                           </div>
                           <div className="w-40 h-16 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md transform rotate-2 self-end ml-auto" />
@@ -406,7 +406,7 @@ export default function HeroSlide() {
               <button
                 key={i}
                 onClick={() => setCurrentIndex(i)}
-                className={`transition-all duration-300 rounded-full ${i === currentIndex ? 'w-8 h-2 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'w-2 h-2 bg-white/20 hover:bg-white/40'}`}
+                className={`transition-all duration-300 rounded-full ${i === currentIndex ? 'w-8 h-2 bg-brand-accent-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'w-2 h-2 bg-white/20 hover:bg-white/40'}`}
                 aria-label={`Ir al slide ${i + 1}`}
               />
             ))}

@@ -70,7 +70,45 @@ export async function GET(request: NextRequest) {
 
       // 3. Lógica de Redirección Inteligente
       if (isRootDomain) {
-        // Estamos en el root, necesitamos encontrar a qué tienda mandar al usuario
+        // Si el usuario vino desde una tienda específica, priorizar ese origen
+        if (fromOrigin) {
+          const fromUrl = new URL(fromOrigin)
+          const fromHost = fromUrl.hostname
+
+          // Extraer subdominio del origen para buscar tienda
+          const isLocalDev = fromHost.includes('localhost') || fromHost.includes('127.0.0.1')
+          const isYahpos = fromHost.includes('yahpos.cl')
+          let subdomain: string | null = null
+          if (isLocalDev) {
+            const parts = fromHost.split('.localhost:3000')
+            if (parts.length > 1) subdomain = parts[0]
+          } else if (isYahpos) {
+            const parts = fromHost.split('.yahpos.cl')
+            if (parts.length > 1) subdomain = parts[0]
+          }
+
+          // Si es un subdominio válido, buscar membresía del usuario en esa tienda
+          if (subdomain && !['www', ''].includes(subdomain)) {
+            const { data: userStore } = await supabase
+              .from('user_stores')
+              .select('store_id, stores!inner(subdomain, custom_domain)')
+              .eq('user_id', user.id)
+              .eq('is_active', true)
+              .eq('stores.subdomain', subdomain)
+              .maybeSingle()
+
+            if (userStore) {
+              console.log(`[Auth Callback] Staff redirigido a tienda: ${subdomain}`)
+              return redirectViaSessionSync(supabase, fromOrigin, next)
+            }
+          }
+
+          // Para clientes o staff sin membresía en esta tienda, volver al origen
+          console.log(`[Auth Callback] Redirigiendo de raíz a origen: ${fromOrigin}`)
+          return redirectViaSessionSync(supabase, fromOrigin, next)
+        }
+
+        // Sin fromOrigin: buscar primera tienda del usuario (staff/admin)
         const { data: userStores } = await supabase
           .from('user_stores')
           .select('store_id, stores(subdomain, custom_domain)')
@@ -89,7 +127,6 @@ export async function GET(request: NextRequest) {
 
           console.log(`[Auth Callback] Redirigiendo de raíz a tienda: ${targetHost}`)
           
-          // Obtener la sesión actual para sincronizarla con el subdominio
           const { data: { session } } = await supabase.auth.getSession()
           
           if (session) {
@@ -103,9 +140,9 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(`${protocol}://${targetHost}${next}`)
         }
 
-        // Si es superusuario pero no tiene tienda (dev global), igual necesita session-sync
-        if (isSuperUser && fromOrigin) {
-          return redirectViaSessionSync(supabase, fromOrigin, next)
+        // Developer sin tienda → queda en root
+        if (isSuperUser) {
+          return NextResponse.redirect(`${origin}/developer`)
         }
       } else {
         // Ya estamos en un subdominio, simplemente seguir el flujo

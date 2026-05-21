@@ -26,7 +26,7 @@ const PlatformHeader = () => {
           start: 50, // Trigger after 50px scroll
           toggleActions: 'play none none reverse',
         },
-        backgroundColor: 'rgba(21, 0, 36, 0.8)', // corporate-darker with alpha
+        backgroundColor: 'rgba(21, 0, 36, 0.8)', // brand-900 with alpha
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid rgba(119, 0, 204, 0.2)',
         height: '80px',
@@ -53,11 +53,11 @@ const PlatformHeader = () => {
       <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-12 h-12 bg-gradient-to-br from-corporate-blue to-corporate-dark rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 ring-1 ring-white/20">
+          <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-700 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 ring-1 ring-white/20">
             <Store className="text-white w-7 h-7" />
           </div>
           <span className="text-3xl font-black tracking-tighter">
-            YAHPOS<span className="text-accent-yellow">!</span>
+            YAHPOS<span className="text-brand-accent">!</span>
           </span>
         </Link>
 
@@ -67,10 +67,10 @@ const PlatformHeader = () => {
             <Link 
               key={link.name} 
               href={link.href}
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 hover:text-accent-yellow transition-colors duration-300 relative group/link"
+              className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 hover:text-brand-accent transition-colors duration-300 relative group/link"
             >
               {link.name}
-              <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-accent-yellow transition-all duration-300 group-hover/link:w-full"></span>
+              <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-brand-accent transition-all duration-300 group-hover/link:w-full"></span>
             </Link>
           ))}
           <div className="h-8 w-[1px] bg-white/10 mx-2"></div>
@@ -82,7 +82,7 @@ const PlatformHeader = () => {
           </Link>
           <Link 
             href="/login" 
-            className="px-8 py-3 bg-corporate-blue text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-corporate-dark shadow-xl hover:shadow-corporate-blue/20 transition-all duration-300 transform hover:-translate-y-1 ring-1 ring-white/10"
+            className="px-8 py-3 bg-brand-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-brand-700 shadow-xl hover:shadow-brand-primary/20 transition-all duration-300 transform hover:-translate-y-1 ring-1 ring-white/10"
           >
             Empezar
           </Link>
@@ -90,7 +90,7 @@ const PlatformHeader = () => {
 
         {/* Mobile Toggle */}
         <button 
-          className="lg:hidden p-2 text-white hover:text-accent-yellow transition-colors"
+          className="lg:hidden p-2 text-white hover:text-brand-accent transition-colors"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={32} /> : <Menu size={32} />}
@@ -99,10 +99,10 @@ const PlatformHeader = () => {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-corporate-darker z-[2000] flex flex-col p-8 lg:hidden animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="fixed inset-0 bg-brand-900 z-[2000] flex flex-col p-8 lg:hidden animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex justify-between items-center mb-16">
              <span className="text-3xl font-black tracking-tighter text-white">
-              YAHPOS<span className="text-accent-yellow">!</span>
+              YAHPOS<span className="text-brand-accent">!</span>
             </span>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-3 bg-white/5 rounded-2xl">
               <X className="w-8 h-8 text-white" />
@@ -114,7 +114,7 @@ const PlatformHeader = () => {
                 key={link.name} 
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-5xl font-black text-white hover:text-accent-yellow transition-colors tracking-tighter"
+                className="text-5xl font-black text-white hover:text-brand-accent transition-colors tracking-tighter"
               >
                 {link.name}
               </Link>
@@ -128,7 +128,7 @@ const PlatformHeader = () => {
             </Link>
             <Link 
               href="/login" 
-              className="w-full py-6 bg-corporate-blue text-white text-center text-2xl font-black rounded-[2rem] shadow-2xl shadow-corporate-blue/20 mt-4"
+              className="w-full py-6 bg-brand-primary text-white text-center text-2xl font-black rounded-[2rem] shadow-2xl shadow-brand-primary/20 mt-4"
             >
               Empezar Gratis
             </Link>

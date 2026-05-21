@@ -11,7 +11,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
 
 interface Terminal {
-  id: string
+  id: string | number
   name: string
   description?: string
   is_active: boolean
@@ -148,8 +148,8 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
       } else {
         // Offline or DB error — create a local-only session
         sessionData = {
-          id: `local-${Date.now()}`,
-          terminal_id: selectedTerminal?.id || 'offline-1',
+          id: Date.now(),
+          terminal_id: Number(selectedTerminal?.id) || 0,
           terminal_name: selectedTerminal?.name ?? 'Caja',
           cashier_name: cashierName,
           opening_amount: amount,
@@ -167,8 +167,8 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
     } catch {
       // Complete offline fallback
       const offlineSession: CashSession = {
-        id: `local-${Date.now()}`,
-        terminal_id: selectedTerminal?.id || 'offline-1',
+        id: Date.now(),
+        terminal_id: Number(selectedTerminal?.id) || 0,
         terminal_name: selectedTerminal?.name ?? 'Caja',
         cashier_name: cashierName,
         opening_amount: parseInt(openingAmount.replace(/\D/g, ''), 10) || 0,
@@ -190,19 +190,19 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
 
         {/* Logo / Branding */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-patagonia-600 to-cyan-500 rounded-[2.5rem] flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-patagonia-600/40 border-2 border-white/20">
+          <div className="w-20 h-20 bg-gradient-to-br from-brand-primary to-brand-accent-500 rounded-[2.5rem] flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-brand-primary/40 border-2 border-white/20">
             <Monitor className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-black text-white uppercase tracking-tighter">YAHPOS!</h1>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-2">Bienvenido, <span className="text-patagonia-400">{cashierName}</span></p>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-2">Bienvenido, <span className="text-brand-primary/80">{cashierName}</span></p>
         </div>
 
         {/* Step: Checking */}
         {step === 'checking' && (
           <div className="bg-slate-900/50 rounded-[3rem] p-12 text-center border border-white/5 backdrop-blur-2xl">
             <div className="relative w-16 h-16 mx-auto mb-6">
-                <RefreshCw className="w-16 h-16 text-patagonia-600 animate-spin opacity-20" />
-                <Loader2 className="w-8 h-8 text-patagonia-400 animate-spin absolute inset-0 m-auto" />
+                <RefreshCw className="w-16 h-16 text-brand-primary animate-spin opacity-20" />
+                <Loader2 className="w-8 h-8 text-brand-primary/80 animate-spin absolute inset-0 m-auto" />
             </div>
             <p className="text-slate-300 font-black uppercase tracking-widest text-xs">Verificando sesión activa...</p>
           </div>
@@ -232,7 +232,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
             <div className="space-y-4">
               <Button
                 onClick={() => handleResumeSession()}
-                className="w-full h-16 text-lg font-black bg-patagonia-600 hover:bg-patagonia-700 text-white rounded-2xl shadow-xl shadow-patagonia-600/30 active:scale-95 transition-all"
+                className="w-full h-16 text-lg font-black bg-brand-primary hover:brightness-90 text-white rounded-2xl shadow-xl shadow-brand-primary/30 active:scale-95 transition-all"
               >
                 <RefreshCw className="w-5 h-5 mr-3" />
                 RETOMAR SESIÓN
@@ -281,17 +281,17 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
                           isOccupied 
                             ? 'bg-red-500/5 border-red-500/20 cursor-not-allowed opacity-60' 
                             : isMine
-                              ? 'bg-patagonia-600/10 border-patagonia-600/40'
-                              : 'bg-white/5 hover:bg-white/10 border-white/5 hover:border-patagonia-600/50'
+                              ? 'bg-brand-primary/10 border-brand-primary/40'
+                              : 'bg-white/5 hover:bg-white/10 border-white/5 hover:border-brand-primary/50'
                         }`}
                       >
                         <div className="flex items-center gap-5">
                           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-transform ${
                             isOccupied 
                               ? 'bg-red-500/20 border-red-500/30' 
-                              : 'bg-gradient-to-br from-patagonia-600/20 to-cyan-500/20 border-patagonia-600/30 group-hover:scale-110'
+                              : 'bg-gradient-to-br from-brand-primary/20 to-brand-accent-500/20 border-brand-primary/30 group-hover:scale-110'
                           }`}>
-                            <Monitor className={`w-6 h-6 ${isOccupied ? 'text-red-400' : 'text-patagonia-400'}`} />
+                            <Monitor className={`w-6 h-6 ${isOccupied ? 'text-red-400' : 'text-brand-primary/80'}`} />
                           </div>
                           <div className="text-left">
                             <div className="flex items-center gap-2">
@@ -309,7 +309,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
                             )}
                           </div>
                         </div>
-                        {!isOccupied && <ChevronRight className="w-6 h-6 text-slate-600 group-hover:text-patagonia-400 transition-colors" />}
+                        {!isOccupied && <ChevronRight className="w-6 h-6 text-slate-600 group-hover:text-brand-primary/80 transition-colors" />}
                       </button>
                     )
                   })}
@@ -341,7 +341,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
         {step === 'opening-amount' && selectedTerminal && (
           <div className="bg-slate-900 rounded-[3rem] p-10 space-y-8 border border-white/10 shadow-2xl shadow-black">
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 bg-patagonia-600/20 text-patagonia-400 px-4 py-2 rounded-full mb-6 border border-patagonia-600/30">
+              <div className="inline-flex items-center gap-2 bg-brand-primary/20 text-brand-primary/80 px-4 py-2 rounded-full mb-6 border border-brand-primary/30">
                 <Monitor className="w-4 h-4" />
                 <span className="font-black text-[10px] uppercase tracking-widest">{selectedTerminal.name}</span>
               </div>
@@ -351,7 +351,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
 
             <div className="space-y-6">
               <div className="relative group">
-                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-black text-slate-700 group-focus-within:text-patagonia-600 transition-colors">$</span>
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-black text-slate-700 group-focus-within:text-brand-primary transition-colors">$</span>
                 <input
                   type="number"
                   min="0"
@@ -361,7 +361,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
                   onKeyDown={e => e.key === 'Enter' && handleOpenSession()}
                   placeholder="0"
                   autoFocus
-                  className="w-full bg-white/5 border-2 border-white/5 focus:border-patagonia-600 rounded-[2rem] text-center text-5xl font-black text-white py-10 focus:outline-none focus:ring-4 focus:ring-patagonia-600/20 transition-all shadow-inner tracking-tighter"
+                  className="w-full bg-white/5 border-2 border-white/5 focus:border-brand-primary rounded-[2rem] text-center text-5xl font-black text-white py-10 focus:outline-none focus:ring-4 focus:ring-brand-primary/20 transition-all shadow-inner tracking-tighter"
                 />
               </div>
 
@@ -371,7 +371,7 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
                   <button
                     key={amount}
                     onClick={() => setOpeningAmount(String(amount))}
-                    className="bg-white/5 hover:bg-patagonia-600/20 border border-white/5 hover:border-patagonia-600/50 rounded-2xl py-4 text-xs font-black text-slate-400 hover:text-white transition-all uppercase tracking-tighter"
+                    className="bg-white/5 hover:bg-brand-primary/20 border border-white/5 hover:border-brand-primary/50 rounded-2xl py-4 text-xs font-black text-slate-400 hover:text-white transition-all uppercase tracking-tighter"
                   >
                     {formatPrice(amount)}
                   </button>

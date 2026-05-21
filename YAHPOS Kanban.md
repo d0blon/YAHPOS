@@ -6,26 +6,19 @@ kanban-plugin: board
 
 ## 📋 BACKLOG
 
-- [ ] **[Bug]** Cashier Name no se muestra en Customer Display (INVESTIGAR MÁS — fix de metadataRef puede no ser suficiente)
-- [ ] **[Admin]** Rediseño Cierre Forzado
-- [ ] **[Admin]** Carga Certificado .pfx
-- [x] **[Admin]** Branding Config
-- [x] **[Stab]** API try/catch (14 rutas)
-- [x] **[Stab]** Auth Checks en rutas
-- [ ] **[Design]** Refactor PaymentModal
-- [x] **[Design]** UI Settings
-- [ ] **[Bug]** Auth SSO redirige a tienda incorrecta (callback usa .limit(1) ignora from_origin)
-- [ ] **[Bug]** "Auth session missing!" en cada request (cookies Supabase no propagan entre subdominios)
 - [ ] **[Stab]** Invalid Refresh Token: Already Used (race condition Strict Mode)
 - [ ] **[Mkt]** Resends — Sistema de reenvío de publicidad/marketing a clientes (usar Inngest)
 - [ ] **[Infra]** Inngest — Setup inicial (client, serve route, dev server)
 - [ ] **[Infra]** Migrar SII sync a Inngest (re-intentos automáticos)
 - [ ] **[Infra]** Programar reportes diarios con Inngest cron
+- [ ] **[Admin]** Rediseño Cierre Forzado
+- [ ] **[Admin]** Carga Certificado .pfx
+- [ ] **[Design]** Refactor PaymentModal
 
 
 ## 🏗️ EN PROGRESO
 
-- [x] **[Stab]** Memory Leaks (verificar)
+- [ ] **[Test]** Probar flujo completo: registro POS → cuenta web → verificación → canje
 
 
 ## 🧐 REVISIÓN
@@ -35,6 +28,14 @@ kanban-plugin: board
 
 ## ✅ TERMINADO
 
+- [x] **[Bug]** Auth SSO redirige a tienda correcta (callback usa from_origin + subdomain filter)
+- [x] **[Loyalty]** store_id en registro web + fallback búsqueda POS sin store_id
+- [x] **[Loyalty]** SQL migration: is_full_account, identity_verified columns
+- [x] **[POS]** CustomerStatusPanel: QR registro / carnet verificación / verified badge + auto-refresh
+- [x] **[Display]** IdleState: "Bienvenidos a [Tienda]" con logo y puntos
+- [x] **[POS]** validateSession() antes de procesar pagos
+- [x] **[POS]** Broadcast reset cuando carrito vacío (display ya no se cuelga)
+- [x] **[POS]** Efecto init estabilizado (sin re-ejecutar en cross-tab auth)
 - [x] **[POS]** Fase 0: IVA Duplication Fix (per-terminal shouldSkipSii)
 - [x] **[POS]** Fase 1.0: Hook useCustomerDisplaySync (BroadcastChannel + localStorage)
 - [x] **[POS]** Fase 1.1: Customer Display Page (fullscreen, 5 estados, QR, confetti)

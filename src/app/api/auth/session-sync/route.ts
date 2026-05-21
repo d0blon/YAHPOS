@@ -13,12 +13,15 @@ export async function GET(request: NextRequest) {
   const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https'
   const origin = `${protocol}://${host}`
 
+  console.log(`[Session Sync Log] GET request. Host: ${host}, Origin: ${origin}, Next: ${next}`)
+
   if (!accessToken || !refreshToken) {
+    console.error(`[Session Sync Log] Missing tokens. Access: ${!!accessToken}, Refresh: ${!!refreshToken}`)
     return NextResponse.redirect(`${origin}/login?error=sync_missing_tokens`)
   }
 
   const secure = protocol === 'https'
-  const setCookieHeaders: string[] = []
+  const cookiesToSetArray: { name: string; value: string; options: any }[] = []
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,22 +30,9 @@ export async function GET(request: NextRequest) {
       cookies: {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
+          console.log(`[Session Sync Log] cookiesToSet count: ${cookiesToSet.length}`)
           cookiesToSet.forEach(({ name, value, options }) => {
-            const opts = { ...options }
-            const cookieParts = [`${name}=${value}`]
-            cookieParts.push(`Path=${opts.path || '/'}`)
-            if (opts.maxAge !== undefined) {
-              cookieParts.push(`Max-Age=${opts.maxAge}`)
-            }
-            if (opts.domain) {
-              cookieParts.push(`Domain=${opts.domain}`)
-            }
-            cookieParts.push(`SameSite=${opts.sameSite || 'Lax'}`)
-            if (secure) {
-              cookieParts.push('Secure')
-            }
-            cookieParts.push('HttpOnly')
-            setCookieHeaders.push(cookieParts.join('; '))
+            cookiesToSetArray.push({ name, value, options })
           })
         },
       },
@@ -60,8 +50,11 @@ export async function GET(request: NextRequest) {
   })
 
   if (error || !data.session) {
+    console.error(`[Session Sync Log] setSession error:`, error?.message || 'No session returned')
     return NextResponse.redirect(`${origin}/login?error=sync_failed`)
   }
+
+  console.log(`[Session Sync Log] setSession SUCCESS for: ${data.session.user.email}. Redirecting to: ${next}`)
 
   const redirectTo = `${origin}${next.startsWith('/') ? next : '/' + next}`
 
@@ -82,9 +75,16 @@ export async function GET(request: NextRequest) {
     headers: { 'Content-Type': 'text/html;charset=utf-8' },
   })
 
-  for (const cookie of setCookieHeaders) {
-    response.headers.append('Set-Cookie', cookie)
-  }
+  cookiesToSetArray.forEach(({ name, value, options }) => {
+    const opts = {
+      ...options,
+      secure: secure,
+      sameSite: 'lax' as const,
+      path: '/',
+    }
+    console.log(`[Session Sync Log] Setting cookie via response.cookies: ${name} | Options:`, opts)
+    response.cookies.set(name, value, opts)
+  })
 
   return response
 }

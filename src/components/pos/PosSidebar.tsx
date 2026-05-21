@@ -52,12 +52,12 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
   return (
     <aside 
       className={cn(
-        "bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col transition-all duration-300 relative z-50 shadow-2xl",
+        "bg-white dark:bg-surface-100 border-r border-gray-100 dark:border-gray-800 flex flex-col transition-all duration-300 relative z-50 shadow-2xl",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
       {/* Brand / Logo */}
-      <div className="p-6 flex items-center gap-3 border-b border-gray-50 dark:border-slate-800 bg-corporate-blue/5 dark:bg-corporate-blue/10">
+      <div className="p-6 flex items-center gap-3 border-b border-gray-50 dark:border-gray-800 bg-white dark:bg-surface-100">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
           {config.store_logo && config.white_label_enabled && config.tier === 'patagonia' ? (
             <Image 
@@ -79,10 +79,10 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
         </div>
         {!isCollapsed && (
           <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-            <h1 className="font-black text-gray-900 dark:text-slate-100 tracking-tighter leading-none uppercase truncate max-w-[120px]">
+            <h1 className="font-black text-gray-900 dark:text-gray-100 tracking-tighter leading-none uppercase truncate max-w-[120px]">
               {displayBrand}
             </h1>
-            <p className="text-[10px] font-bold text-corporate-blue tracking-[0.1em] uppercase mt-1">
+            <p className="text-[10px] font-bold text-brand-primary tracking-[0.1em] uppercase mt-1">
               {subLabel}
             </p>
           </div>
@@ -98,11 +98,11 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
             className={cn(
               "w-full flex items-center gap-4 p-4 rounded-2xl transition-all group relative",
               item.active 
-                ? "bg-corporate-blue text-white shadow-xl shadow-corporate-blue/20 dark:shadow-corporate-blue/40" 
-                : "text-gray-400 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/50 hover:text-corporate-blue"
+                ? "bg-brand-primary text-white shadow-xl shadow-brand-primary/20 dark:shadow-brand-primary/40" 
+                : "text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-brand-primary"
             )}
           >
-            <item.icon className={cn("w-6 h-6 shrink-0 transition-transform group-hover:scale-110", item.active ? "text-white" : "text-gray-400 dark:text-slate-500")} />
+            <item.icon className={cn("w-6 h-6 shrink-0 transition-transform group-hover:scale-110", item.active ? "text-white" : "text-gray-400 dark:text-gray-500")} />
             {!isCollapsed && <span className="font-black text-sm">{item.label}</span>}
             {item.active && !isCollapsed && <div className="ml-auto w-2 h-2 bg-white rounded-full shadow-[0_0_8px_white]" />}
           </button>
@@ -111,7 +111,7 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
         <div className="pt-6 border-t border-gray-50 mt-4 space-y-2">
            <button
              onClick={onShowSettings}
-             className="w-full flex items-center gap-4 p-4 rounded-2xl text-gray-400 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/50 hover:text-corporate-blue transition-all"
+             className="w-full flex items-center gap-4 p-4 rounded-2xl text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-brand-primary transition-all"
            >
              <Settings className="w-6 h-6 shrink-0" />
              {!isCollapsed && <span className="font-bold text-sm">Ajustes Admin</span>}
@@ -124,9 +124,9 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
         <div className="pt-2 pb-4">
             <Link 
               href="/admin" 
-              className="w-full flex items-center gap-4 p-4 rounded-3xl bg-gray-100 dark:bg-slate-800 hover:bg-corporate-blue hover:text-white transition-all group shadow-sm hover:shadow-xl hover:-translate-y-0.5"
+              className="w-full flex items-center gap-4 p-4 rounded-3xl bg-gray-100 dark:bg-surface-200 hover:bg-brand-primary hover:text-white transition-all group shadow-sm hover:shadow-xl hover:-translate-y-0.5"
             >
-              <LayoutDashboard className="w-6 h-6 shrink-0 text-corporate-blue dark:text-corporate-blue/80 group-hover:text-white transition-colors" />
+              <LayoutDashboard className="w-6 h-6 shrink-0 text-brand-primary dark:text-brand-primary/80 group-hover:text-white transition-colors" />
               {!isCollapsed && <span className="font-black text-xs uppercase tracking-widest">Panel Admin</span>}
             </Link>
         </div>
@@ -135,7 +135,7 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
           "rounded-[1.5rem] p-4 transition-all border-2",
           isTrainingMode 
             ? "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800" 
-            : "bg-gray-50 dark:bg-slate-800/50 border-transparent"
+            : "bg-gray-50 dark:bg-surface-200/50 border-transparent"
         )}>
           {!isCollapsed && (
             <div className="flex justify-between items-center mb-3">
@@ -171,7 +171,7 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
             "bg-gray-900 rounded-[2rem] p-4 flex items-center gap-3 border border-white/5",
             isCollapsed ? "justify-center" : ""
         )}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-corporate-blue to-accent-yellow p-0.5 group">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-primary to-brand-accent p-0.5 group">
                 <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center overflow-hidden">
                     <User className="text-white w-5 h-5" />
                 </div>
@@ -199,7 +199,7 @@ export function PosSidebar({ onShowHistory, onShowClosure, onShowSettings, onSho
       {/* Collapse Toggle Button */}
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 dark:hover:bg-slate-800 transition-all text-gray-400 dark:text-slate-500 z-[60]"
+        className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-surface-100 border border-gray-100 dark:border-gray-800 rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-gray-400 dark:text-gray-500 z-[60]"
       >
         {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>
