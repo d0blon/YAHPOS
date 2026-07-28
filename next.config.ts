@@ -5,7 +5,7 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://*.supabase.co https://i.pravatar.cc https://images.unsplash.com https://cdn.jumbo.cl https://jumbo.vteximg.com.br https://*.cugat.cl https://cugat.cl;
+    img-src 'self' blob: data: https://*.supabase.co https://i.pravatar.cc https://images.unsplash.com https://cdn.jumbo.cl https://jumbo.vteximg.com.br https://*.cugat.cl https://cugat.cl https://placehold.co https://*.placehold.co;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'jumbo.vteximg.com.br' },
       { protocol: 'https', hostname: 'cugat.cl' },
       { protocol: 'https', hostname: '*.cugat.cl' },
+      { protocol: 'https', hostname: 'placehold.co' },
+      { protocol: 'https', hostname: '*.placehold.co' },
     ],
   },
   async headers() {

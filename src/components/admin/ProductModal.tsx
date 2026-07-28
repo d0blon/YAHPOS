@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -25,7 +26,9 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
   const [branches, setBranches] = useState<any[]>([])
   const [branchStocks, setBranchStocks] = useState<{[key: string]: number}>({})
   const [isSearchingBarcode, setIsSearchingBarcode] = useState(false)
+  const [skuMatchedMaster, setSkuMatchedMaster] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)  // moved here
+  const [suggestedDistributors, setSuggestedDistributors] = useState<any[]>([])
   const { config, isFeatureEnabled } = useSaaS()
   const isMultiBranch = isFeatureEnabled('multi-branch')
   
@@ -43,6 +46,10 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
     isActive: true,
     isFeatured: false,
     nutritionalSeals: 0,
+    brand: '',
+    volume: '',
+    supplierName: '',
+    supplierMetadata: {} as any,
     isRealtimeTracked: false
   })
 
@@ -88,6 +95,10 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         isActive: product.isActive !== undefined ? product.isActive : true,
         isFeatured: product.isFeatured || false,
         nutritionalSeals: product.nutritional_seals || 0,
+        brand: product.brand || '',
+        volume: product.volume || '',
+        supplierName: product.supplierName || product.supplier_name || '',
+        supplierMetadata: product.supplierMetadata || product.supplier_metadata || {},
         isRealtimeTracked: product.is_realtime_tracked || false
       })
 
@@ -100,6 +111,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         setBranchStocks(stocks)
       }
     } else {
+      setSuggestedDistributors([])
       setFormData({
         name: '',
         sku: '',
@@ -114,6 +126,10 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         isActive: true,
         isFeatured: false,
         nutritionalSeals: 0,
+        brand: '',
+        volume: '',
+        supplierName: '',
+        supplierMetadata: {},
         isRealtimeTracked: false
       })
       setBranchStocks({})
@@ -123,7 +139,10 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
   // Autocompletado Mágico vía SKU/Barcode
   useEffect(() => {
     const code = formData.sku
-    if (!code || code.length < 8) return
+    if (!code || code.length < 8) {
+      setSkuMatchedMaster(false)
+      return
+    }
 
     const timer = setTimeout(async () => {
       setIsSearchingBarcode(true)
@@ -132,15 +151,16 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
         const data = await res.json()
         
         if (data.success && data.product) {
+          setSkuMatchedMaster(true)
           setFormData(prev => ({
             ...prev,
             name: prev.name || data.product.name || '',
             category: prev.category || data.product.category || prev.category,
             image: prev.image || data.product.image_url || '',
-            nutritionalSeals: data.product.nutritionalSeals ?? prev.nutritionalSeals,
+            brand: prev.brand || data.product.brand || '',
             barcode: prev.sku // Asegurar que barcode se llene si no existe
           }))
-          toast.success('✨ Producto encontrado en catálogo global', {
+          toast.success('✨ Producto encontrado en catálogo maestro YAHPOS!', {
             description: `Se autocompletó: ${data.product.name}`
           })
         }
@@ -161,8 +181,8 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
     setIsSaving(true)
 
     try {
-      const url = product ? `/api/products/${product.id}` : '/api/products'
-      const method = product ? 'PATCH' : 'POST'
+      const url = product && product.id ? `/api/products/${product.id}` : '/api/products'
+      const method = product && product.id ? 'PATCH' : 'POST'
 
       const payload = {
         ...formData,
@@ -181,6 +201,20 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
       if (!res.ok) {
         const err = await res.json()
         throw new Error(err.error || 'Error al guardar producto')
+      }
+
+      if (!skuMatchedMaster && formData.sku && formData.name) {
+        fetch('/api/products/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sku: formData.sku,
+            name: formData.name,
+            brand: formData.brand,
+            category: formData.category,
+            image_url: formData.image
+          })
+        }).catch(e => console.error('Error enviando submission al maestro:', e))
       }
 
       toast.success(product ? 'Producto actualizado' : 'Producto creado')
@@ -271,6 +305,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
               </Label>
               <div className="relative">
                 <Input 
+                  required
                   placeholder="Ej: 780123456789"
                   value={formData.sku}
                   onChange={e => setFormData({...formData, sku: e.target.value})}
@@ -318,6 +353,68 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Marca */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-bold">
+                <Tag className="w-4 h-4 text-brand-primary" /> Marca del Producto
+              </Label>
+              <Input 
+                required
+                placeholder="Ej: Colún, Soprole, Tucapel, Coca-Cola"
+                value={formData.brand}
+                onChange={e => setFormData({...formData, brand: e.target.value})}
+                className="rounded-xl border-gray-200 h-11"
+              />
+            </div>
+
+            {/* Contenido / Volumen Neto */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-bold">
+                <Scale className="w-4 h-4 text-brand-primary" /> Contenido / Volumen Neto
+              </Label>
+              <Input 
+                required
+                placeholder="Ej: 1L, 1kg, 250g, 350cc"
+                value={formData.volume}
+                onChange={e => setFormData({...formData, volume: e.target.value})}
+                className="rounded-xl border-gray-200 h-11"
+              />
+            </div>
+
+            {/* Distribuidora / Proveedor */}
+            <div className="space-y-2 col-span-full">
+              <Label className="flex items-center gap-2 text-sm font-bold">
+                <MapPin className="w-4 h-4 text-brand-primary" /> Distribuidora / Proveedor
+              </Label>
+              <Input 
+                required
+                placeholder="Ej: Distribuidora Cugat, Soprole, Colún, Mayorista 10"
+                value={formData.supplierName}
+                onChange={e => setFormData({...formData, supplierName: e.target.value})}
+                className="rounded-xl border-gray-200 h-11"
+              />
+              {suggestedDistributors.length > 0 && (
+                <div className="flex flex-wrap gap-2 items-center mt-2">
+                  <span className="text-[10px] text-gray-500 font-bold uppercase">Sugerencias locales:</span>
+                  {suggestedDistributors.map(dist => (
+                    <button
+                      key={dist.name}
+                      type="button"
+                      onClick={() => setFormData({
+                        ...formData,
+                        supplierName: dist.name,
+                        supplierMetadata: dist.metadata || {}
+                      })}
+                      className="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-2.5 py-1 rounded-xl transition-colors"
+                      title={dist.metadata?.phone ? `Teléfono: ${dist.metadata.phone}` : ''}
+                    >
+                      {dist.name} {dist.metadata?.phone ? `📞` : ''}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Unidad */}
@@ -433,10 +530,12 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
 
           {/* URL de Imagen */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-bold">
-              URL de Imagen
+            <Label className="flex items-center gap-2 text-sm font-bold flex-wrap">
+              <span>URL de Imagen (Foto)</span>
+              <span className="text-xs text-red-500 font-normal ml-1">(Requerido para catálogo maestro)</span>
             </Label>
             <Input 
+              required
               placeholder="https://ejemplo.com/imagen.jpg"
               value={formData.image}
               onChange={e => setFormData({...formData, image: e.target.value})}

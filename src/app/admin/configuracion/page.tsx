@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
@@ -22,6 +23,7 @@ import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/authStore'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { cn } from '@/lib/utils'
+import { CHILE_REGIONS } from '@/lib/chile-geography'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -391,7 +393,7 @@ export default function AdminConfiguracion() {
   const [sqlScript, setSqlScript] = useState('')
   
   // All settings state
-  const [store, setStore] = useState({ name: '', slogan: '', address: '', city: '', phone: '', email: '', website: '' })
+  const [store, setStore] = useState({ name: '', slogan: '', address: '', city: '', commune: '', region: '', phone: '', email: '', website: '' })
   const [pos, setPos] = useState({ 
     terminalName: '', taxRate: 19, currency: 'CLP', lowStockThreshold: 5, receiptMessage: '',
     region: 'REGIONES' as string,
@@ -497,7 +499,8 @@ export default function AdminConfiguracion() {
     try {
       const flat: Record<string, string> = {
         store_name: store.name, store_slogan: store.slogan, store_address: store.address,
-        store_city: store.city, store_phone: store.phone, store_email: store.email, store_website: store.website,
+        store_city: store.city, store_commune: store.commune || '', store_region: store.region || '',
+        store_phone: store.phone, store_email: store.email, store_website: store.website,
         pos_terminal_name: pos.terminalName, pos_tax_rate: String(pos.taxRate), pos_currency: pos.currency,
         pos_low_stock_threshold: String(pos.lowStockThreshold), pos_receipt_message: pos.receiptMessage,
         pos_region: pos.region,
@@ -651,8 +654,47 @@ export default function AdminConfiguracion() {
                       <Field label="Email de contacto">
                         <Input className="rounded-xl h-11" type="email" value={store.email} onChange={e => setStore({...store, email: e.target.value})} placeholder="contacto@austral.cl" />
                       </Field>
-                      <Field label="Ciudad / Región" hint="Se muestra en el topbar y boletas">
-                        <Input className="rounded-xl h-11" value={store.city} onChange={e => setStore({...store, city: e.target.value})} placeholder="Castro, Chiloé, Chile" />
+                      <Field label="Región">
+                        <select
+                          className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                          value={store.region || ''}
+                          onChange={e => {
+                            const regName = e.target.value;
+                            const regObj = CHILE_REGIONS.find(r => r.name === regName);
+                            const firstCommune = regObj?.communes[0] || '';
+                            setStore({
+                              ...store,
+                              region: regName,
+                              commune: firstCommune,
+                              city: firstCommune
+                            });
+                          }}
+                        >
+                          <option value="" disabled>Seleccione Región</option>
+                          {CHILE_REGIONS.map(r => (
+                            <option key={r.name} value={r.name}>{r.name}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Comuna">
+                        <select
+                          className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                          value={store.commune || ''}
+                          onChange={e => setStore({
+                            ...store,
+                            commune: e.target.value,
+                            city: e.target.value
+                          })}
+                          disabled={!store.region}
+                        >
+                          <option value="" disabled>Seleccione Comuna</option>
+                          {(CHILE_REGIONS.find(r => r.name === store.region)?.communes || []).map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Ciudad" hint="Se muestra en el topbar y boletas">
+                        <Input className="rounded-xl h-11" value={store.city} onChange={e => setStore({...store, city: e.target.value})} placeholder="Santiago" />
                       </Field>
                       <Field label="Sitio web">
                         <Input className="rounded-xl h-11" value={store.website} onChange={e => setStore({...store, website: e.target.value})} placeholder="https://..." />

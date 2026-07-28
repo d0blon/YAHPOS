@@ -6,15 +6,16 @@ kanban-plugin: board
 
 ## 📋 BACKLOG
 
-- [ ] **[Stab]** Invalid Refresh Token: Already Used (race condition Strict Mode)
 - [ ] **[Mkt]** Resends — Sistema de reenvío de publicidad/marketing a clientes (usar Inngest)
 - [ ] **[Infra]** Inngest — Setup inicial (client, serve route, dev server)
 - [ ] **[Infra]** Migrar SII sync a Inngest (re-intentos automáticos)
 - [ ] **[Infra]** Programar reportes diarios con Inngest cron
 - [ ] **[Admin]** Rediseño Cierre Forzado
-- [ ] **[Admin]** Carga Certificado .pfx
 - [ ] **[Design]** Refactor PaymentModal
-
+- [ ] **[PWA]** Warning manifest: ícono `yahpos_logo_square_master_192.png` con tamaño real distinto al declarado (no bloqueante)
+- [ ] **[Góndolas]** Mapeo físico de góndolas y rutas de reposición optimizadas para sala de ventas
+- [ ] **[Admin/Logística]** Separación de Pedidos: Clasificar y separar por Venta en tienda, Retiro en tienda (para pedidos con retiro presencial) y Ventas online con envío a domicilio
+- [ ] **[E-commerce/Logística]** Mapa interactivo de Despacho: Integrar mapa interactivo para verificar domicilio (si la casa entra en el rango de envío a domicilio), calcular el envío por kilómetros (averiguar si mapcn.dev nos sirve para esto)
 
 ## 🏗️ EN PROGRESO
 
@@ -26,8 +27,18 @@ kanban-plugin: board
 - [ ] **[POS]** Gestión Sesiones Caja
 
 
+## 🧪 POR PROBAR
+
+- [ ] **[Admin/IA]** Subida Directa de Facturas: Agregar botón de carga de PDF/Imagen en "Ingresos con IA" y procesar mediante endpoint de IA/n8n para ingresos de stock
+- [ ] **[Infra]** Integración n8n + IA (Gemini 2.5) + WhatsApp (Evolution API) para actualización de stock automática (Fase de Pruebas locales)
+
+
 ## ✅ TERMINADO
 
+- [x] **[Stab]** Invalid Refresh Token: Already Used (race condition Strict Mode) — fix en `SessionSync.tsx` (guard `mounted` + mutex `isRefreshingProfile` + `initialSessionFired`), verificado con prueba real de 20 recargas rápidas (2026-07-28)
+- [x] **[Catálogo]** Catálogo Maestro YAHPOS! Compartido — Fases A/B/C completas + Fase C-Fix (bug RLS en panel de moderación, `getPendingMasterCatalogSubmissionsAction`/`approveMasterCatalogSubmissionAction` ahora usan `adminClient`) (2026-07-28)
+- [x] **[Admin]** Carga Certificado .pfx — ya implementado (`admin/configuracion` + `api/sii/config/route.ts`, cifrado AES vía `encrypt()`), confirmado por auditoría (2026-07-28)
+- [x] **[Infra]** Realtime Stock (Supabase Realtime) — ya implementado (`RealTimeStockBadge.tsx` shop + pos, canal `postgres_changes`), confirmado por auditoría (2026-07-28)
 - [x] **[Bug]** Auth SSO redirige a tienda correcta (callback usa from_origin + subdomain filter)
 - [x] **[Loyalty]** store_id en registro web + fallback búsqueda POS sin store_id
 - [x] **[Loyalty]** SQL migration: is_full_account, identity_verified columns
@@ -142,6 +153,6 @@ kanban-plugin: board
 
 %% kanban:settings
 ```
-{"kanban-plugin":"board","list-collapse":[false,false,false,false,true,true,true,true,true,true,true,true]}
+{"kanban-plugin":"board","list-collapse":[false,false,false,false,false,true,true,true,true,true,true,true,true]}
 ```
 %%

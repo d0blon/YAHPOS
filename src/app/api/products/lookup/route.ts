@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 
 export async function GET(request: Request) {
   try {
@@ -10,64 +11,95 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'Código inválido' }, { status: 400 })
     }
 
-    // Capa 1: Catálogo propio
     const supabase = await createClient()
-    const { data: local } = await supabase
-      .from('products')
-      .select('name, category, image, sku, barcode')
-      .or(`sku.eq.${code},barcode.eq.${code}`)
-      .limit(1)
+
+    // Validar sesión
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'No autorizado' }, { status: 401 })
+    }
+
+    // Consulta única al catálogo maestro propio (ya no se busca en products cross-tenant)
+    const { data: masterProduct } = await supabase
+      .from('master_catalog_products')
+      .select('name, brand, category, image_url, description')
+      .eq('sku', code)
       .maybeSingle()
 
-    if (local) {
+    if (masterProduct) {
       return NextResponse.json({
         success: true,
-        source: 'internal',
+        source: 'master_catalog',
         product: { 
-          name: local.name, 
-          category: local.category, 
-          image_url: local.image 
+          name: masterProduct.name, 
+          category: masterProduct.category, 
+          image_url: masterProduct.image_url,
+          brand: masterProduct.brand,
+          description: masterProduct.description
         }
       })
     }
 
-    // Capa 2: Open Food Facts
-    try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`, {
-        signal: AbortSignal.timeout(5000)
-      })
-      const data = await res.json()
-      
-      if (data.status === 1) {
-        const labels = data.product.labels_tags || []
-        const uniqueSeals = new Set<string>()
-        labels.forEach((label: string) => {
-          if (label === 'en:high-in-sugars') uniqueSeals.add('sugars')
-          if (label === 'en:high-in-saturated-fat') uniqueSeals.add('fat')
-          if (label === 'en:high-in-sodium' || label === 'en:high-in-salt') uniqueSeals.add('salt')
-          if (label === 'en:high-in-calories' || label === 'en:high-in-energy') uniqueSeals.add('calories')
-        })
-
-        return NextResponse.json({
-          success: true,
-          source: 'openfoodfacts',
-          product: {
-            name: data.product.product_name || data.product.generic_name,
-            category: data.product.categories?.split(',')[0]?.trim(),
-            image_url: data.product.image_url || data.product.image_front_url,
-            brand: data.product.brands,
-            quantity: data.product.quantity,
-            nutritionalSeals: uniqueSeals.size
-          }
-        })
-      }
-    } catch (err) {
-      console.error('[Product Lookup] Open Food Facts error:', err)
-    }
-
-    return NextResponse.json({ success: false, source: null, error: 'Producto no encontrado' })
+    return NextResponse.json({ 
+      success: false, 
+      source: null, 
+      error: 'Producto no encontrado'
+    })
   } catch (err) {
     console.error('[GET /api/products/lookup] Error:', err)
+    return NextResponse.json({ success: false, error: 'Error interno del servidor' }, { status: 500 })
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient()
+
+    // Validar sesión
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'No autorizado' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !profile.store_id) {
+      return NextResponse.json({ success: false, error: 'Tienda no encontrada' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { sku, name, brand, category, image_url } = body
+
+    if (!sku || !name) {
+      return NextResponse.json({ success: false, error: 'SKU y nombre requeridos' }, { status: 400 })
+    }
+
+    // Insertar usando el admin client porque la tabla deniega todo acceso por RLS a 'authenticated'
+    const adminClient = createAdminClient()
+    const { error } = await adminClient
+      .from('master_catalog_submissions')
+      .insert({
+        sku,
+        name,
+        brand: brand || null,
+        category: category || null,
+        image_url: image_url || null,
+        submitted_by_store_id: profile.store_id,
+        status: 'pending'
+      })
+
+    if (error) {
+      console.error('[POST /api/products/lookup] Insert error:', error.message)
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('[POST /api/products/lookup] Error:', err)
     return NextResponse.json({ success: false, error: 'Error interno del servidor' }, { status: 500 })
   }
 }

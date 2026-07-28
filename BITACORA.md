@@ -1,5 +1,55 @@
 # Bitácora — YAHPOS!
 
+### 2026-07-28 — Catálogo Maestro (Fase C-Fix) + Fix race condition Invalid Refresh Token
+
+**Catálogo Maestro YAHPOS! Compartido — cierre:**
+Antigravity reportó Fases A/B/C completas. Auditoría del Arquitecto (Claude Code) encontró
+bug real en Fase C: `getPendingMasterCatalogSubmissionsAction` y
+`approveMasterCatalogSubmissionAction` (`src/app/developer/actions.ts`) consultaban
+`master_catalog_submissions` con el cliente normal — tabla tiene RLS activo sin policies
+para `authenticated` (a propósito, acceso solo vía admin client), Postgres no tira error,
+simplemente devuelve `[]`/`no rows` siempre. Rompía lista de pendientes, export y aprobar.
+Build/lint no lo detectan (bug de runtime, no de tipos).
+
+**Fix (Fase C-Fix):** swap a `adminClient` en ambas queries. Verificado por el Arquitecto
+leyendo el código corregido — coincide con el fix pedido. Tarea cerrada.
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/app/developer/actions.ts` | 2 SELECTs sobre `master_catalog_submissions` ahora vía `adminClient` en vez de `supabase` |
+| `src/app/developer/DeveloperPanel.tsx` | `type Submission` local para tipar el estado (sin regresión) |
+
+**Fix race condition Invalid Refresh Token:**
+Bug de backlog de larga data (§9 CLAUDE.md). Causa: `SessionSync.tsx` tenía dos puntos de
+entrada concurrentes al montar (`getSession()` manual + evento `INITIAL_SESSION` del
+listener `onAuthStateChange`), ambos podían disparar refresh del mismo token en paralelo —
+Supabase rota el token en cada uso, el segundo intento revienta con `Invalid Refresh Token`.
+Se agrava en React Strict Mode (doble montaje en dev).
+
+**Fix:** guard `mounted` (mata callbacks de montajes viejos tras Strict Mode remount) +
+mutex `isRefreshingProfile` (evita `refreshProfile()` concurrente) + flag
+`initialSessionFired` (salta el `getSession()` de respaldo si el listener ya atrapó la
+sesión). `src/providers/SaaSProvider.tsx` (zona roja) auditado y descartado como fuente del
+bug — no tocado.
+
+**Verificación real:** usuario hizo prueba manual — ~20 recargas rápidas en
+`admin.localhost:3000/admin` logueado, cero `Invalid Refresh Token` en consola, sesión no se
+cae. Confirmado en runtime, no solo build/lint.
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/components/auth/SessionSync.tsx` | Guard `mounted` + mutex `isRefreshingProfile` + flag `initialSessionFired`, tipado `Session \| null`, imports sin uso removidos |
+
+**Auditoría adicional de backlog (§9):** Realtime Stock (Supabase Realtime) y Carga
+Certificado `.pfx` ya estaban implementados y funcionando — no figuraban marcados como
+terminados. Corregido en Kanban.
+
+**Hallazgo menor no bloqueante:** warning de manifest PWA, ícono
+`yahpos_logo_square_master_192.png` con tamaño real distinto al declarado. Pendiente, fuera
+de scope de esta sesión.
+
+---
+
 ### 2026-05-19 — Fix session-sync cookie propagation (INCOMPLETO — BLOQUEADO)
 
 **Problema:** Auth cross-subdomain loop. session-sync perdía cookies en el redirect.
@@ -687,3 +737,57 @@ Documentación del flujo completo de pago online con gaps identificados.
 - Configuración de SII propuesta para admin
 - Tabla de gaps con impacto y soluciones
 - Plan extendido para e-commerce (Fase 4)
+
+### Integración n8n + IA (Ingreso de Inventario Inteligente)
+Se implementaron las rutas de API seguras y la infraestructura en Supabase para habilitar la carga automática de stock vía n8n y el modelo Gemini 2.5 Flash de forma aislada y multi-tenant.
+
+**Rutas API Creadas (en Next.js):**
+* `GET /api/v1/bot/products`: Búsqueda segura en catálogo utilizando el `store_id` resuelto desde el token de autorización.
+* `POST /api/v1/bot/inventory/update`: Actualización atómica en bloque de stock de productos vía RPC.
+
+**Infraestructura en Base de Datos:**
+* Tabla `store_api_keys` con índices y RLS por `store_id`.
+* Esquema `n8n_metadata` para aislar las tablas de estado de n8n.
+* Función RPC `public.increment_product_stock` para prevenir race conditions.
+
+**Flujo en n8n:**
+* Despliegue en Render Dockerizado + Keep-Alive en Cron-Job.org.
+* Procesamiento de facturas y extracción JSON estructurado con Gemini 2.5 Flash.
+* Limpieza automática de markdown (`.replace(/```json/g, '')`) en la expresión JSON de n8n para prevenir fallos de parseo.
+* Conectores y cabeceras de bypass para localtunnel (`bypass-tunnel-reminder`) y ngrok (`ngrok-skip-browser-warning`).
+
+### Mapeo y Control de Góndolas (Propuesta de Misión Futura)
+**Objetivo:** Optimizar el flujo de trabajo de los reponedores en sala de ventas mediante la planimetría/mapa visual de las góndolas y la ubicación exacta de cada producto en la tienda.
+
+**Funcionalidades Clave:**
+1. **Modelado Físico de Góndolas (Planimetría):**
+   * Configuración de la estructura de la tienda en Admin: Pasillos, Estanterías/Góndolas, Niveles (repisas) y Caras de exhibición (*facings*).
+   * Definición gráfica simple de la tienda (ej: Góndola A1, Nivel 3, Posición 2).
+2. **Asignación de Ubicación por Producto:**
+   * Agregar campos de ubicación en el formulario y base de datos de productos (ej: `aisle`, `shelf_id`, `shelf_level`, `shelf_position`).
+   * Capacidad de auditar y cambiar las ubicaciones escaneando el código de barra del producto en sala desde un dispositivo móvil o POS portátil.
+3. **Flujo de Trabajo del Reponedor Eficiente (Ruta de Reposición):**
+   * **Ordenamiento de Ruta**: Cuando ingresa mercadería (como la procesada automáticamente por Gemini en n8n), el sistema no solo actualiza el stock, sino que genera una "Lista de Reposición" ordenada físicamente por pasillo y góndola para que el reponedor coloque los productos en una sola caminata optimizada, reduciendo tiempos de traslado.
+   * **Alertas de Reposición / Quiebre de Stock**: Alarmas automáticas cuando el stock en la góndola frontal es menor al umbral mínimo, solicitando al reponedor traer más unidades desde la bodega de almacenamiento (*backroom*).
+4. **Optimización con Inteligencia Artificial (Planimetría Sugerida):**
+   * Usar IA para analizar patrones de compra cruzada (por ejemplo, detectar qué productos se compran juntos frecuentemente) y sugerir colocar dichos productos en góndolas adyacentes o niveles visualmente prioritarios para maximizar ventas.
+
+
+
+### 2026-07-27 — Reactivación del proyecto tras pausa de 2 meses
+
+**Contexto:** Pausa de ~2 meses por pruebas académicas. El proyecto está en buen estado, sin cambios desde mayo 2026.
+
+**Estado al retomar:**
+- Última tarea completada: Bot inventory API + n8n + Gemini integration (mayo 2026)
+- Tarea activa en TASK_HANDOFF.md: Realtime Stock (Supabase Realtime — POS → E-commerce) — **pendiente de iniciar**
+- Build: no verificado desde la pausa — correr `npm run build` antes de implementar
+- Rama: main
+
+**Cambios de infraestructura desde la pausa:**
+- Obsidian Local REST API configurado como MCP server de Antigravity (puerto 27123 HTTP)
+- Workflow redefinido: Claude Pro = Arquitecto (solo planificación), Antigravity = Constructor (solo implementación)
+
+**Próximo paso:** Ejecutar el handoff activo de Realtime Stock. Ver TASK_HANDOFF.md.
+
+---

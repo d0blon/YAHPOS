@@ -21,14 +21,18 @@ import {
   recordAdminExpenseAction,
   updateStoreDomainsAction,
   verifyDnsAction,
-  getFinancialStatsAction
+  getFinancialStatsAction,
+  getPendingMasterCatalogSubmissionsAction,
+  approveMasterCatalogSubmissionAction,
+  rejectMasterCatalogSubmissionAction,
+  importEnrichedMasterCatalogSubmissionsAction
 } from './actions'
 import { cn } from '@/lib/utils'
 import SystemLogs from './SystemLogs'
 import SystemHealth from './SystemHealth'
 import { useAuthStore } from '@/stores/authStore'
 
-type Tab = 'DASHBOARD' | 'BUSINESS' | 'MONITOR'
+type Tab = 'DASHBOARD' | 'BUSINESS' | 'MONITOR' | 'CATALOG'
 
 import { Store, FinancialStats, SystemLog } from '@/types'
 
@@ -71,6 +75,103 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
   const [managingDomainStore, setManagingDomainStore] = useState<Store | null>(null)
   const [domainInputs, setDomainInputs] = useState({ subdomain: '', customDomain: '' })
   const [isVerifyingDns, setIsVerifyingDns] = useState(false)
+
+  // Fase C: Master Catalog
+  type Submission = {
+    id: string
+    sku: string
+    name: string
+    brand?: string
+    category?: string
+    description?: string
+    image_url?: string
+    status: string
+    created_at: string
+    stores?: { name: string }
+  }
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false)
+  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null)
+
+  const fetchSubmissions = async () => {
+    setLoadingSubmissions(true)
+    const res = await getPendingMasterCatalogSubmissionsAction()
+    if (res.success) {
+      setSubmissions((res.data as unknown as Submission[]) || [])
+    } else {
+      toast.error('Error cargando submissions: ' + res.error)
+    }
+    setLoadingSubmissions(false)
+  }
+
+  useEffect(() => {
+    if (activeTab === 'CATALOG') {
+      fetchSubmissions()
+    }
+  }, [activeTab])
+
+  const handleExportSubmissions = () => {
+    if (submissions.length === 0) {
+      toast.error('No hay items pendientes para exportar')
+      return
+    }
+    const dataStr = JSON.stringify(submissions, null, 2)
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+    const linkElement = document.createElement('a')
+    linkElement.setAttribute('href', dataUri)
+    linkElement.setAttribute('download', 'master_catalog_pending.json')
+    linkElement.click()
+  }
+
+  const handleImportEnriched = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'application/json'
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement
+      const file = target.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = async (e2) => {
+        try {
+          const json = JSON.parse(e2.target?.result as string)
+          if (!Array.isArray(json)) throw new Error('Debe ser un array')
+          const res = await importEnrichedMasterCatalogSubmissionsAction(json)
+          if (res.success) {
+            toast.success(`✅ Importados ${res.updatedCount} registros enriquecidos`)
+            fetchSubmissions()
+          } else {
+            toast.error('Error al importar: ' + res.error)
+          }
+        } catch (err) {
+          toast.error('Archivo JSON inválido')
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
+
+  const handleApproveSubmission = async (id: string, data: Partial<Submission>) => {
+    const res = await approveMasterCatalogSubmissionAction(id, data)
+    if (res.success) {
+      toast.success('✨ Aprobado y añadido al Catálogo Maestro')
+      setEditingSubmission(null)
+      fetchSubmissions()
+    } else {
+      toast.error('Error: ' + res.error)
+    }
+  }
+
+  const handleRejectSubmission = async (id: string) => {
+    const res = await rejectMasterCatalogSubmissionAction(id)
+    if (res.success) {
+      toast.success('Submission rechazada')
+      fetchSubmissions()
+    } else {
+      toast.error('Error: ' + res.error)
+    }
+  }
 
 
   useEffect(() => {
@@ -219,6 +320,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
     { id: 'DASHBOARD', label: 'Consola Central', icon: Layout },
     { id: 'BUSINESS', label: 'Gestión Negocios', icon: Building2 },
     { id: 'MONITOR', label: 'Monitor Operativo', icon: TerminalIcon },
+    { id: 'CATALOG', label: 'Catálogo Maestro', icon: Database },
   ]
 
   return (
@@ -806,6 +908,196 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
             <SystemLogs storeId={selectedStoreId} />
           </div>
         )}
+
+        {activeTab === 'CATALOG' && (
+          <div className="space-y-6 animate-slide-in">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-4 rounded-none">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-amber-500/10 border border-amber-500/20">
+                  <Database className="h-5 w-5 text-amber-500" />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-amber-400">Moderación Catálogo Maestro</h4>
+                  <p className="text-[9px] text-gray-500 font-bold uppercase mt-0.5">Pendientes de revisión y enriquecimiento IA</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleExportSubmissions}
+                  variant="outline"
+                  className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10 rounded-none text-[10px] font-black uppercase tracking-widest h-10 px-4"
+                >
+                  <ArrowDownRight className="h-3.5 w-3.5 mr-2" />
+                  Exportar para IA
+                </Button>
+                <Button 
+                  onClick={handleImportEnriched}
+                  className="bg-amber-600 hover:bg-amber-500 rounded-none text-[10px] font-black uppercase tracking-widest h-10 px-4 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                >
+                  <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
+                  Importar Enriquecido
+                </Button>
+                <Button 
+                  onClick={fetchSubmissions}
+                  variant="outline"
+                  className="border-white/10 text-gray-500 hover:bg-white/5 rounded-none h-10 px-3"
+                  title="Recargar"
+                >
+                  <RefreshCw className={cn("h-4 w-4", loadingSubmissions && "animate-spin")} />
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-black/60 border border-white/5 overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.15em] text-gray-500 bg-white/[0.02]">
+                    <th className="p-4">SKU / Origen</th>
+                    <th className="p-4">Datos (Nombre, Marca, Categoría)</th>
+                    <th className="p-4">Descripción (Enriquecida)</th>
+                    <th className="p-4 text-right min-w-[200px]">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {loadingSubmissions ? (
+                    <tr>
+                      <td colSpan={4} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
+                        Cargando cola de revisión...
+                      </td>
+                    </tr>
+                  ) : submissions.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
+                        No hay productos pendientes
+                      </td>
+                    </tr>
+                  ) : submissions.map(sub => (
+                    <tr key={sub.id} className="hover:bg-white/5 transition-colors group">
+                      <td className="p-4 align-top">
+                        <div className="text-[12px] font-black text-amber-400 font-mono">{sub.sku}</div>
+                        <div className="text-[9px] text-gray-500 font-bold uppercase mt-1">
+                          Vía: {sub.stores?.name || 'Desconocido'}
+                        </div>
+                        <div className="text-[9px] text-gray-600 font-bold mt-0.5">
+                          {new Date(sub.created_at).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="p-4 align-top">
+                        {editingSubmission?.id === sub.id ? (
+                          <div className="space-y-2">
+                            <input 
+                              value={editingSubmission.name} 
+                              onChange={e => setEditingSubmission({...editingSubmission, name: e.target.value})}
+                              className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                              placeholder="Nombre"
+                            />
+                            <div className="flex gap-2">
+                              <input 
+                                value={editingSubmission.brand || ''} 
+                                onChange={e => setEditingSubmission({...editingSubmission, brand: e.target.value})}
+                                className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                                placeholder="Marca"
+                              />
+                              <input 
+                                value={editingSubmission.category || ''} 
+                                onChange={e => setEditingSubmission({...editingSubmission, category: e.target.value})}
+                                className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                                placeholder="Categoría"
+                              />
+                            </div>
+                            <input 
+                              value={editingSubmission.image_url || ''} 
+                              onChange={e => setEditingSubmission({...editingSubmission, image_url: e.target.value})}
+                              className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                              placeholder="URL de Imagen"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="text-[13px] font-black text-white">{sub.name}</div>
+                            <div className="flex gap-2 mt-1">
+                              {sub.brand && <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300">{sub.brand}</span>}
+                              {sub.category && <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300">{sub.category}</span>}
+                            </div>
+                            {sub.image_url && <a href={sub.image_url} target="_blank" rel="noreferrer" className="text-[9px] text-blue-400 hover:underline mt-2 inline-block">Ver imagen</a>}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 align-top">
+                        {editingSubmission?.id === sub.id ? (
+                          <textarea 
+                            value={editingSubmission.description || ''} 
+                            onChange={e => setEditingSubmission({...editingSubmission, description: e.target.value})}
+                            className="w-full h-full min-h-[80px] bg-black border border-white/10 p-2 text-xs text-white" 
+                            placeholder="Descripción (IA)"
+                          />
+                        ) : (
+                          <div className={cn("text-[10px] leading-relaxed max-w-sm", sub.description ? "text-gray-300" : "text-gray-600 italic")}>
+                            {sub.description || 'Sin descripción...'}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 text-right align-top">
+                        {editingSubmission?.id === sub.id ? (
+                          <div className="flex flex-col gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleApproveSubmission(sub.id, editingSubmission)}
+                              className="h-8 bg-green-600 hover:bg-green-500 rounded-none text-[9px] font-black uppercase"
+                            >
+                              Guardar y Aprobar
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => setEditingSubmission(null)}
+                              className="h-8 border border-white/10 text-gray-400 rounded-none text-[9px] font-black uppercase hover:bg-white/5"
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleApproveSubmission(sub.id, sub)}
+                              className="h-8 bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white rounded-none text-[9px] font-black uppercase"
+                            >
+                              <CheckCircle2 className="w-3 h-3 mr-1.5" /> Aprobar Rápido
+                            </Button>
+                            <div className="flex gap-2 w-full">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                onClick={() => setEditingSubmission(sub)}
+                                className="flex-1 h-8 border border-white/10 text-gray-400 rounded-none text-[9px] font-black uppercase hover:bg-white/5"
+                              >
+                                Editar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                onClick={() => {
+                                  if(confirm('¿Seguro que deseas rechazar este registro?')) {
+                                    handleRejectSubmission(sub.id)
+                                  }
+                                }}
+                                className="flex-1 h-8 border border-red-500/20 text-red-500 rounded-none text-[9px] font-black uppercase hover:bg-red-500/10"
+                              >
+                                Rechazar
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

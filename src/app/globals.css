@@ -124,7 +124,7 @@
     --input: hsl(268, 46%, 89%);
     --ring: hsl(275, 100%, 40%);
     --radius: 1rem;
-    --font-heading: 'Outfit', sans-serif;
+    --font-heading: var(--font-sora), 'Outfit', sans-serif;
   }
 
   .dark {
@@ -157,7 +157,7 @@
 
   * {
     border-color: var(--border);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-dm-sans), 'Inter', system-ui, -apple-system, sans-serif;
   }
   
   h1, h2, h3, h4, h5, h6 {

@@ -4,8 +4,7 @@ import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
-import { User } from '@/types'
-import { DEVELOPER_EMAILS } from '@/lib/constants'
+import { Session } from '@supabase/supabase-js'
 
 /**
  * Este componente asegura que la sesión de Supabase se sincronice
@@ -17,25 +16,33 @@ export function SessionSync() {
   const { refreshProfile, logout } = useAuthStore()
 
   useEffect(() => {
-    // 1. Carga inicial: Si hay una sesión activa, refrescar el perfil inmediatamente
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        await refreshProfile()
-      }
-    }
-    initAuth()
+    let mounted = true
+    let isRefreshingProfile = false
+    let initialSessionFired = false
 
-    // 2. Escuchar cambios de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth Event:', event, session?.user?.email)
-      
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        // El middleware ya inyectó los headers, pero el cliente necesita
-        // actualizar el estado global de AuthStore con el rol de esta tienda.
+    const handleSync = async (session: Session | null) => {
+      if (!mounted || isRefreshingProfile) return
+      isRefreshingProfile = true
+      try {
         if (session) {
           await refreshProfile()
         }
+      } finally {
+        isRefreshingProfile = false
+      }
+    }
+
+    // 2. Escuchar cambios de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+      console.log('Auth Event:', event, session?.user?.email)
+      
+      if (event === 'INITIAL_SESSION') {
+        initialSessionFired = true
+      }
+      
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        await handleSync(session)
       }
       
       if (event === 'SIGNED_OUT') {
@@ -44,7 +51,19 @@ export function SessionSync() {
       }
     })
 
+    // 1. Carga inicial controlada (con delay para evitar pisotón)
+    // Si INITIAL_SESSION ya disparó, no hacemos getSession() redundante
+    const initTimer = setTimeout(async () => {
+      if (!mounted || initialSessionFired) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        await handleSync(session)
+      }
+    }, 800)
+
     return () => {
+      mounted = false
+      clearTimeout(initTimer)
       subscription.unsubscribe()
     }
   }, [router, refreshProfile, logout])

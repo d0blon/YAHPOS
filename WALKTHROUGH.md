@@ -166,3 +166,27 @@ Se ha resuelto el problema de concurrencia y bloqueo de terminales, asegurando q
 
 ---
 *Documentación actualizada el 11 de Mayo 2026 tras la implementación de los fixes de terminales.*
+
+---
+## 13. Integración de n8n e Inteligencia Artificial (Costo $0)
+Se ha implementado el stack completo para la automatización e integración con IA (Gemini 2.5 Flash) y WhatsApp (vía Evolution API) utilizando una arquitectura de costo $0 en su totalidad.
+
+### Lógica de Negocio y Multi-Tenancy:
+* **Resolución por API Key**: Las nuevas rutas no dependen de subdominios ni de dominios específicos para aislar datos. Al recibir una petición, consultan la cabecera `Authorization: Bearer <API_KEY>`, calculan su hash SHA-256 en la base de datos y resuelven el `store_id` correspondiente.
+* **Aislamiento en DB**: Todas las operaciones de catálogo y stock están restringidas por el `store_id` resuelto, permitiendo a múltiples tiendas utilizar una misma estructura de automatización centralizada.
+
+### Implementación Técnica:
+1. **Rutas Next.js (API Routes)**:
+   * `GET /api/v1/bot/products`: Endpoint seguro que permite a n8n buscar productos en el catálogo filtrando por coincidencia parcial de texto en base al `store_id` resuelto. Requiere scope `'products:read'`.
+   * `POST /api/v1/bot/inventory/update`: Endpoint que recibe un bloque de actualizaciones de stock (`{ updates: [{ sku: string, quantity: number }] }`) y ejecuta cambios atómicos por base de datos usando el RPC del sistema. Requiere scope `'inventory:write'`.
+2. **Infraestructura de Base de Datos**:
+   * Creación de la tabla `store_api_keys` con índices de búsqueda rápida y políticas de RLS.
+   * Creación de la función PostgreSQL `public.increment_product_stock` para realizar incrementos de stock seguros y libres de condiciones de carrera.
+   * Aislamiento del esquema `n8n_metadata` en la base de datos de Supabase para almacenar la persistencia de n8n (Render).
+3. **Flujo de Trabajo n8n**:
+   * Configuración de paso seguro en modo de Sesión de Supabase (puerto `5432` en el pooler) para permitir la migración inicial de n8n sobre IPv4.
+   * Integración de Gemini 2.5 Flash con prompt estructurado para la extracción de JSON limpio libre de markdown, incluyendo mitigaciones de parseo (`JSON.parse` + `.replace`).
+   * Configuración de cabeceras de salto de túneles (`bypass-tunnel-reminder` y `ngrok-skip-browser-warning`) para posibilitar las pruebas de desarrollo local sin bloqueos.
+
+---
+*Documentación actualizada el 27 de Mayo 2026 tras la estabilización de los flujos de integración n8n e IA.*
