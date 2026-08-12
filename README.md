@@ -33,11 +33,11 @@
 - SEO optimizado con meta tags dinámicas
 
 ### Administración Multi-tienda
-- **Multi-tenancy** por subdominio con aislamiento completo
+- **Multi-tenancy** por subdominio con aislamiento completo (RLS a nivel de base de datos)
 - Panel admin con métricas, pedidos, clientes, sucursales, personal
 - Gestión de cajas con apertura/cierre y control de sesiones
-- **RBAC** (Roles: owner, admin, employee, developer)
-- **SaaS Tiers** con gating de funcionalidades por plan
+- **RBAC** (Roles: developer, owner, admin, manager, cashier, warehouse, customer)
+- **SaaS Tiers** (Starter / Pro / Platinum) con gating de funcionalidades por plan
 
 ### Gestión de Stock
 - Monitor de stock en tiempo real (Realtime + Supabase)
@@ -56,12 +56,14 @@
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | Next.js 14 (App Router), React, TypeScript |
-| Estilos | Tailwind CSS |
-| Base de Datos | Supabase (PostgreSQL) |
-| Autenticación | Supabase Auth + RBAC |
+| Frontend | Next.js 16 (App Router, webpack), React, TypeScript (strict) |
+| Estilos | Tailwind CSS v4 (theme en `globals.css`, no en `tailwind.config.ts`) |
+| Base de Datos | Supabase (PostgreSQL) con Row-Level Security |
+| Autenticación | Supabase Auth (SSR) + RBAC |
 | Realtime | Supabase Realtime (Broadcast + Presence) |
-| DTE / SII | Node-Forge, XML-Crypto |
+| DTE / SII | Motor propio (Node-Forge, XML-Crypto, CAF, .pfx) |
+| IA | Gemini 1.5 Flash (lectura de facturas de proveedor) |
+| Automatización | n8n (self-hosted) |
 | Testing | Jest, Playwright |
 | Infraestructura | Vercel + Supabase |
 
@@ -101,8 +103,11 @@
 
 | Documento | Descripción |
 |-----------|-------------|
-| [PROJECT_BOARD.md](./PROJECT_BOARD.md) | Tablero Kanban con backlog, progreso y bugs |
-| [YAHPOS Kanban.md](./YAHPOS%20Kanban.md) | Tablero Kanban nativo para Obsidian |
+| [CLAUDE.md](./CLAUDE.md) | Contexto del proyecto para agentes IA — leer primero |
+| [YAHPOS Kanban.md](./YAHPOS%20Kanban.md) | Backlog y estado actual — fuente de verdad del progreso |
+| [TASK_HANDOFF.md](./TASK_HANDOFF.md) | Tarea activa (protocolo Arquitecto/Constructor) |
+| [AGENTS.md](./AGENTS.md) | Protocolo de trabajo entre agentes (Claude Code + Antigravity) |
+| [BITACORA.md](./BITACORA.md) | Historial completo de cambios |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Arquitectura del sistema multi-tenancy |
 | [WALKTHROUGH.md](./WALKTHROUGH.md) | Walkthrough técnico de infraestructura |
 | [COLLABORATION_PROTOCOL.md](./COLLABORATION_PROTOCOL.md) | Protocolo de colaboración OpenCode + Antigravity |
@@ -128,12 +133,27 @@ npm run dev
 ### Variables de Entorno Requeridas
 
 ```
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-RESEND_API_KEY=
-NEXT_PUBLIC_SITE_URL=
+
+# IA (lectura de facturas)
+GEMINI_API_KEY=
+
+# Seguridad
+SECURITY_SALT=
+
+# Pagos
+FLOW_API_KEY=
+FLOW_SECRET=
+
+# SII
+SII_API_URL=
+SII_ENVIRONMENT=
 ```
+
+Ver [CLAUDE.md](./CLAUDE.md) para la lista completa y actualizada.
 
 ---
 
