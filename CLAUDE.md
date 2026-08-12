@@ -106,6 +106,26 @@ austral-market-next/
 
 ## 5. Reglas Críticas (NO Saltarse)
 
+### Regla de Oro (vigente desde 2026-08-12): correctitud y seguridad antes que velocidad
+Decisión explícita del dueño del proyecto tras una auditoría de un día que encontró ~10 bugs
+severos (varios críticos: escalada de privilegios en RLS, `/admin`/`/pos` inaccesibles para
+dueños reales, checkout que podía dejar órdenes pagadas sin items) — todos con la MISMA causa
+raíz: algo se construyó una vez, quedó a medias o se reemplazó por otra cosa en paralelo, y nadie
+verificó que las dos partes siguieran de acuerdo. Ver `AGENTS.md §0` (mismo texto, versión para
+Antigravity).
+
+Para CUALQUIER `TASK_HANDOFF.md` que escriba de acá en adelante, no solo fixes de bugs:
+1. **Antes de escribir el spec:** investigar el radio de impacto completo — qué tablas/policies
+   RLS toca, qué otro código ya lee/escribe esa misma data, qué cliente Supabase corresponde
+   (`createClient()` respetando RLS vs `createAdminClient()`) y por qué.
+2. **Toda tabla o camino de escritura nuevo lleva su policy de RLS en el MISMO handoff** — nunca
+   "la seguridad se agrega después".
+3. **Seguir verificando cada Report Back de forma independiente y en vivo** (tsc, lectura
+   completa de diffs, queries/pruebas reales) — no confiar en el "✅ 0 errores" reportado.
+4. Es aceptable y esperado que esto tome 2-3x más tiempo de lo habitual. No es un problema.
+5. Auditorías chicas y periódicas (revisar `pg_policies` u otras zonas de riesgo cada tanto) en
+   vez de dejarlo todo para una auditoría gigante al final.
+
 ### Tailwind CSS v4
 `tailwind.config.ts` **ES IGNORADO**. Todo el theme se define en `src/app/globals.css` dentro de `@theme { ... }`.
 - ✅ Usar: `bg-brand-primary`, `text-brand-accent`, `from-brand-500`, `shadow-brand-primary/10`

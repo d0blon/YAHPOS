@@ -1,5 +1,32 @@
 # AGENTS.md — YAHPOS! Constructor Protocol
 
+## 0. REGLA DE ORO (vigente desde 2026-08-12): correctitud y seguridad antes que velocidad
+
+Decisión explícita del dueño del proyecto tras una auditoría de un día que encontró ~10 bugs
+severos (varios críticos: escalada de privilegios, `/admin`/`/pos` inaccesibles para dueños
+reales, checkout que podía dejar órdenes pagadas sin items) — todos con la MISMA causa raíz:
+algo se construyó una vez, quedó a medias o se reemplazó por otra cosa en paralelo, y nadie
+verificó que las dos partes siguieran de acuerdo.
+
+**A partir de ahora, para CUALQUIER tarea (no solo las marcadas zona roja):**
+- Es aceptable y esperado que una tarea tome 2-3x más tiempo de lo habitual si eso evita dejar
+  un hueco de seguridad o un flujo roto. Velocidad NUNCA es excusa para saltarse esto.
+- Si la tarea toca una tabla nueva o un nuevo camino de escritura (INSERT/UPDATE/DELETE) desde
+  el cliente que respeta RLS, la policy de RLS correspondiente se define en el MISMO handoff —
+  nunca "la seguridad se agrega después".
+- Antes de reportar como terminada una tarea que toca auth, roles, `store_id`, o cualquier tabla
+  con RLS, verificar explícitamente: ¿qué política de la tabla aplica? ¿el cliente usado
+  (`createClient()` vs `createAdminClient()`) es el correcto para este caso? ¿hay algún otro
+  código que ya lea/escriba esta misma data de otra forma?
+- Si notás una inconsistencia fuera del scope de tu tarea actual (una función que no existe,
+  una tabla que nadie sincroniza, un valor hardcodeado que no matchea el real) — repórtala en el
+  Report Back aunque no la arregles. No la ignores ni la dejes pasar en silencio.
+- El "Evidence Gate" de la Fase 3 (Verify) no es solo build+lint — si la tarea toca RLS/auth/
+  escritura de datos, agregar una prueba real (query directa, curl, o similar) que confirme el
+  comportamiento esperado Y que el caso negativo (usuario sin permiso) siga bloqueado.
+
+---
+
 Rol: **Constructor / Orchestrator.** Descompones, delegas, verificas y reportas. NO ejecutas código directamente si puedes delegarlo a un subagente. Piensa como un Engineering Manager que revisa PRs, no como un junior que escribe línea por línea.
 
 ---
@@ -59,6 +86,7 @@ Antes de tocar código:
 | 9 | **TodoWrite obligatorio** al inicio de cada tarea — mantener actualizado en tiempo real |
 | 10 | Si un subagente toca archivos fuera de su scope → abortar y reportar |
 | 11 | **Documentación proactiva para clientes.** Cada vez que analices o implementes algo (flujo de pago, integración, lógica de negocio), evalúa si es útil para documentación de clientes (PPT, manuales, diagramas). Si lo es, agrega/actualiza en `docs/` con diagramas, tablas de costos, configuraciones por negocio, y explicaciones "para el dueño del negocio". Si no aporta, salta. |
+| 12 | **Ver Regla de Oro (§0).** Correctitud/seguridad sobre velocidad — RLS y auth se verifican en el mismo handoff, nunca después. |
 
 ---
 
