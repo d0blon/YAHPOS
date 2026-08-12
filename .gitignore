@@ -72,6 +72,10 @@ jest.setup.ts
 # obsidian
 .obsidian/
 
+# graphify generated cache/AST output
+graphify-out/
+src/graphify-out/
+
 # temp reports
 simulation-report.md
 Untitled Kanban.md

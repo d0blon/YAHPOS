@@ -61,12 +61,7 @@ export default function CategoryPage() {
     async function loadData() {
       setLoading(true);
       try {
-        const allProducts = await getProducts();
-        const categoryProducts = allProducts.filter(p => {
-          // La API devuelve categorySlug directamente ("alimentos", "bebidas", etc.)
-          const c = (p as any).categorySlug?.toLowerCase() || (p.category as unknown as string)?.toLowerCase() || '';
-          return c === slug.toLowerCase();
-        }).map(p => {
+        const categoryProducts = (await getProducts(undefined, slug)).map(p => {
           let foundBrand = 'Otra';
           for (const brand of KNOWN_BRANDS) {
              if (p.name.toLowerCase().includes(brand.toLowerCase())) {

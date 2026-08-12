@@ -1,7 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase'
-import { DEVELOPER_EMAILS } from '@/lib/constants'
-
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
 
@@ -16,23 +14,26 @@ export async function GET(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    let storeId = profile?.store_id
-    const isDev = user.email && DEVELOPER_EMAILS.includes(user.email.toLowerCase())
+    // Prioridad: header de middleware (resuelto por subdominio) > profile.store_id
+    const headerStoreId = req.headers.get('x-store-id')
+    const storeId = headerStoreId || profile?.store_id
 
-    if (!storeId && isDev) {
-      // Fallback para desarrolladores: usar la primera tienda encontrada
-      const { data: firstStore } = await supabase.from('stores').select('id').limit(1).single()
-      storeId = firstStore?.id
-      console.log(`[Dashboard API] Developer bypass for ${user.email} using Store: ${storeId}`)
+    if (!storeId) {
+      return NextResponse.json({ error: 'No se pudo determinar la tienda para esta request' }, { status: 404 })
     }
 
-    if (!storeId) return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 })
+    const branchId = req.nextUrl.searchParams.get('branchId')
 
-    // 1. Obtener datos de pedidos para ingresos y conteo (Filtrado por store_id)
-    const { data: orders, error: ordersError, count: orderCount } = await supabase
+    // 1. Obtener datos de pedidos para ingresos y conteo (Filtrado por store_id y opcionalmente branch_id)
+    let ordersQuery = supabase
       .from('orders')
       .select('*', { count: 'exact' })
       .eq('store_id', storeId)
+
+    if (branchId && branchId !== 'all') {
+      ordersQuery = ordersQuery.eq('branch_id', branchId)
+    }
+    const { data: orders, error: ordersError, count: orderCount } = await ordersQuery
 
     if (ordersError) throw ordersError
 
@@ -163,6 +164,13 @@ export async function GET(req: NextRequest) {
       value: paymentMethodsData[key]
     })).sort((a, b) => b.value - a.value);
 
+    // 8. Obtener lista de sucursales para el selector frontend
+    const { data: branches } = await supabase
+      .from('branches')
+      .select('id, name')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: true })
+
     return NextResponse.json({
       stats: [
         { title: 'Ventas Totales', value: `$${totalRevenue.toLocaleString('es-CL')}`, change: '+0%', trend: 'up', icon: 'DollarSign' },
@@ -174,7 +182,8 @@ export async function GET(req: NextRequest) {
       topProducts,
       activePersonnel,
       chartData,
-      paymentMethods
+      paymentMethods,
+      branches: branches || []
     })
 
   } catch (error: any) {

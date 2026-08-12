@@ -13,7 +13,7 @@ import { Session } from '@supabase/supabase-js'
  */
 export function SessionSync() {
   const router = useRouter()
-  const { refreshProfile, logout } = useAuthStore()
+  const { refreshProfile } = useAuthStore()
 
   useEffect(() => {
     let mounted = true
@@ -46,8 +46,11 @@ export function SessionSync() {
       }
       
       if (event === 'SIGNED_OUT') {
-        logout()
-        router.refresh()
+        useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false, memberships: [], currentStoreRole: null })
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('yahpos-auth')
+        }
+        window.location.href = '/'
       }
     })
 
@@ -66,7 +69,7 @@ export function SessionSync() {
       clearTimeout(initTimer)
       subscription.unsubscribe()
     }
-  }, [router, refreshProfile, logout])
+  }, [router, refreshProfile])
 
   return null
 }

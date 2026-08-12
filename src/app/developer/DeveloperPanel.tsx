@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { 
   Zap, Crown, Star, LogOut, Save, Layout, Database,
   CheckCircle2, Building2, BarChart3, 
@@ -8,25 +8,32 @@ import {
   Terminal as TerminalIcon, Search, Filter,
   AlertTriangle, Clock, TrendingUp, Settings2, Plus,
   DollarSign, ArrowUpRight, ArrowDownRight, Briefcase,
-  Globe, Shield, ExternalLink, RefreshCw
+  Globe, Shield, ExternalLink, RefreshCw, ChevronDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { 
   getStoresWithStatusAction, 
-  updateStoreBillingAction, 
   createStoreAction,
-  logoutDeveloperAction,
-  recordAdminExpenseAction,
   updateStoreDomainsAction,
-  verifyDnsAction,
-  getFinancialStatsAction,
+  verifyDnsAction
+} from './actions/stores'
+import { 
+  updateStoreBillingAction, 
+  recordAdminExpenseAction,
+  getFinancialStatsAction
+} from './actions/financial'
+import { 
+  logoutDeveloperAction
+} from './actions/auth'
+import { 
   getPendingMasterCatalogSubmissionsAction,
   approveMasterCatalogSubmissionAction,
   rejectMasterCatalogSubmissionAction,
-  importEnrichedMasterCatalogSubmissionsAction
-} from './actions'
+  importEnrichedMasterCatalogSubmissionsAction,
+  getApprovedMasterCatalogProductsAction
+} from './actions/catalog'
 import { cn } from '@/lib/utils'
 import SystemLogs from './SystemLogs'
 import SystemHealth from './SystemHealth'
@@ -60,6 +67,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
   })
   const [searchQuery, setSearchQuery] = useState('')
   const [editingStore, setEditingStore] = useState<Store | null>(null)
+  const [billingForm, setBillingForm] = useState<{ tier?: string, payment_status?: string, next_payment_date?: string }>({})
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -75,6 +83,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
   const [managingDomainStore, setManagingDomainStore] = useState<Store | null>(null)
   const [domainInputs, setDomainInputs] = useState({ subdomain: '', customDomain: '' })
   const [isVerifyingDns, setIsVerifyingDns] = useState(false)
+  const [expandedStore, setExpandedStore] = useState<string | null>(null)
 
   // Fase C: Master Catalog
   type Submission = {
@@ -92,7 +101,14 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(false)
   const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null)
-
+  const [catalogView, setCatalogView] = useState<'PENDING' | 'APPROVED'>('PENDING')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [approvedProducts, setApprovedProducts] = useState<any[]>([])
+  const [catalogSearch, setCatalogSearch] = useState('')
+  const [loadingApproved, setLoadingApproved] = useState(false)
+  const [catalogPage, setCatalogPage] = useState(0)
+  const [catalogTotal, setCatalogTotal] = useState(0)
+  const [catalogHasMore, setCatalogHasMore] = useState(false)
   const fetchSubmissions = async () => {
     setLoadingSubmissions(true)
     const res = await getPendingMasterCatalogSubmissionsAction()
@@ -106,9 +122,31 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
 
   useEffect(() => {
     if (activeTab === 'CATALOG') {
-      fetchSubmissions()
+      if (catalogView === 'PENDING') {
+        fetchSubmissions()
+      } else {
+        setCatalogPage(0)
+        fetchApproved(catalogSearch, 0, false)
+      }
     }
-  }, [activeTab])
+  }, [activeTab, catalogView])
+
+  const fetchApproved = async (search = '', page = 0, isLoadMore = false) => {
+    setLoadingApproved(true)
+    const res = await getApprovedMasterCatalogProductsAction(search, page)
+    if (res.success) {
+      if (isLoadMore) {
+        setApprovedProducts(prev => [...prev, ...(res.data || [])])
+      } else {
+        setApprovedProducts(res.data || [])
+      }
+      setCatalogTotal(res.total || 0)
+      setCatalogHasMore((res.data?.length || 0) === res.pageSize)
+    } else {
+      toast.error('Error cargando catálogo: ' + res.error)
+    }
+    setLoadingApproved(false)
+  }
 
   const handleExportSubmissions = () => {
     if (submissions.length === 0) {
@@ -222,25 +260,30 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
       return
     }
     setIsCreatingStore(true)
-    const result = await createStoreAction(newStore)
-    if (result.success) {
-      toast.success('✅ Negocio inicializado y propietario asignado')
-      setNewStore({ 
-        name: '', 
-        slug: '', 
-        tier: 'austral',
-        owner_email: '',
-        contact_phone: '',
-        address: '',
-        city: '',
-        payment_months: 1
-      })
-      fetchData()
+    try {
+      const result = await createStoreAction(newStore)
+      if (result.success) {
+        toast.success('✅ Tienda inicializada y propietario asignado')
+        setNewStore({ 
+          name: '', 
+          slug: '', 
+          tier: 'austral',
+          owner_email: '',
+          contact_phone: '',
+          address: '',
+          city: '',
+          payment_months: 1
+        })
+        fetchData()
+      } else {
+        toast.error(result.error || 'Error al crear tienda')
+      }
+    } catch (error) {
+      console.error('Error creando tienda:', error)
+      toast.error('Error de conexión al crear la tienda. Intenta de nuevo.')
+    } finally {
       setIsCreatingStore(false)
-    } else {
-      toast.error(result.error || 'Error al crear negocio')
     }
-    setIsCreatingStore(false)
   }
 
   const handleRecordExpense = async () => {
@@ -293,17 +336,23 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
     if (!managingDomainStore?.custom_domain) return
     
     setIsVerifyingDns(true)
-    const result = await verifyDnsAction(managingDomainStore.id, managingDomainStore.custom_domain)
-    
-    if (result.success) {
-      toast.success('✅ DNS Verificado correctamente')
-      fetchData()
-      // Actualizar estado local para mostrar el check verde
-      setManagingDomainStore({ ...managingDomainStore, domain_verified: true })
-    } else {
-      toast.error(result.error || 'Fallo en la verificación DNS')
+    try {
+      const result = await verifyDnsAction(managingDomainStore.id, managingDomainStore.custom_domain)
+      
+      if (result.success) {
+        toast.success('✅ DNS Verificado correctamente')
+        fetchData()
+        // Actualizar estado local para mostrar el check verde
+        setManagingDomainStore({ ...managingDomainStore, domain_verified: true })
+      } else {
+        toast.error(result.error || 'Fallo en la verificación DNS')
+      }
+    } catch (error) {
+      console.error('Error verificando DNS:', error)
+      toast.error('Error de conexión al verificar DNS. Intenta de nuevo.')
+    } finally {
+      setIsVerifyingDns(false)
     }
-    setIsVerifyingDns(false)
   }
 
   const handleLogout = async () => {
@@ -318,7 +367,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
 
   const tabs = [
     { id: 'DASHBOARD', label: 'Consola Central', icon: Layout },
-    { id: 'BUSINESS', label: 'Gestión Negocios', icon: Building2 },
+    { id: 'BUSINESS', label: 'Gestión de Tiendas', icon: Building2 },
     { id: 'MONITOR', label: 'Monitor Operativo', icon: TerminalIcon },
     { id: 'CATALOG', label: 'Catálogo Maestro', icon: Database },
   ]
@@ -353,7 +402,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
             className="text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-none border-white/10 font-black uppercase tracking-widest text-[9px] transition-all h-8 px-4"
           >
             <LogOut className="h-3 w-3 mr-2" />
-            TERMINATE_SESSION
+            CERRAR_SESIÓN
           </Button>
         </div>
       </div>
@@ -391,7 +440,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
             {/* KPI Cards - Higher Density */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Negocios', val: stats.total, icon: Building2, color: 'text-amber-500' },
+                { label: 'Tiendas', val: stats.total, icon: Building2, color: 'text-amber-500' },
                 { label: 'Activos', val: stats.active, icon: CheckCircle2, color: 'text-amber-500' },
                 { label: 'Ingresos Totales', val: `$${finStats.income.toLocaleString()}`, icon: DollarSign, color: 'text-amber-400' },
                 { label: 'Profit Neto', val: `$${finStats.profit.toLocaleString()}`, icon: TrendingUp, color: 'text-amber-400' },
@@ -475,7 +524,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                   <div className="p-3 bg-white/[0.02] border-l-2 border-amber-500/50 space-y-1">
                     <p className="text-[9px] font-black text-gray-500 uppercase">Alertas de Pago</p>
                     <p className="text-[11px] font-bold text-white uppercase italic">
-                      {stores.filter(s => s.payment_status === 'overdue').length} Negocios Morosos
+                      {stores.filter(s => s.payment_status === 'overdue').length} Tiendas Morosas
                     </p>
                   </div>
                   <div className="p-3 bg-white/[0.02] border-l-2 border-amber-500/50 space-y-1">
@@ -533,7 +582,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
                 <input 
                   type="text"
-                  placeholder="FILTRAR NEGOCIOS..."
+                  placeholder="FILTRAR TIENDAS..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-black/60 border border-white/10 py-2.5 pl-10 pr-4 text-[11px] font-bold uppercase tracking-widest text-white focus:border-amber-500/40 outline-none transition-all placeholder:text-gray-700"
@@ -545,7 +594,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                   className="bg-amber-600 hover:bg-amber-500 rounded-none text-[10px] font-black uppercase tracking-widest h-10 px-6 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
                 >
                   <Plus className="h-3.5 w-3.5 mr-2" />
-                  Nuevo Negocio
+                  Nueva Tienda
                 </Button>
                 <Button 
                   variant="outline"
@@ -566,6 +615,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                     <th className="p-4">Plan / Tier</th>
                     <th className="p-4">Estado</th>
                     <th className="p-4">Vencimiento</th>
+                    <th className="p-4">Sucursales</th>
                     <th className="p-4 text-right">Acciones</th>
                   </tr>
                 </thead>
@@ -577,8 +627,9 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                       </td>
                     </tr>
                   ) : filteredStores.map(store => (
-                    <tr key={store.id} className="hover:bg-white/5 transition-colors group">
-                      <td className="p-4">
+                    <Fragment key={store.id}>
+                      <tr className="hover:bg-white/5 transition-colors group">
+                        <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-amber-500/10 border border-amber-500/20 flex items-center justify-center font-black text-amber-500 italic text-[11px]">
                             {store.name.substring(0, 2).toUpperCase()}
@@ -623,6 +674,17 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                           {store.next_payment_date ? new Date(store.next_payment_date).toLocaleDateString('es-CL') : 'N/A'}
                         </div>
                       </td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => setExpandedStore(expandedStore === store.id ? null : store.id)}
+                          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-amber-400 transition-colors"
+                        >
+                          {(store as Store & { branches?: {id:string,name:string,is_active:boolean}[] }).branches?.length === 1
+                            ? '1 sucursal'
+                            : `${(store as Store & { branches?: {id:string,name:string,is_active:boolean}[] }).branches?.length || 0} sucursales`}
+                          <ChevronDown className={cn("h-3 w-3 transition-transform", expandedStore === store.id && "rotate-180")} />
+                        </button>
+                      </td>
                       <td className="p-4 text-right flex justify-end gap-2">
                         <Button 
                           size="sm" 
@@ -642,14 +704,42 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                         <Button 
                           size="sm" 
                           variant="ghost"
-                          onClick={() => setEditingStore(store)}
+                          onClick={() => {
+                            setEditingStore(store)
+                            setBillingForm({
+                              tier: store.tier,
+                              payment_status: store.payment_status,
+                              next_payment_date: store.next_payment_date ? new Date(store.next_payment_date).toISOString().split('T')[0] : ''
+                            })
+                          }}
                           className="h-8 rounded-none border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/10 hover:text-amber-400"
                         >
                           <Settings2 className="h-3.5 w-3.5 mr-2" />
-                          EDIT
+                          EDITAR
                         </Button>
                       </td>
                     </tr>
+                    {expandedStore === store.id && (
+                      <tr className="bg-black/40">
+                        <td colSpan={6} className="p-4 pl-8">
+                          {(store as Store & { branches?: {id:string,name:string,is_active:boolean}[] }).branches?.length ? (
+                            <div className="flex flex-wrap gap-2">
+                              {(store as Store & { branches?: {id:string,name:string,is_active:boolean}[] }).branches!.map(b => (
+                                <span key={b.id} className={cn(
+                                  "text-[10px] font-black uppercase tracking-widest px-3 py-1.5 border",
+                                  b.is_active ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/5" : "border-gray-600/30 text-gray-500 bg-gray-500/5"
+                                )}>
+                                  {b.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-gray-600 uppercase font-bold">Sin sucursales registradas</p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -664,15 +754,15 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                   <div className="flex justify-between items-center">
                     <h3 className="text-xl font-black uppercase italic text-white flex items-center gap-3 tracking-tighter">
                       <Building2 className="text-amber-500 h-5 w-5" />
-                      INIT_NEW_TENANT_PROTOCOL
+                      INICIAR_PROTOCOLO_NUEVA_TIENDA
                     </h3>
-                    <div className="text-[9px] font-bold text-amber-500/30 uppercase tracking-[0.3em]">v4.0.2 // STABLE</div>
+                    <div className="text-[9px] font-bold text-amber-500/30 uppercase tracking-[0.3em]">v4.0.2 // ESTABLE</div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Business Legal Name</label>
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Razón Social</label>
                         <input 
                           className="w-full bg-black/60 border border-white/10 p-3 text-[13px] text-white font-bold outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-800" 
                           placeholder="Austral Market Pro"
@@ -681,7 +771,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">URL_SLUG (Unique)</label>
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">URL_IDENTIFICADOR (Único)</label>
                         <input 
                           className="w-full bg-black/60 border border-white/10 p-3 text-[13px] text-amber-500 font-mono outline-none focus:border-amber-500/50 transition-all" 
                           value={newStore.slug}
@@ -689,7 +779,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Master Owner Email</label>
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Email del Propietario</label>
                         <input 
                           type="email"
                           className="w-full bg-black/60 border border-white/10 p-3 text-[13px] text-white font-bold outline-none focus:border-amber-500/50 transition-all" 
@@ -703,16 +793,16 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
 
                     <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Operational Location</label>
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Ubicación Operacional</label>
                         <div className="flex gap-2">
                           <input 
-                            className="flex-[2] bg-black/60 border border-white/10 p-3 text-[13px] text-white font-bold outline-none focus:border-amber-500/50" 
+                            className="flex-[2] min-w-0 bg-black/60 border border-white/10 p-3 text-[13px] text-white font-bold outline-none focus:border-amber-500/50" 
                             placeholder="Address"
                             value={newStore.address}
                             onChange={e => setNewStore({...newStore, address: e.target.value})}
                           />
                           <input 
-                            className="flex-1 bg-black/60 border border-white/10 p-3 text-[13px] text-white font-bold outline-none focus:border-amber-500/50" 
+                            className="flex-1 min-w-0 bg-black/60 border border-white/10 p-3 text-[13px] text-white font-bold outline-none focus:border-amber-500/50" 
                             placeholder="City"
                             value={newStore.city}
                             onChange={e => setNewStore({...newStore, city: e.target.value})}
@@ -720,7 +810,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">SaaS Tier Selection</label>
+                        <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Selección de Plan SaaS</label>
                         <div className="relative">
                           <select 
                             className="w-full bg-black border border-white/10 p-3 text-[13px] text-white font-black uppercase outline-none focus:border-amber-500/50 appearance-none cursor-pointer"
@@ -739,7 +829,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Subscription (Months)</label>
+                          <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Suscripción (Meses)</label>
                           <input 
                             type="number"
                             min="1"
@@ -749,7 +839,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Initial Billing (incl. IVA)</label>
+                          <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Facturación Inicial (incl. IVA)</label>
                           <div className="bg-orange-500/10 border border-orange-500/20 p-3 flex flex-col justify-center h-[46px]">
                             <span className="text-[14px] font-black text-amber-400 italic">
                               ${Math.round((tierPricesUF[newStore.tier] || 0) * UF_VALUE * IVA * newStore.payment_months).toLocaleString()}
@@ -766,14 +856,100 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                       variant="ghost"
                       className="flex-1 rounded-none text-[11px] font-black uppercase tracking-widest text-gray-600 hover:text-white"
                     >
-                      ABORT_PROCESS
+                      CANCELAR
                     </Button>
                     <Button 
                       onClick={handleCreateStore}
                       disabled={isCreatingStore}
                       className="flex-1 bg-amber-600 hover:bg-amber-500 rounded-none text-[11px] font-black uppercase tracking-widest py-6"
                     >
-                      {isCreatingStore ? 'INITIALIZING...' : 'EXECUTE_DEPLOYMENT'}
+                      {isCreatingStore ? 'INICIALIZANDO...' : 'CREAR_TIENDA'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingStore && (
+              <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                <div className="bg-[#0c0c0e] border border-amber-500/40 max-w-md w-full p-8 space-y-6 relative shadow-2xl">
+                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-amber-600 to-orange-600" />
+                  
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-black uppercase italic text-white flex items-center gap-3 tracking-tighter">
+                      <Settings2 className="text-amber-500 h-5 w-5" />
+                      EDITAR_NEGOCIO: {editingStore.name}
+                    </h3>
+                    <Button variant="ghost" size="icon" onClick={() => setEditingStore(null)} className="text-gray-600 hover:text-white">×</Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Selección de Plan SaaS</label>
+                      <div className="relative">
+                        <select 
+                          className="w-full bg-black border border-white/10 p-3 text-[13px] text-white font-black uppercase outline-none focus:border-amber-500/50 appearance-none cursor-pointer"
+                          value={billingForm.tier || 'austral'}
+                          onChange={e => setBillingForm({...billingForm, tier: e.target.value})}
+                        >
+                          <option value="austral">Austral</option>
+                          <option value="archipielago">Archipiélago</option>
+                          <option value="patagonia">Patagonia</option>
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <ArrowDownRight className="h-4 w-4 text-amber-500" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Estado de Pago</label>
+                      <div className="relative">
+                        <select 
+                          className="w-full bg-black border border-white/10 p-3 text-[13px] text-white font-black uppercase outline-none focus:border-amber-500/50 appearance-none cursor-pointer"
+                          value={billingForm.payment_status || 'paid'}
+                          onChange={e => setBillingForm({...billingForm, payment_status: e.target.value})}
+                        >
+                          <option value="paid">Pagado</option>
+                          <option value="pending">Pendiente</option>
+                          <option value="overdue">Atrasado</option>
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <ArrowDownRight className="h-4 w-4 text-amber-500" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Próximo Vencimiento</label>
+                      <input 
+                        type="date"
+                        className="w-full bg-black/60 border border-white/10 p-3 text-[13px] text-white font-mono outline-none focus:border-amber-500/50" 
+                        value={billingForm.next_payment_date || ''}
+                        onChange={e => setBillingForm({...billingForm, next_payment_date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 pt-4 border-t border-white/5">
+                    <Button 
+                      onClick={() => setEditingStore(null)}
+                      variant="ghost"
+                      className="flex-1 rounded-none text-[11px] font-black uppercase tracking-widest text-gray-600 hover:text-white"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={() => handleUpdateBilling(editingStore.id, { 
+                        tier: billingForm.tier as 'austral' | 'archipielago' | 'patagonia', 
+                        payment_status: billingForm.payment_status as 'paid' | 'pending' | 'overdue',
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        next_payment_date: billingForm.next_payment_date ? (new Date(billingForm.next_payment_date).toISOString() as any) : null
+                      })}
+                      className="flex-1 bg-amber-600 hover:bg-amber-500 rounded-none text-[11px] font-black uppercase tracking-widest"
+                    >
+                      Guardar Cambios
                     </Button>
                   </div>
                 </div>
@@ -881,7 +1057,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                 </div>
                 <div>
                   <h4 className="text-[11px] font-black uppercase tracking-widest text-amber-400">Contexto de Monitoreo</h4>
-                  <p className="text-[9px] text-gray-500 font-bold uppercase mt-0.5">Filtrar logs y métricas por negocio específico</p>
+                  <p className="text-[9px] text-gray-500 font-bold uppercase mt-0.5">Filtrar logs y métricas por tienda específica</p>
                 </div>
               </div>
               <div className="relative w-full md:w-auto">
@@ -922,178 +1098,296 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                 </div>
               </div>
               <div className="flex gap-2">
+                {catalogView === 'PENDING' ? (
+                  <>
+                    <Button 
+                      onClick={handleExportSubmissions}
+                      variant="outline"
+                      className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10 rounded-none text-[10px] font-black uppercase tracking-widest h-10 px-4"
+                    >
+                      <ArrowDownRight className="h-3.5 w-3.5 mr-2" />
+                      Exportar para IA
+                    </Button>
+                    <Button 
+                      onClick={handleImportEnriched}
+                      className="bg-amber-600 hover:bg-amber-500 rounded-none text-[10px] font-black uppercase tracking-widest h-10 px-4 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                    >
+                      <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
+                      Importar Enriquecido
+                    </Button>
+                  </>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
+                    <input 
+                      type="text"
+                      placeholder="Buscar en catálogo..."
+                      value={catalogSearch}
+                      onChange={(e) => setCatalogSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          setCatalogPage(0)
+                          fetchApproved(catalogSearch, 0, false)
+                        }
+                      }}
+                      className="bg-black/60 border border-white/10 pl-9 pr-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white focus:border-amber-500/40 outline-none h-10"
+                    />
+                  </div>
+                )}
                 <Button 
-                  onClick={handleExportSubmissions}
-                  variant="outline"
-                  className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10 rounded-none text-[10px] font-black uppercase tracking-widest h-10 px-4"
-                >
-                  <ArrowDownRight className="h-3.5 w-3.5 mr-2" />
-                  Exportar para IA
-                </Button>
-                <Button 
-                  onClick={handleImportEnriched}
-                  className="bg-amber-600 hover:bg-amber-500 rounded-none text-[10px] font-black uppercase tracking-widest h-10 px-4 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
-                >
-                  <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
-                  Importar Enriquecido
-                </Button>
-                <Button 
-                  onClick={fetchSubmissions}
+                  onClick={() => {
+                    if (catalogView === 'PENDING') {
+                      fetchSubmissions()
+                    } else {
+                      setCatalogPage(0)
+                      fetchApproved(catalogSearch, 0, false)
+                    }
+                  }}
                   variant="outline"
                   className="border-white/10 text-gray-500 hover:bg-white/5 rounded-none h-10 px-3"
                   title="Recargar"
                 >
-                  <RefreshCw className={cn("h-4 w-4", loadingSubmissions && "animate-spin")} />
+                  <RefreshCw className={cn("h-4 w-4", (loadingSubmissions || loadingApproved) && "animate-spin")} />
                 </Button>
               </div>
             </div>
 
+            <div className="flex gap-px bg-white/5 border border-white/5">
+              <button
+                onClick={() => setCatalogView('PENDING')}
+                className={cn(
+                  "relative px-6 py-2 transition-all duration-300 text-[10px] font-black uppercase tracking-[0.2em] flex-1",
+                  catalogView === 'PENDING' ? "text-amber-400 bg-amber-500/5" : "text-gray-600 hover:text-gray-400 bg-black/20"
+                )}
+              >
+                Pendientes
+                {catalogView === 'PENDING' && <div className="absolute bottom-0 left-0 w-full h-[1px] bg-amber-500" />}
+              </button>
+              <button
+                onClick={() => setCatalogView('APPROVED')}
+                className={cn(
+                  "relative px-6 py-2 transition-all duration-300 text-[10px] font-black uppercase tracking-[0.2em] flex-1",
+                  catalogView === 'APPROVED' ? "text-amber-400 bg-amber-500/5" : "text-gray-600 hover:text-gray-400 bg-black/20"
+                )}
+              >
+                Catálogo Aprobado
+                {catalogView === 'APPROVED' && <div className="absolute bottom-0 left-0 w-full h-[1px] bg-amber-500" />}
+              </button>
+            </div>
+
             <div className="bg-black/60 border border-white/5 overflow-x-auto">
               <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.15em] text-gray-500 bg-white/[0.02]">
-                    <th className="p-4">SKU / Origen</th>
-                    <th className="p-4">Datos (Nombre, Marca, Categoría)</th>
-                    <th className="p-4">Descripción (Enriquecida)</th>
-                    <th className="p-4 text-right min-w-[200px]">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {loadingSubmissions ? (
-                    <tr>
-                      <td colSpan={4} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
-                        Cargando cola de revisión...
-                      </td>
-                    </tr>
-                  ) : submissions.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
-                        No hay productos pendientes
-                      </td>
-                    </tr>
-                  ) : submissions.map(sub => (
-                    <tr key={sub.id} className="hover:bg-white/5 transition-colors group">
-                      <td className="p-4 align-top">
-                        <div className="text-[12px] font-black text-amber-400 font-mono">{sub.sku}</div>
-                        <div className="text-[9px] text-gray-500 font-bold uppercase mt-1">
-                          Vía: {sub.stores?.name || 'Desconocido'}
-                        </div>
-                        <div className="text-[9px] text-gray-600 font-bold mt-0.5">
-                          {new Date(sub.created_at).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="p-4 align-top">
-                        {editingSubmission?.id === sub.id ? (
-                          <div className="space-y-2">
-                            <input 
-                              value={editingSubmission.name} 
-                              onChange={e => setEditingSubmission({...editingSubmission, name: e.target.value})}
-                              className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
-                              placeholder="Nombre"
-                            />
-                            <div className="flex gap-2">
-                              <input 
-                                value={editingSubmission.brand || ''} 
-                                onChange={e => setEditingSubmission({...editingSubmission, brand: e.target.value})}
-                                className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
-                                placeholder="Marca"
+                {catalogView === 'PENDING' ? (
+                  <>
+                    <thead>
+                      <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.15em] text-gray-500 bg-white/[0.02]">
+                        <th className="p-4">SKU / Origen</th>
+                        <th className="p-4">Datos (Nombre, Marca, Categoría)</th>
+                        <th className="p-4">Descripción (Enriquecida)</th>
+                        <th className="p-4 text-right min-w-[200px]">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {loadingSubmissions ? (
+                        <tr>
+                          <td colSpan={4} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
+                            Cargando cola de revisión...
+                          </td>
+                        </tr>
+                      ) : submissions.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
+                            No hay productos pendientes
+                          </td>
+                        </tr>
+                      ) : submissions.map(sub => (
+                        <tr key={sub.id} className="hover:bg-white/5 transition-colors group">
+                          <td className="p-4 align-top">
+                            <div className="text-[12px] font-black text-amber-400 font-mono">{sub.sku}</div>
+                            <div className="text-[9px] text-gray-500 font-bold uppercase mt-1">
+                              Vía: {sub.stores?.name || 'Desconocido'}
+                            </div>
+                            <div className="text-[9px] text-gray-600 font-bold mt-0.5">
+                              {new Date(sub.created_at).toLocaleDateString()}
+                            </div>
+                          </td>
+                          <td className="p-4 align-top">
+                            {editingSubmission?.id === sub.id ? (
+                              <div className="space-y-2">
+                                <input 
+                                  value={editingSubmission.name} 
+                                  onChange={e => setEditingSubmission({...editingSubmission, name: e.target.value})}
+                                  className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                                  placeholder="Nombre"
+                                />
+                                <div className="flex gap-2">
+                                  <input 
+                                    value={editingSubmission.brand || ''} 
+                                    onChange={e => setEditingSubmission({...editingSubmission, brand: e.target.value})}
+                                    className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                                    placeholder="Marca"
+                                  />
+                                  <input 
+                                    value={editingSubmission.category || ''} 
+                                    onChange={e => setEditingSubmission({...editingSubmission, category: e.target.value})}
+                                    className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                                    placeholder="Categoría"
+                                  />
+                                </div>
+                                <input 
+                                  value={editingSubmission.image_url || ''} 
+                                  onChange={e => setEditingSubmission({...editingSubmission, image_url: e.target.value})}
+                                  className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
+                                  placeholder="URL de Imagen"
+                                />
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="text-[13px] font-black text-white">{sub.name}</div>
+                                <div className="flex gap-2 mt-1">
+                                  {sub.brand && <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300">{sub.brand}</span>}
+                                  {sub.category && <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300">{sub.category}</span>}
+                                </div>
+                                {sub.image_url && <a href={sub.image_url} target="_blank" rel="noreferrer" className="text-[9px] text-blue-400 hover:underline mt-2 inline-block">Ver imagen</a>}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 align-top">
+                            {editingSubmission?.id === sub.id ? (
+                              <textarea 
+                                value={editingSubmission.description || ''} 
+                                onChange={e => setEditingSubmission({...editingSubmission, description: e.target.value})}
+                                className="w-full h-full min-h-[80px] bg-black border border-white/10 p-2 text-xs text-white" 
+                                placeholder="Descripción (IA)"
                               />
-                              <input 
-                                value={editingSubmission.category || ''} 
-                                onChange={e => setEditingSubmission({...editingSubmission, category: e.target.value})}
-                                className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
-                                placeholder="Categoría"
-                              />
-                            </div>
-                            <input 
-                              value={editingSubmission.image_url || ''} 
-                              onChange={e => setEditingSubmission({...editingSubmission, image_url: e.target.value})}
-                              className="w-full bg-black border border-white/10 p-2 text-xs text-white" 
-                              placeholder="URL de Imagen"
-                            />
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="text-[13px] font-black text-white">{sub.name}</div>
-                            <div className="flex gap-2 mt-1">
-                              {sub.brand && <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300">{sub.brand}</span>}
-                              {sub.category && <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300">{sub.category}</span>}
-                            </div>
-                            {sub.image_url && <a href={sub.image_url} target="_blank" rel="noreferrer" className="text-[9px] text-blue-400 hover:underline mt-2 inline-block">Ver imagen</a>}
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-4 align-top">
-                        {editingSubmission?.id === sub.id ? (
-                          <textarea 
-                            value={editingSubmission.description || ''} 
-                            onChange={e => setEditingSubmission({...editingSubmission, description: e.target.value})}
-                            className="w-full h-full min-h-[80px] bg-black border border-white/10 p-2 text-xs text-white" 
-                            placeholder="Descripción (IA)"
-                          />
-                        ) : (
-                          <div className={cn("text-[10px] leading-relaxed max-w-sm", sub.description ? "text-gray-300" : "text-gray-600 italic")}>
-                            {sub.description || 'Sin descripción...'}
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-4 text-right align-top">
-                        {editingSubmission?.id === sub.id ? (
-                          <div className="flex flex-col gap-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleApproveSubmission(sub.id, editingSubmission)}
-                              className="h-8 bg-green-600 hover:bg-green-500 rounded-none text-[9px] font-black uppercase"
-                            >
-                              Guardar y Aprobar
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              onClick={() => setEditingSubmission(null)}
-                              className="h-8 border border-white/10 text-gray-400 rounded-none text-[9px] font-black uppercase hover:bg-white/5"
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleApproveSubmission(sub.id, sub)}
-                              className="h-8 bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white rounded-none text-[9px] font-black uppercase"
-                            >
-                              <CheckCircle2 className="w-3 h-3 mr-1.5" /> Aprobar Rápido
-                            </Button>
-                            <div className="flex gap-2 w-full">
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                onClick={() => setEditingSubmission(sub)}
-                                className="flex-1 h-8 border border-white/10 text-gray-400 rounded-none text-[9px] font-black uppercase hover:bg-white/5"
-                              >
-                                Editar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                onClick={() => {
-                                  if(confirm('¿Seguro que deseas rechazar este registro?')) {
-                                    handleRejectSubmission(sub.id)
-                                  }
-                                }}
-                                className="flex-1 h-8 border border-red-500/20 text-red-500 rounded-none text-[9px] font-black uppercase hover:bg-red-500/10"
-                              >
-                                Rechazar
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                            ) : (
+                              <div className={cn("text-[10px] leading-relaxed max-w-sm", sub.description ? "text-gray-300" : "text-gray-600 italic")}>
+                                {sub.description || 'Sin descripción...'}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 text-right align-top">
+                            {editingSubmission?.id === sub.id ? (
+                              <div className="flex flex-col gap-2">
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleApproveSubmission(sub.id, editingSubmission)}
+                                  className="h-8 bg-green-600 hover:bg-green-500 rounded-none text-[9px] font-black uppercase"
+                                >
+                                  Guardar y Aprobar
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  onClick={() => setEditingSubmission(null)}
+                                  className="h-8 border border-white/10 text-gray-400 rounded-none text-[9px] font-black uppercase hover:bg-white/5"
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleApproveSubmission(sub.id, sub)}
+                                  className="h-8 bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white rounded-none text-[9px] font-black uppercase"
+                                >
+                                  <CheckCircle2 className="w-3 h-3 mr-1.5" /> Aprobar Rápido
+                                </Button>
+                                <div className="flex gap-2 w-full">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => setEditingSubmission(sub)}
+                                    className="flex-1 h-8 border border-white/10 text-gray-400 rounded-none text-[9px] font-black uppercase hover:bg-white/5"
+                                  >
+                                    Editar
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => {
+                                      if(confirm('¿Seguro que deseas rechazar este registro?')) {
+                                        handleRejectSubmission(sub.id)
+                                      }
+                                    }}
+                                    className="flex-1 h-8 border border-red-500/20 text-red-500 rounded-none text-[9px] font-black uppercase hover:bg-red-500/10"
+                                  >
+                                    Rechazar
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                ) : (
+                  <>
+                    <thead>
+                      <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-[0.15em] text-gray-500 bg-white/[0.02]">
+                        <th className="p-4">SKU</th>
+                        <th className="p-4">Nombre</th>
+                        <th className="p-4">Marca</th>
+                        <th className="p-4">Categoría</th>
+                        <th className="p-4 text-right">Precio Ref.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {loadingApproved ? (
+                        <tr>
+                          <td colSpan={5} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
+                            Cargando catálogo aprobado...
+                          </td>
+                        </tr>
+                      ) : approvedProducts.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="p-20 text-center text-[11px] text-gray-600 uppercase font-black tracking-widest">
+                            No hay productos en el catálogo maestro
+                          </td>
+                        </tr>
+                      ) : approvedProducts.map(prod => (
+                        <tr key={prod.sku} className="hover:bg-white/5 transition-colors group">
+                          <td className="p-4">
+                            <div className="text-[12px] font-black text-amber-400 font-mono">{prod.sku}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-[13px] font-black text-white">{prod.name}</div>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">{prod.brand || '-'}</span>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">{prod.category || '-'}</span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <span className="text-[11px] font-black text-white">
+                              {prod.reference_price ? `$${prod.reference_price.toLocaleString()}` : '-'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                )}
               </table>
+              {catalogView === 'APPROVED' && catalogHasMore && (
+                <div className="flex justify-center p-4 border-t border-white/5">
+                  <Button 
+                    onClick={() => {
+                      const nextPage = catalogPage + 1
+                      setCatalogPage(nextPage)
+                      fetchApproved(catalogSearch, nextPage, true)
+                    }}
+                    disabled={loadingApproved}
+                    variant="outline"
+                    className="border-white/10 text-[10px] font-black uppercase tracking-widest text-amber-500 hover:bg-amber-500/10"
+                  >
+                    Cargar más ({approvedProducts.length} de {catalogTotal})
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

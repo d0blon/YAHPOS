@@ -32,6 +32,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { SectionCard, SectionHeader } from '@/components/admin/SectionCard'
+import { useSaaS } from '@/providers/SaaSProvider'
 
 interface Branch {
   id: string
@@ -44,6 +45,7 @@ interface Branch {
 }
 
 export default function SucursalesPage() {
+  const { storeId } = useSaaS()
   const [branches, setBranches] = useState<Branch[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -100,6 +102,10 @@ export default function SucursalesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!storeId) {
+      toast.error('No se pudo determinar la tienda actual')
+      return
+    }
     setIsSubmitting(true)
 
     try {
@@ -114,7 +120,7 @@ export default function SucursalesPage() {
       } else {
         const { error } = await supabase
           .from('branches')
-          .insert([formData])
+          .insert([{ ...formData, store_id: storeId }])
         
         if (error) throw error
         toast.success('Sucursal creada correctamente')

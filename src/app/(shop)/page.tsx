@@ -2,16 +2,18 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  Truck, Search, ShoppingCart, Heart, User, Sparkles,
+  Truck, ShoppingCart, Heart, Sparkles,
   Apple, Beef, Package, Wine, PawPrint, Candy,
   Droplets, Baby, Globe, Tag, Clock, Award, Leaf,
-  ArrowRight, Star, ShieldCheck, ArrowLeft, ChevronRight,
-  Timer, Flame, TrendingUp, ChefHat, Newspaper
+  ArrowRight, Star, ShieldCheck,
+  Timer, Flame, TrendingUp, ChefHat
 } from 'lucide-react'
 import { Home as HomeIcon } from 'lucide-react'
 import Footer from '@/components/layout/Footer'
 import WhatsAppButton from '@/components/layout/WhatsAppButton'
 import PlatformLanding from '@/sections/PlatformLanding'
+import { createClient } from '@/lib/supabase'
+import CategoryNav from '@/components/shop/CategoryNav'
 
 interface Product {
   id: string
@@ -70,19 +72,29 @@ const MOCK_PRODUCTS: Product[] = (() => {
   }))
 })()
 
-const CATEGORIES = [
-  { name: 'Ofertas', icon: Tag, color: 'text-rose-600', bg: 'bg-rose-50' },
-  { name: 'Frutas y Verduras', icon: Apple, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { name: 'Carnicería', icon: Beef, color: 'text-red-600', bg: 'bg-red-50' },
-  { name: 'Despensa', icon: Package, color: 'text-amber-600', bg: 'bg-amber-50' },
-  { name: 'Bebidas', icon: Wine, color: 'text-violet-600', bg: 'bg-violet-50' },
-  { name: 'Limpieza', icon: Sparkles, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-  { name: 'Hogar', icon: HomeIcon, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { name: 'Mascotas', icon: PawPrint, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  { name: 'Lácteos', icon: Droplets, color: 'text-sky-600', bg: 'bg-sky-50' },
-  { name: 'Dulces', icon: Candy, color: 'text-pink-600', bg: 'bg-pink-50' },
-  { name: 'Bebé', icon: Baby, color: 'text-teal-600', bg: 'bg-teal-50' },
-  { name: 'Importados', icon: Globe, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+interface DynamicCategory {
+  name: string
+  slug?: string
+  icon?: React.ComponentType<{ className?: string }>
+  iconName?: string
+  color: string
+  bg: string
+  subcats?: string[]
+}
+
+const CATEGORIES: DynamicCategory[] = [
+  { name: 'Ofertas', icon: Tag, iconName: 'Tag', color: 'text-rose-600', bg: 'bg-rose-50' },
+  { name: 'Frutas y Verduras', icon: Apple, iconName: 'Apple', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { name: 'Carnicería', icon: Beef, iconName: 'Beef', color: 'text-red-600', bg: 'bg-red-50' },
+  { name: 'Despensa', icon: Package, iconName: 'Package', color: 'text-amber-600', bg: 'bg-amber-50' },
+  { name: 'Bebidas', icon: Wine, iconName: 'Wine', color: 'text-violet-600', bg: 'bg-violet-50' },
+  { name: 'Limpieza', icon: Sparkles, iconName: 'Sparkles', color: 'text-cyan-600', bg: 'bg-cyan-50' },
+  { name: 'Hogar', icon: HomeIcon, iconName: 'Home', color: 'text-orange-600', bg: 'bg-orange-50' },
+  { name: 'Mascotas', icon: PawPrint, iconName: 'PawPrint', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  { name: 'Lácteos', icon: Droplets, iconName: 'Droplets', color: 'text-sky-600', bg: 'bg-sky-50' },
+  { name: 'Dulces', icon: Candy, iconName: 'Candy', color: 'text-pink-600', bg: 'bg-pink-50' },
+  { name: 'Bebé', icon: Baby, iconName: 'Baby', color: 'text-teal-600', bg: 'bg-teal-50' },
+  { name: 'Importados', icon: Globe, iconName: 'Globe', color: 'text-indigo-600', bg: 'bg-indigo-50' },
 ]
 
 const BASKETS = [
@@ -143,7 +155,7 @@ const RECIPES = [
   },
 ]
 
-const PARTNER_LOGOS = ['Webpay', 'Flow', 'Mercado Pago', 'Khipu', 'Tenpo']
+
 
 // --- ZONE COMPONENTS ---
 
@@ -175,37 +187,50 @@ function MapPinIcon({ className }: { className?: string }) {
   )
 }
 
-function HeroOfertaAncla() {
+function HeroOfertaAncla({ product }: { product?: Product }) {
+  if (!product) return null
+  const discount = product.original_price ? Math.round((1 - product.price / product.original_price) * 100) : 0
+  const savings = product.original_price ? product.original_price - product.price : 0
+  const pricePerUnit = product.unit ? `por ${product.unit === 'kg' ? 'kg' : 'unidad'}` : ''
+
   return (
     <section className="bg-[#f7f5f2]">
       <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="grid md:grid-cols-2 gap-6 md:gap-10 items-center">
           <div className="relative aspect-[4/3] md:aspect-auto md:h-[400px] rounded-2xl overflow-hidden bg-white shadow-lg">
-            <Image
-              src="https://placehold.co/800x600/4b0082/ffd100?text=Oferta+Semana"
-              alt="Oferta de la semana"
-              fill
-              className="object-cover"
-            />
+            {product.image ? (
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                className="object-contain p-6"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold">Sin imagen</div>
+            )}
             <div className="absolute top-4 left-4 bg-brand-accent text-brand-primary text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1">
               <Tag className="w-3 h-3" />
               OFERTA SEMANA
             </div>
           </div>
           <div className="space-y-4">
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Detergentes y limpieza</p>
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{product.category}</p>
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-              Detergente Líquido Ultra 1.5L
+              {product.name}
             </h2>
             <div className="flex items-baseline gap-3">
-              <span className="text-2xl text-gray-400 line-through font-bold">$4.990</span>
-              <span className="text-5xl md:text-6xl font-black text-brand-primary price-lg">$2.990</span>
+              {product.original_price && (
+                <span className="text-2xl text-gray-400 line-through font-bold">${product.original_price.toLocaleString('es-CL')}</span>
+              )}
+              <span className="text-5xl md:text-6xl font-black text-brand-primary price-lg">${product.price.toLocaleString('es-CL')}</span>
             </div>
-            <p className="text-sm text-gray-500">por litro: $1.993</p>
-            <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 text-sm font-bold px-3 py-1.5 rounded-lg">
-              <Award className="w-4 h-4" />
-              Ahorras $2.000 (40%)
-            </div>
+            {pricePerUnit && <p className="text-sm text-gray-500">{pricePerUnit}</p>}
+            {savings > 0 && (
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 text-sm font-bold px-3 py-1.5 rounded-lg">
+                <Award className="w-4 h-4" />
+                Ahorras ${savings.toLocaleString('es-CL')} ({discount}%)
+              </div>
+            )}
             <div className="flex items-center gap-3 text-sm text-gray-600">
               <Timer className="w-4 h-4 text-rose-500" />
               <span>Oferta válida hasta: <strong className="text-gray-900">23:59:59</strong></span>
@@ -225,7 +250,23 @@ function HeroOfertaAncla() {
   )
 }
 
-function ZonaCategorias() {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Tag,
+  Apple,
+  Beef,
+  Package,
+  Wine,
+  Sparkles,
+  Home: HomeIcon,
+  PawPrint,
+  Droplets,
+  Candy,
+  Baby,
+  Globe,
+}
+
+function ZonaCategorias({ categories }: { categories: DynamicCategory[] }) {
+  const items = categories.length > 0 ? categories : CATEGORIES
   return (
     <section className="bg-white border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -238,18 +279,21 @@ function ZonaCategorias() {
           </div>
         </div>
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-          {CATEGORIES.map(cat => (
-            <Link
-              key={cat.name}
-              href={`/categoria/${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
-              className="flex flex-col items-center gap-2 min-w-[80px] p-3 rounded-xl border border-gray-100 hover:border-brand-primary/30 hover:shadow-md transition-all group"
-            >
-              <div className={`w-10 h-10 rounded-lg ${cat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                <cat.icon className={`w-5 h-5 ${cat.color}`} />
-              </div>
-              <span className="text-[11px] font-semibold text-gray-600 text-center leading-tight">{cat.name}</span>
-            </Link>
-          ))}
+          {items.map(cat => {
+            const Icon = cat.icon || (cat.iconName ? ICON_MAP[cat.iconName] : Package)
+            return (
+              <Link
+                key={cat.name}
+                href={`/categoria/${cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-')}`}
+                className="flex flex-col items-center gap-2 min-w-[80px] p-3 rounded-xl border border-gray-100 hover:border-brand-primary/30 hover:shadow-md transition-all group"
+              >
+                <div className={`w-10 h-10 rounded-lg ${cat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  <Icon className={`w-5 h-5 ${cat.color}`} />
+                </div>
+                <span className="text-[11px] font-semibold text-gray-600 text-center leading-tight">{cat.name}</span>
+              </Link>
+            )
+          })}
         </div>
       </div>
     </section>
@@ -257,7 +301,8 @@ function ZonaCategorias() {
 }
 
 function ZonaOfertas({ products }: { products: Product[] }) {
-  const offers = products.filter(p => p.original_price).slice(0, 8)
+  const offers = products.filter(p => p.original_price && p.original_price > p.price).slice(0, 8)
+  if (offers.length === 0) return null
   return (
     <section className="bg-[#f7f5f2]">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -284,56 +329,65 @@ function ZonaOfertas({ products }: { products: Product[] }) {
 }
 
 function ZonaFrutasCarnes({ products }: { products: Product[] }) {
-  const frutas = products.filter(p => p.categorySlug === 'carniceria').slice(0, 4).map((p, i) => ({ ...p, name: ['Tomate x kg', 'Lechuga Escarola', 'Plátano x kg', 'Manzana Roja x kg', 'Palta x kg', 'Limón x kg', 'Cebolla x kg', 'Zapallo x kg'][i % 8] }))
-  const carnes = products.filter(p => p.categorySlug === 'carniceria').slice(0, 4)
+  const feriaList = ['frescos', 'frutas-y-verduras', 'frutas', 'verduras', 'feria']
+  const carnesList = ['carnes', 'carniceria', 'pollo', 'cerdo', 'vacuno']
+  
+  const frutas = products.filter(p => feriaList.includes(p.categorySlug)).slice(0, 8)
+  const carnes = products.filter(p => carnesList.includes(p.categorySlug)).slice(0, 8)
+  
+  if (frutas.length === 0 && carnes.length === 0) return null
+  
   return (
     <section className="bg-white">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
-        {/* Frutas y Verduras */}
-        <div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 bg-emerald-500 rounded-full" />
-            <div className="flex-1">
-              <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>
-                La Gran Feria
-              </h2>
-              <p className="text-sm text-emerald-700 font-medium flex items-center gap-1">
-                <Leaf className="w-3.5 h-3.5" /> Frescas y seleccionadas — Llegadas hoy
-              </p>
+        {frutas.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-8 bg-emerald-500 rounded-full" />
+              <div className="flex-1">
+                <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>
+                  La Gran Feria
+                </h2>
+                <p className="text-sm text-emerald-700 font-medium flex items-center gap-1">
+                  <Leaf className="w-3.5 h-3.5" /> Frescas y seleccionadas — Llegadas hoy
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full">
+                <Truck className="w-3 h-3" /> Entrega el mismo día
+              </span>
             </div>
-            <span className="hidden sm:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full">
-              <Truck className="w-3 h-3" /> Entrega el mismo día
-            </span>
-          </div>
-          <div className="super-grid">
-            {frutas.map((product) => (
-              <ProductCardSuper key={product.id} product={product} variant="fresh" />
-            ))}
-          </div>
-          <Link href="/categoria/frutas-verduras" className="mt-3 flex items-center justify-center gap-1 text-sm font-bold text-emerald-700 py-2 hover:underline">
-            Ver toda la feria <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-        {/* Carnicería */}
-        <div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 bg-rose-500 rounded-full" />
-            <div className="flex-1">
-              <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>
-                Carnicería — Cortes seleccionados
-              </h2>
-              <p className="text-sm text-rose-600 font-medium">Cortes premium, directo del campo</p>
+            <div className="super-grid">
+              {frutas.map((product) => (
+                <ProductCardSuper key={product.id} product={product} variant="fresh" />
+              ))}
             </div>
+            <Link href="/categoria/frutas-y-verduras" className="mt-3 flex items-center justify-center gap-1 text-sm font-bold text-emerald-700 py-2 hover:underline">
+              Ver toda la feria <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <div className="super-grid">
-            {carnes.map((product) => (
-              <ProductCardSuper key={product.id} product={product} variant="meat" />
-            ))}
+        )}
+        
+        {carnes.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-8 bg-rose-500 rounded-full" />
+              <div className="flex-1">
+                <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Carnicería — Cortes seleccionados
+                </h2>
+                <p className="text-sm text-rose-600 font-medium">Cortes premium, directo del campo</p>
+              </div>
+            </div>
+            <div className="super-grid">
+              {carnes.map((product) => (
+                <ProductCardSuper key={product.id} product={product} variant="meat" />
+              ))}
+            </div>
+            <Link href="/categoria/carniceria" className="mt-3 flex items-center justify-center gap-1 text-sm font-bold text-rose-600 py-2 hover:underline">
+              Ver cortes <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <Link href="/categoria/carniceria" className="mt-3 flex items-center justify-center gap-1 text-sm font-bold text-rose-600 py-2 hover:underline">
-            Ver cortes <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+        )}
       </div>
     </section>
   )
@@ -378,26 +432,39 @@ function ZonaCategoriasMenorFrecuencia() {
     <section className="bg-white border-t border-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid md:grid-cols-3 gap-6">
-          {cats.map(cat => (
-            <Link key={cat.name} href={`/categoria/${cat.name.toLowerCase()}`} className="group">
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 hover:border-brand-primary/30 hover:shadow-md transition-all">
-                <div className={`w-14 h-14 rounded-xl ${cat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                  <cat.icon className={`w-7 h-7 ${cat.color}`} />
+          {cats.map(cat => {
+            const Icon = cat.icon || (cat.iconName ? ICON_MAP[cat.iconName] : Package)
+            return (
+              <Link key={cat.name} href={`/categoria/${cat.slug || cat.name.toLowerCase()}`} className="group">
+                <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 hover:border-brand-primary/30 hover:shadow-md transition-all">
+                  <div className={`w-14 h-14 rounded-xl ${cat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <Icon className={`w-7 h-7 ${cat.color}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">{cat.name}</h3>
+                    <p className="text-xs text-gray-400">Ver productos →</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{cat.name}</h3>
-                  <p className="text-xs text-gray-400">Ver productos →</p>
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       </div>
     </section>
   )
 }
 
-function ZonaRankingRecetas() {
+function ZonaRankingRecetas({ products }: { products: Product[] }) {
+  const rankingProducts = products.length > 0 
+    ? products.slice(0, 5).map((p, idx) => ({
+        rank: idx + 1,
+        name: p.name,
+        price: p.price,
+        sales: `${1000 - idx * 120} vendidos`,
+        image: p.image || `https://placehold.co/60x60/f7f5f2/4b0082?text=${p.name.charAt(0)}`
+      }))
+    : TOP_PRODUCTS;
+
   return (
     <section className="bg-[#f7f5f2]">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -409,7 +476,7 @@ function ZonaRankingRecetas() {
               Top ventas esta semana
             </h2>
             <div className="space-y-3">
-              {TOP_PRODUCTS.map(p => (
+              {rankingProducts.map(p => (
                 <div key={p.rank} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 hover:shadow-md transition-shadow">
                   <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black ${
                     p.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
@@ -417,7 +484,9 @@ function ZonaRankingRecetas() {
                     p.rank === 3 ? 'bg-orange-100 text-orange-700' :
                     'bg-gray-50 text-gray-400'
                   }`}>{p.rank}</span>
-                  <Image src={p.image} alt={p.name} width={40} height={40} className="rounded-lg object-cover w-10 h-10" />
+                  <div className="relative w-10 h-10 shrink-0">
+                    <Image src={p.image} alt={p.name} fill className="rounded-lg object-cover" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
                     <p className="text-xs text-gray-400">{p.sales}</p>
@@ -469,7 +538,10 @@ function ZonaRankingRecetas() {
   )
 }
 
-function ZonaImportados() {
+function ZonaImportados({ products }: { products: Product[] }) {
+  const importados = products.filter(p => p.categorySlug === 'importados' || p.categorySlug === 'importado').slice(0, 4)
+  if (importados.length === 0) return null
+
   return (
     <section className="bg-gray-950 text-white">
       <div className="max-w-7xl mx-auto px-4 py-10">
@@ -478,19 +550,18 @@ function ZonaImportados() {
           <p className="text-brand-accent text-sm font-medium mt-1">Productos importados seleccionados</p>
         </div>
         <div className="super-grid">
-          {[
-            { name: 'Aceite de Oliva Extra Virgen', origin: '🇮🇹 Italia', price: 12990, desc: 'Prensa en frío, cosecha 2025', image: 'https://placehold.co/400x400/2a2a2a/ffd100?text=Oliva' },
-            { name: 'Parmigiano Reggiano DOP', origin: '🇮🇹 Italia', price: 18990, desc: 'Madurado 24 meses, origen protegido', image: 'https://placehold.co/400x400/2a2a2a/ffd100?text=Parmesano' },
-            { name: 'Té Matcha Ceremonial', origin: '🇯🇵 Japón', price: 14990, desc: 'Grado ceremonial, cultivo sombreado', image: 'https://placehold.co/400x400/2a2a2a/ffd100?text=Matcha' },
-            { name: 'Salmón Noruego Ahumado', origin: '🇳🇴 Noruega', price: 22990, desc: 'Ahumado natural, cortes premium', image: 'https://placehold.co/400x400/2a2a2a/ffd100?text=Salmon' },
-          ].map(item => (
-            <div key={item.name} className="bg-[#2a2a2a] border border-gray-800 rounded-2xl p-4 hover:border-brand-accent/30 transition-all group">
+          {importados.map(item => (
+            <div key={item.id} className="bg-[#2a2a2a] border border-gray-800 rounded-2xl p-4 hover:border-brand-accent/30 transition-all group">
               <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-gray-800">
-                <Image src={item.image} alt={item.name} fill className="object-cover" />
+                {item.image ? (
+                  <Image src={item.image} alt={item.name} fill className="object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold">Sin imagen</div>
+                )}
               </div>
-              <span className="text-xs font-medium text-brand-accent">{item.origin}</span>
-              <h3 className="text-sm font-bold text-white mt-1 mb-1">{item.name}</h3>
-              <p className="text-xs text-gray-400 mb-2">{item.desc}</p>
+              <span className="text-xs font-medium text-brand-accent">{item.brand || 'Importado'}</span>
+              <h3 className="text-sm font-bold text-white mt-1 mb-1 line-clamp-2 min-h-[2.5em]">{item.name}</h3>
+              <p className="text-xs text-gray-400 mb-2 line-clamp-1">{item.description || 'Producto especial seleccionado'}</p>
               <span className="text-lg font-black text-brand-accent price-lg">${item.price.toLocaleString('es-CL')}</span>
             </div>
           ))}
@@ -613,6 +684,62 @@ export const metadata = {
   description: 'Gestiona tu negocio y compra online con la plataforma líder en la Patagonia. Envíos a domicilio y POS integrado.',
 }
 
+interface DbProduct {
+  id: string | number
+  name: string
+  description?: string | null
+  price: number
+  original_price?: number | null
+  category?: string | null
+  image?: string | null
+  stock?: number | null
+  nutritional_seals?: number | null
+  unit?: string | null
+  sku?: string | null
+  barcode?: string | null
+  brand?: string | null
+  min_stock?: number | null
+  max_stock?: number | null
+  is_active?: boolean | null
+  category_id?: string | null
+  tags?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  store_id?: string | null
+}
+
+function normalizeDbProduct(p: DbProduct): Product {
+  const categorySlug = (p.category ?? '').toLowerCase().replace(/\s+/g, '-')
+  const categoryName = categorySlug
+    ? categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1)
+    : 'Sin categoría'
+  
+  return {
+    id: String(p.id),
+    name: p.name,
+    description: p.description ?? '',
+    price: p.price,
+    original_price: p.original_price ?? null,
+    category: categoryName,
+    categorySlug: categorySlug,
+    image: p.image ?? null,
+    stock: p.stock ?? 0,
+    nutritionalSeals: p.nutritional_seals ?? 0,
+    unit: p.unit ?? 'un',
+    sku: p.sku ?? null,
+    barcode: p.barcode ?? null,
+    brand: p.brand ?? null,
+    min_stock: p.min_stock ?? 5,
+    max_stock: p.max_stock ?? 100,
+    is_active: p.is_active ?? true,
+    category_id: p.category_id ?? null,
+    tags: p.tags ?? null,
+    created_at: p.created_at || new Date().toISOString(),
+    updated_at: p.updated_at || new Date().toISOString(),
+    store_id: p.store_id ?? null,
+  }
+}
+
 export default async function Home() {
   const headersList = await headers()
   const storeId = headersList.get('x-store-id')
@@ -662,25 +789,98 @@ export default async function Home() {
     )
   }
 
+  // Carga de productos dinámicos desde base de datos
+  let products: Product[] = []
+  let isDemo = false
+
+  if (storeId) {
+    try {
+      const supabase = await createClient()
+      const { data: dbProducts, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+
+      if (!error && dbProducts && dbProducts.length > 0) {
+        products = dbProducts.map(normalizeDbProduct)
+      } else {
+        products = MOCK_PRODUCTS
+        isDemo = true
+      }
+    } catch (err) {
+      console.error('Error fetching dynamic store products:', err)
+      products = MOCK_PRODUCTS
+      isDemo = true
+    }
+  } else {
+    products = MOCK_PRODUCTS
+    isDemo = true
+  }
+
+  // Ofertas simuladas si no hay ofertas reales definidas en base de datos
+  const hasRealOffers = products.some(p => p.original_price && p.original_price > p.price)
+  if (!hasRealOffers && !isDemo) {
+    products = products.map((p, idx) => {
+      if (idx < 12) {
+        return {
+          ...p,
+          original_price: Math.round(p.price * 1.25)
+        }
+      }
+      return p
+    })
+  }
+
+  // Extracción de categorías dinámicas
+  const uniqueCategorySlugs = Array.from(new Set(products.map(p => p.categorySlug)))
+  const dynamicCategories = uniqueCategorySlugs.map(slug => {
+    const existing = CATEGORIES.find(c => c.name.toLowerCase().replace(/\s+/g, '-') === slug)
+    if (existing) {
+      return {
+        name: existing.name,
+        slug: slug,
+        iconName: existing.iconName || 'Package',
+        color: existing.color,
+        bg: existing.bg,
+        subcats: [existing.name]
+      }
+    } else {
+      const name = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ')
+      return {
+        name: name,
+        slug: slug,
+        iconName: 'Package',
+        color: 'text-brand-primary',
+        bg: 'bg-brand-primary/5',
+        subcats: [name]
+      }
+    }
+  })
+
+  // Obtener producto destacado para Hero (primer producto en oferta o primer producto general)
+  const featuredProduct = products.find(p => p.original_price) || products[0]
+
   // Supermercado completo — Ecommerce para Archipiélago / Patagonia
   return (
     <div className="shop-bg min-h-screen">
       {/* Z1 — Barra logística */}
       <ZoneBarraLogistica />
 
-      {/* Zona adicional: hero está arriba del header, integrado con el layout */}
+      {/* Menú de categorías dinámico */}
+      <CategoryNav categories={dynamicCategories} />
 
       {/* Z2 — Hero oferta ancla */}
-      <HeroOfertaAncla />
+      {featuredProduct && <HeroOfertaAncla product={featuredProduct} />}
 
       {/* Z3 — Mapa tienda: categorías */}
-      <ZonaCategorias />
+      <ZonaCategorias categories={dynamicCategories} />
 
       {/* Z4 — Ofertas agrupadas */}
-      <ZonaOfertas products={MOCK_PRODUCTS} />
+      <ZonaOfertas products={products} />
 
       {/* Z5 — Frutas y verduras + Carnicería */}
-      <ZonaFrutasCarnes products={MOCK_PRODUCTS} />
+      <ZonaFrutasCarnes products={products} />
 
       {/* Z6 — Canastas sugeridas */}
       <ZonaCanastas />
@@ -689,10 +889,10 @@ export default async function Home() {
       <ZonaCategoriasMenorFrecuencia />
 
       {/* Z8 — Ranking + Recetas */}
-      <ZonaRankingRecetas />
+      <ZonaRankingRecetas products={products} />
 
       {/* Z9 — Importados premium */}
-      <ZonaImportados />
+      <ZonaImportados products={products} />
 
       {/* Z10 — Newsletter */}
       <ZonaNewsletter />

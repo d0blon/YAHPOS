@@ -41,7 +41,10 @@ export default async function middleware(request: NextRequest) {
   const isAuthRoute = path.startsWith('/login') || path.startsWith('/register') || path.startsWith('/registro') || path.startsWith('/iniciar-sesion')
   
   // Bloqueo de seguridad: Si es dominio raíz, NO puede entrar a POS/Admin ni Login/Register
-  if (isRootDomain && (isPosRoute || isAdminRoute || isAuthRoute)) {
+  const isDeveloperLoginFlow = path.startsWith('/login') &&
+    request.nextUrl.searchParams.get('redirect')?.startsWith('/developer')
+
+  if (isRootDomain && (isPosRoute || isAdminRoute || isAuthRoute) && !isDeveloperLoginFlow) {
     console.warn(`[Security] Bloqueo en raíz (${host}): acceso denegado a ${path}. Redirigiendo a Landing.`)
     const protocol = host.includes('localhost') ? 'http' : 'https'
     return NextResponse.redirect(new URL('/', `${protocol}://${host}`))
@@ -78,12 +81,12 @@ export default async function middleware(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
-            response.cookies.set(name, value, { ...options, secure: false, sameSite: 'lax', path: '/' })
+            response.cookies.set(name, value, { ...options, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' })
           })
         },
       },
       cookieOptions: {
-        secure: false,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
       },
@@ -92,7 +95,8 @@ export default async function middleware(request: NextRequest) {
 
   // 3. Resolución de Tienda (Multi-Tenancy)
   let storeData = null
-  if (!isRootDomain) {
+  const isBotApiRoute = path.startsWith('/api/v1/bot')
+  if (!isRootDomain && !isBotApiRoute) {
     let store = null;
     
     // Soporte para subdominios locales (.localhost:3000 o .localtest.me:3000)
@@ -160,7 +164,7 @@ export default async function middleware(request: NextRequest) {
     const authCookies = request.cookies.getAll().filter(c => c.name.startsWith('sb-'))
     for (const cookie of authCookies) {
       request.cookies.set(cookie.name, '')
-      response.cookies.set(cookie.name, '', { maxAge: 0, path: '/', secure: false, sameSite: 'lax' })
+      response.cookies.set(cookie.name, '', { maxAge: 0, path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' })
     }
   }
   
@@ -169,6 +173,8 @@ export default async function middleware(request: NextRequest) {
   }
   
   // Auth state successfully checked
+  
+  const isDeveloper = !!user && DEVELOPER_EMAILS.includes(user.email?.toLowerCase() || '')
 
   if (!user && !isAudit && !isPublicRoute && (isAdminRoute || isPosRoute || isProtectedRoute || path.startsWith('/developer'))) {
     const redirectUrl = request.nextUrl.clone()
@@ -189,8 +195,7 @@ export default async function middleware(request: NextRequest) {
   }
 
   if (user && (isAdminRoute || isPosRoute)) {
-    // Verificar rol global para bypass de desarrollador
-    const isDeveloper = DEVELOPER_EMAILS.includes(user.email?.toLowerCase() || '')
+    // Verificar rol global para bypass de developer ya se hizo arriba
     
     // Si estamos en un subdominio, verificar membresía
     if (storeData) {
@@ -216,11 +221,11 @@ export default async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/?error=unauthorized_pos', request.url))
       }
     }
+  }
 
-    // Rutas exclusivas para Developer
-    if (path.startsWith('/developer') && !isPublicRoute && !isDeveloper) {
-      return NextResponse.redirect(new URL('/admin', request.url))
-    }
+  // Rutas exclusivas para Developer
+  if (user && path.startsWith('/developer') && !isPublicRoute && !isDeveloper) {
+    return NextResponse.redirect(new URL('/admin', request.url))
   }
 
   return response

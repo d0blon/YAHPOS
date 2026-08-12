@@ -144,7 +144,10 @@ export function UserDropdown() {
             {/* Logout */}
             <div className="border-t border-gray-100 dark:border-gray-800 mt-1 pt-1">
               <button
-                onClick={() => { logout(); setIsOpen(false) }}
+                onClick={async () => {
+                  await logout()
+                  setIsOpen(false)
+                }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors text-sm font-semibold"
               >
                 <LogOut className="w-4 h-4 flex-shrink-0" />

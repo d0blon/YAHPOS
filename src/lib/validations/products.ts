@@ -13,6 +13,10 @@ export const productSchema = z.object({
   sku: z.string().optional(),
   barcode: z.string().optional(),
   nutritionalSeals: z.number().int().min(0).max(4).optional().default(0),
+  brand: z.string().optional().default(''),
+  volume: z.string().optional().default(''),
+  supplierName: z.string().optional().default(''),
+  supplierMetadata: z.any().optional(),
   isRealtimeTracked: z.boolean().optional().default(false),
   branchStocks: z.array(z.object({
     branchId: z.string().uuid(),

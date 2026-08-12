@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createClient, createAdminClient } from '@/lib/supabase'
 import { withAuth, apiError } from '@/lib/api-utils'
 import { customerSchema } from '@/lib/validations/customers'
 
@@ -128,7 +128,8 @@ export async function POST(req: Request) {
     let result;
     if (existing) {
       console.log(`[API POST] Actualizando cliente existente: ${existing.id}`)
-      result = await auth.supabase
+      const adminSupabase = createAdminClient()
+      result = await adminSupabase
         .from('profiles')
         .update({ 
           first_name: firstName,

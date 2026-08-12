@@ -1,5 +1,91 @@
 # Bitácora — YAHPOS!
 
+### 2026-07-29 — CRÍTICO: /api/dashboard mostraba la misma tienda en todos los subdominios
+
+**Hallazgo:** el usuario reprodujo en pantalla que `master.localhost:3000/admin` y
+`austral-market.localhost:3000/admin`, con la misma cuenta developer, mostraban EXACTAMENTE
+los mismos números de dashboard. Causa: `src/app/api/dashboard/route.ts` tenía un fallback
+"usar la primera tienda encontrada" para cuentas developer con `profiles.store_id = null`,
+que ignoraba por completo el subdominio real de la request — `middleware.ts` ya resuelve e
+inyecta el header `x-store-id` correcto, pero este endpoint nunca lo leía.
+
+**Fix:** el endpoint ahora prioriza el header `x-store-id` sobre `profile.store_id`, y falla
+con 404 claro si ninguno resuelve — sin adivinar con "la primera tienda". Verificado: el
+patrón de "primera tienda" no existía en ningún otro archivo (grep completo de `src/`), así
+que el bug quedó acotado a este único endpoint, no era sistémico.
+
+**Alcance real:** no afectaba a cuentas de clientes normales (con `store_id` ya seteado en su
+perfil) — solo a cuentas developer/owner globales navegando por distintos subdominios.
+
+---
+
+### 2026-07-28 — SiiSyncManager (código muerto) + gate roto en OfflineSyncManager
+
+**Hallazgo (investigación del Arquitecto):** `src/components/sii/SiiSyncManager.tsx` y
+`src/components/pos/OfflineSyncManager.tsx` son DOS componentes distintos, no uno solo como
+sugería el backlog. El primero es código muerto (0 referencias, versión vieja superseded). El
+segundo está montado y corriendo en el POS real, pero tenía un bug activo: el gate
+`if (!settings?.sii?.enabled) return` en `syncCafs()` nunca dejaba pasar nada porque
+`settings.sii.enabled` es `false` por defecto y nada en todo el codebase lo pone en `true` —
+el auto-refresh del pool de folios SII estaba muerto para TODAS las tiendas, incluso las bien
+configuradas. El chequeo además era redundante: `/api/sii/auth/token` ya maneja el caso "sin
+config" con un 404 limpio.
+
+**Fix (Antigravity):** borrado `SiiSyncManager.tsx`. Gate roto removido de
+`OfflineSyncManager.tsx`, `syncCafs()` ahora llama directo a `/api/sii/auth/token` y confía en
+el manejo de error ya existente. Verificado por el Arquitecto: diff coincide exacto con el spec.
+
+**Pruebas de runtime:** diferidas — ningún store tiene SII configurado todavía (certificación
+SII quedó diferida el mismo día). Se cierra la tarea en base a revisión de código + build/lint
+limpio, sin fabricar una prueba de runtime que no se puede correr de verdad. Pendiente correr
+el plan de pruebas completo cuando exista un store con `sii_config` real.
+
+---
+
+### 2026-07-28 — Consolidación de tareas pendientes + limpieza de docs obsoletos
+
+**Motivo:** el usuario sospechaba que había tareas anotadas en documentos que ya no reflejaban
+el estado real del código (algunas ya resueltas, otras genuinamente perdidas entre ~15 docs
+dispersos). Se pidió al Arquitecto (Claude Code) barrer todo el vault de Obsidian + graphify +
+grep de TODOs en `src/` y armar una lista maestra única, ordenada por riesgo/importancia/tiempo.
+
+**Docs revisados:** `AUDIT_REPORT_2026-07-28.md`, `CHECKLIST_DETALLADO.md`, `MAPA_MAESTRO_MISIONES_PENDIENTES.md`,
+`PLAN_DE_TRABAJO_OPENCODE.md`, `plan-implementacion-ecommerce-yhapos.md`, `REVISION_DISENO.md`,
+`task.md`, `YAHPOS Kanban.md`, `AGENTS.md`, `COLLABORATION_PROTOCOL.md`, `CONTEXT_FOR_CLAUDE.md`,
+`simulation-report.md`, más grep de `TODO`/`FIXME` en todo `src/`.
+
+**Confirmado FALSO / ya resuelto (verificado leyendo el código actual, no solo el doc):**
+- `CHECKLIST_DETALLADO.md` casi entero: logos `logo-light/dark.png` y `favicon.ico` existen,
+  Webpay commit ya usa `.replace('ORD-','')` (no el bug viejo del `.split()`), 14 API routes con
+  try/catch y auth checks ya aplicados. Archivado en `docs/archivo/` — solo M1/M2/M3 (loading
+  states, `window.innerWidth` en render, console.error verbose) seguían vigentes, movidos a la
+  lista maestra activa.
+- `AGENTS.md` §4 "Auth SSO Bug — No arreglado": falso, `callback/route.ts:74-108` ya respeta
+  `fromOrigin` correctamente (fix de 2026-05-16 nunca actualizó esta nota). Corregido in-place.
+- `AGENTS.md` §7 "Webpack compilation hang": no se reprodujo en el build de hoy (11.8s, limpio).
+- `PLAN_DE_TRABAJO_OPENCODE.md`: enfoque completo (fallback Open Food Facts + scraper) reemplazado
+  por el Catálogo Maestro. Doc entero obsoleto, archivado.
+
+**Sin confirmar (no asumir cerrado, no asumir roto):**
+- `AGENTS.md` §6, loop de auth cross-subdominio de mayo 2026 (hipótesis H1/H2/H3 sobre
+  session-sync) — es un mecanismo DISTINTO al fix de `secure:false` cerrado hoy. El test de hoy
+  no lo confirma ni lo descarta. Ver `docs/archivo/AGENTS_secciones_obsoletas_2026-07-28.md`.
+
+**Hallazgos nuevos reales (no estaban documentados en ningún doc):**
+- `src/sections/PlatformLanding.tsx:370` — número de WhatsApp placeholder hardcodeado
+  (`569XXXXXXXX`) nunca reemplazado, visible a clientes reales. Archivo está en la lista
+  "NO tocar" — pendiente decisión del usuario sobre cómo resolverlo.
+- `src/stores/cartStore.ts:119` — TODO real de lógica de descuentos sin implementar (coincide
+  con backlog "[E-commerce] Cupones" del Kanban).
+
+**Acción tomada:** `CHECKLIST_DETALLADO.md` y `PLAN_DE_TRABAJO_OPENCODE.md` movidos a
+`docs/archivo/`. Secciones desactualizadas de `AGENTS.md` extraídas a
+`docs/archivo/AGENTS_secciones_obsoletas_2026-07-28.md` y corregidas in-place en el doc vivo.
+`plan-implementacion-ecommerce-yhapos.md` (rediseño completo estilo cugat.cl) quedó sin tocar,
+sin sumar al backlog activo — el usuario no confirmó si sigue vigente, revisar más adelante.
+
+---
+
 ### 2026-07-28 — Catálogo Maestro (Fase C-Fix) + Fix race condition Invalid Refresh Token
 
 **Catálogo Maestro YAHPOS! Compartido — cierre:**

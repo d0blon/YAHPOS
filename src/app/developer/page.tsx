@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import DeveloperPanel from './DeveloperPanel'
 import LockScreen from './LockScreen'
-import { getStoresWithStatusAction } from './actions'
+import { getStoresWithStatusAction } from './actions/stores'
 import { Store } from '@/types'
 
 export const metadata = {
@@ -10,6 +10,13 @@ export const metadata = {
 }
 
 export default async function DeveloperPage() {
+  const cookieStore = await cookies()
+  const isUnlocked = cookieStore.get('dev_token')?.value === 'patagonia_dev_active'
+
+  if (!isUnlocked) {
+    return <LockScreen />
+  }
+
   const stores = await getStoresWithStatusAction() as Store[]
 
   return (

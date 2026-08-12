@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 
@@ -15,6 +16,13 @@ export async function GET() {
       .single();
 
     if (!profile?.store_id) return NextResponse.json({ error: 'No store' }, { status: 403 });
+
+    // Obtener la comuna y región directamente de la tabla stores
+    const { data: storeData } = await supabase
+      .from('stores')
+      .select('city, commune, region')
+      .eq('id', profile.store_id)
+      .single();
 
     // Obtener todas las configuraciones de la tabla settings
     const { data: settingsData } = await supabase
@@ -35,7 +43,9 @@ export async function GET() {
         name: flatSettings.store_name || '',
         slogan: flatSettings.store_slogan || '',
         address: flatSettings.store_address || '',
-        city: flatSettings.store_city || '',
+        city: storeData?.city || flatSettings.store_city || '',
+        commune: storeData?.commune || flatSettings.store_commune || '',
+        region: storeData?.region || flatSettings.store_region || '',
         phone: flatSettings.store_phone || '',
         email: flatSettings.store_email || '',
         website: flatSettings.store_website || '',
@@ -132,6 +142,25 @@ export async function PATCH(req: Request) {
       .upsert(upsertData, { onConflict: 'key,store_id' });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Sincronizar commune, region, city y address con la tabla stores
+    const storesUpdate: Record<string, string> = {};
+    if ('store_commune' in body) storesUpdate.commune = body.store_commune;
+    if ('store_region' in body) storesUpdate.region = body.store_region;
+    if ('store_city' in body) storesUpdate.city = body.store_city;
+    if ('store_address' in body) storesUpdate.address = body.store_address;
+
+    if (Object.keys(storesUpdate).length > 0) {
+      const { error: storeError } = await supabase
+        .from('stores')
+        .update(storesUpdate)
+        .eq('id', profile.store_id);
+
+      if (storeError) {
+        console.error('[PATCH /api/settings] Error updating stores:', storeError);
+        return NextResponse.json({ error: storeError.message }, { status: 500 });
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

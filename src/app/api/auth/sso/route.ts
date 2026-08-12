@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -17,8 +18,15 @@ export async function GET(request: NextRequest) {
     const next = requestUrl.searchParams.get('next') || '/admin'
     const host = request.headers.get('host') || ''
     
+    const isProduction = host === 'yahpos.cl' || host.endsWith('.yahpos.cl')
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1')
-    const rootOrigin = isLocalhost ? 'http://localhost:3000' : 'https://yahpos.cl'
+    const protocol = requestUrl.protocol
+    
+    const rootOrigin = isProduction
+      ? 'https://yahpos.cl'
+      : isLocalhost
+        ? 'http://localhost:3000'
+        : `${protocol}//${host}`
     
     const callbackUrl = new URL('/api/auth/callback', rootOrigin)
     if (next) callbackUrl.searchParams.set('next', next)

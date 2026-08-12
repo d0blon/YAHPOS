@@ -112,6 +112,7 @@ export async function POST(req: Request) {
       .insert([{
         user_id: auth.user.id,
         store_id: auth.storeId,
+        branch_id: branchId || null,
         total: total,
         discount: discount ?? 0,
         status: status ?? (isEcommerce ? 'pending' : 'completed'),

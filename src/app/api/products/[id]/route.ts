@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-utils'
 
@@ -55,6 +56,8 @@ export async function PATCH(
       barcode: body.barcode || body.sku,
       nutritional_seals: body.nutritionalSeals,
       is_realtime_tracked: body.isRealtimeTracked,
+      supplier_name: body.supplierName,
+      supplier_metadata: body.supplierMetadata,
     }
 
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])

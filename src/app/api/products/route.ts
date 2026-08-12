@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, prefer-const */
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase'
 import { generateSlug } from '@/lib/utils'
@@ -59,6 +60,7 @@ function serveDemoCatalog(req?: Request) {
     const catalog = loadCatalog()
     const url = req ? new URL(req.url) : null
     const slug = url?.searchParams.get('slug')
+    const category = url?.searchParams.get('category')
 
     if (slug && req) {
       const item = catalog.find((p: any) => generateSlug(p.name) === slug)
@@ -69,7 +71,15 @@ function serveDemoCatalog(req?: Request) {
       return NextResponse.json(transformCatalogItem(item, idx))
     }
 
-    const transformed = catalog.map((item: any, i: number) => transformCatalogItem(item, i))
+    let filtered = catalog
+    if (category) {
+      filtered = catalog.filter((item: any) => {
+        const itemSlug = (item.category_main || '').toLowerCase().replace(/\s+/g, '-')
+        return itemSlug === category.toLowerCase()
+      })
+    }
+
+    const transformed = filtered.map((item: any, i: number) => transformCatalogItem(item, i))
     return NextResponse.json(transformed)
   } catch (err) {
     console.error('[GET /api/products] Demo catalog error:', err)
@@ -78,33 +88,62 @@ function serveDemoCatalog(req?: Request) {
 }
 
 export async function GET(req: Request) {
-  // Demo store (master.*): sirve desde catalog.json
-  const host = req.headers.get('host') || ''
+  const host = (req.headers.get('host') || '').toLowerCase()
+  const supabase = await createClient()
+
+  // Demo store (master.*): catálogo demo SOLO para visitantes públicos sin sesión.
+  // Con sesión activa (admin/developer) siempre se usa la DB real, sin importar el host.
   if (host.startsWith(DEMO_HOST_PREFIX)) {
-    return serveDemoCatalog(req)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return serveDemoCatalog(req)
+    }
   }
 
-  const supabase = await createClient()
   const adminSupabase = createAdminClient()
   
   try {
-    const { data: store, error: storeError } = await adminSupabase
-      .from('stores')
-      .select('id')
-      .eq('is_active', true)
-      .limit(1)
-      .single()
+    let store: { id: string } | null = null
+    let storeError = null
 
-  // Fallback: si no hay store activa en DB, servimos catalog.json (dev local)
-  if (storeError || !store) {
-    return serveDemoCatalog(req)
-  }
+    if (host.endsWith('.localhost:3000')) {
+      const subdomain = host.split('.localhost:3000')[0]
+      const { data, error } = await adminSupabase
+        .from('stores')
+        .select('id')
+        .eq('subdomain', subdomain)
+        .maybeSingle()
+      store = data as { id: string } | null
+      storeError = error
+    } else if (host.endsWith('.localtest.me:3000')) {
+      const subdomain = host.split('.localtest.me:3000')[0]
+      const { data, error } = await adminSupabase
+        .from('stores')
+        .select('id')
+        .eq('subdomain', subdomain)
+        .maybeSingle()
+      store = data as { id: string } | null
+      storeError = error
+    } else {
+      // Producción: usar RPC para dominios personalizados o subdominios yahpos.cl
+      const { data, error } = await adminSupabase
+        .rpc('get_store_by_domain', { p_host: host })
+        .maybeSingle()
+      store = data as { id: string } | null
+      storeError = error
+    }
 
-  const storeId = store.id
+    // Fallback: si no hay tienda resuelta, servimos catalog.json (dev local / demo)
+    if (storeError || !store) {
+      return serveDemoCatalog(req)
+    }
+
+    const storeId = store.id
   
   const { searchParams } = new URL(req.url)
   const branchId = searchParams.get('branch_id')
   const slug = searchParams.get('slug')
+  const categorySlug = searchParams.get('category')
 
     // Usamos el cliente normal (respetando RLS) si es posible.
     // Si la tienda es pública, las políticas RLS deben permitir SELECT anónimo filtrado por store_id.
@@ -135,7 +174,7 @@ export async function GET(req: Request) {
       let currentStock = p.stock ?? 0
       if (branchId) {
         const branchInv = p.inventory?.find((inv: any) => String(inv.branch_id) === String(branchId))
-        currentStock = branchInv ? branchInv.stock : 0
+        currentStock = branchInv ? branchInv.stock : (p.stock ?? 0)
       }
       const categorySlug = (p.category ?? '').toLowerCase()
       const categoryName = categorySlug
@@ -154,8 +193,12 @@ export async function GET(req: Request) {
         categoryId: categorySlug,
         stock: currentStock,
         lowStockThreshold: p.low_stock_threshold || 5,
-        sku: p.sku ?? '',
-        barcode: p.barcode ?? '',
+        sku: p.sku || p.barcode || '',
+        barcode: p.barcode || p.sku || '',
+        brand: p.brand ?? '',
+        volume: p.volume ?? '',
+        supplierName: p.supplier_name ?? '',
+        supplierMetadata: p.supplier_metadata ?? {},
         unit: p.unit ?? 'un',
         isActive: true,
         isFeatured: false,
@@ -168,11 +211,14 @@ export async function GET(req: Request) {
       })
     }
 
-    const { data: products, error: listError } = await supabase
+    let listQuery = supabase
       .from('products')
       .select('*, inventory(*)')
       .eq('store_id', storeId)
-      .order('name')
+    if (categorySlug) {
+      listQuery = listQuery.eq('category', categorySlug)
+    }
+    const { data: products, error: listError } = await listQuery.order('name')
 
     if (listError) {
       console.error('[API /products] List Error:', listError.message)
@@ -194,7 +240,7 @@ export async function GET(req: Request) {
       let currentStock = p.stock ?? 0
       if (branchId) {
         const branchInv = p.inventory?.find((inv: any) => String(inv.branch_id) === String(branchId))
-        currentStock = branchInv ? branchInv.stock : 0
+        currentStock = branchInv ? branchInv.stock : (p.stock ?? 0)
       }
 
       // La columna `category` ya es el slug ("alimentos", "bebidas", etc.)
@@ -215,8 +261,12 @@ export async function GET(req: Request) {
         categoryId: categorySlug,
         stock: currentStock,
         lowStockThreshold: p.low_stock_threshold || 5,
-        sku: p.sku ?? '',
-        barcode: p.barcode ?? '',
+        sku: p.sku || p.barcode || '',
+        barcode: p.barcode || p.sku || '',
+        brand: p.brand ?? '',
+        volume: p.volume ?? '',
+        supplierName: p.supplier_name ?? '',
+        supplierMetadata: p.supplier_metadata ?? {},
         unit: p.unit ?? 'un',
         isActive: true,
         isFeatured: false,
@@ -292,6 +342,10 @@ export async function POST(req: Request) {
         is_exempt: validatedData.isExempt ?? false,
         sku: validatedData.sku,
         barcode: validatedData.barcode || validatedData.sku,
+        brand: validatedData.brand ?? '',
+        volume: validatedData.volume ?? '',
+        supplier_name: validatedData.supplierName ?? '',
+        supplier_metadata: validatedData.supplierMetadata ?? {},
         nutritional_seals: validatedData.nutritionalSeals,
         is_realtime_tracked: validatedData.isRealtimeTracked,
         store_id: profile?.store_id,

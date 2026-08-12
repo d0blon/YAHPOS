@@ -36,6 +36,7 @@ interface DashboardData {
   activePersonnel?: any[]
   chartData?: any[]
   paymentMethods?: any[]
+  branches?: { id: string, name: string }[]
 }
 
 const COLORS = ['#003399', '#10b981', '#f59e0b', '#6366f1', '#ec4899'];
@@ -46,13 +47,19 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('all')
 
-  const fetchDashboard = async (showMainLoader = true) => {
+  const fetchDashboard = async (showMainLoader = true, branchId = selectedBranchId) => {
     try {
       if (showMainLoader) setIsLoading(true)
       else setIsRefreshing(true)
       
-      const res = await fetch('/api/dashboard')
+      const url = new URL('/api/dashboard', window.location.origin)
+      if (branchId !== 'all') {
+        url.searchParams.set('branchId', branchId)
+      }
+      
+      const res = await fetch(url.toString())
       if (!res.ok) throw new Error('Error al cargar datos del dashboard')
       const json = await res.json()
       setData(json)
@@ -119,20 +126,37 @@ export default function AdminDashboard() {
           </h1>
           <p className="text-xs text-gray-500 font-medium mt-1">Rendimiento en tiempo real de tu negocio.</p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => fetchDashboard(false)}
-            disabled={isRefreshing}
-            className="rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10 h-9"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="text-[10px] font-black uppercase">Actualizar</span>
-          </Button>
-          <Button variant="outline" onClick={handleExport} className="rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10 h-9">
-            <Download className="w-3.5 h-3.5 mr-2" />
-            <span className="text-[10px] font-black uppercase">Exportar</span>
-          </Button>
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          {data?.branches && data.branches.length > 0 && (
+            <select
+              value={selectedBranchId}
+              onChange={(e) => {
+                setSelectedBranchId(e.target.value)
+                fetchDashboard(true, e.target.value)
+              }}
+              className="bg-white/5 border border-white/10 dark:bg-black/40 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none w-full sm:w-auto"
+            >
+              <option value="all">Todas las sucursales</option>
+              {data.branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          )}
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => fetchDashboard(false, selectedBranchId)}
+              disabled={isRefreshing}
+              className="flex-1 sm:flex-none rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10 h-9"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="text-[10px] font-black uppercase">Actualizar</span>
+            </Button>
+            <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none rounded-xl border-none shadow-sm hover:bg-white/80 dark:hover:bg-white/10 h-9">
+              <Download className="w-3.5 h-3.5 mr-2" />
+              <span className="text-[10px] font-black uppercase">Exportar</span>
+            </Button>
+          </div>
         </div>
       </div>
 

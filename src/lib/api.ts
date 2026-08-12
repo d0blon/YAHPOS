@@ -34,9 +34,13 @@ export async function apiFetch(path: string, init?: RequestInit) {
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
-export async function getProducts(branchId?: string): Promise<Product[]> {
+export async function getProducts(branchId?: string, category?: string): Promise<Product[]> {
   try {
-    const data = await apiFetch(`/products${branchId ? `?branch_id=${branchId}` : ''}`);
+    const params = new URLSearchParams();
+    if (branchId) params.set('branch_id', branchId);
+    if (category) params.set('category', category);
+    const qs = params.toString();
+    const data = await apiFetch(`/products${qs ? `?${qs}` : ''}`);
     return Array.isArray(data) ? data : (data?.products ?? []);
   } catch (err) {
     console.error('[getProducts] Error al obtener productos de Supabase:', err);

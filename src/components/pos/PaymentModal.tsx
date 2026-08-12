@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { formatPrice, cn } from '@/lib/utils'
 import { Banknote, CreditCard, X, Delete, CheckCircle2, ArrowRight, RefreshCw, Smartphone, Zap, Globe, Building2, Tablet, QrCode } from 'lucide-react'
@@ -37,31 +37,41 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
     { id: 'Compraquí', key: 'other_card', icon: CreditCard, color: 'text-brand-500', bg: 'bg-brand-500/10', desc: 'Respaldo BancoEstado. Confiable.' }
   ];
 
-  const activeTerminalsList = allTerminals.filter(t => {
-    if (!settings.activeTerminals) return true;
-    return settings.activeTerminals[t.key as keyof typeof settings.activeTerminals] === true;
-  });
+  const activeTerminalsList = React.useMemo(() => {
+    return allTerminals.filter(t => {
+      if (!settings.activeTerminals) return true;
+      return settings.activeTerminals[t.key as keyof typeof settings.activeTerminals] === true;
+    });
+  }, [settings.activeTerminals]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Usar un pequeño delay o simplemente asegurar que los estados se seteen juntos
-    // para evitar el error de lint "cascading renders" si aplica
-    setMethod('EFECTIVO')
-    setReceivedStr('')
-    setIsTerminalConfirmed(false)
+  // Manejar el reset de estado sin useEffect para evitar cascading renders
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen && !prevIsOpen) {
+    setPrevIsOpen(true);
+    setMethod('EFECTIVO');
+    setReceivedStr('');
+    setIsTerminalConfirmed(false);
+    setWebpayQrUrl(null);
+    setWebpayToken(null);
+    setWebpayStatus('idle');
     if (activeTerminalsList.length > 0) {
-      setSelectedTerminal(activeTerminalsList[0].id)
+      setSelectedTerminal(activeTerminalsList[0].id);
     }
-  }, [isOpen, activeTerminalsList.length])
+  } else if (!isOpen && prevIsOpen) {
+    setPrevIsOpen(false);
+  }
+
+  const handleMethodChange = (newMethod: typeof method) => {
+    setMethod(newMethod);
+    if (newMethod !== 'WEBPAY_QR') {
+      setWebpayQrUrl(null);
+      setWebpayToken(null);
+      setWebpayStatus('idle');
+    }
+  };
 
   useEffect(() => {
-    if (method !== 'WEBPAY_QR') {
-      setWebpayQrUrl(null)
-      setWebpayToken(null)
-      setWebpayStatus('idle')
-      return
-    }
+    if (method !== 'WEBPAY_QR') return;
     if (webpayStatus !== 'idle') return
 
     const createWebpayQr = async () => {
@@ -151,6 +161,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl p-0 overflow-hidden bg-white dark:bg-surface-100 rounded-[3rem] border-none shadow-2xl text-slate-900 dark:text-white flex flex-col md:flex-row h-auto max-h-[95vh] md:h-[700px] animate-in zoom-in-95 duration-300">
+        <DialogTitle className="sr-only">Canal de Cobro</DialogTitle>
         
         {/* Left Side: Summary & Methods */}
         <div className="w-full md:w-[350px] bg-slate-50 dark:bg-surface-200/50 p-8 border-b md:border-b-0 md:border-r border-slate-100 dark:border-gray-800 flex flex-col shrink-0">
@@ -163,7 +174,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
           
           <div className="flex-1 space-y-4">
             <button 
-              onClick={() => setMethod('EFECTIVO')}
+              onClick={() => handleMethodChange('EFECTIVO')}
               className={cn(
                 "w-full p-8 rounded-[2.5rem] border-2 flex flex-col items-center gap-4 transition-all duration-300 group relative overflow-hidden",
                 method === 'EFECTIVO' 
@@ -177,7 +188,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
             </button>
 
             <button 
-              onClick={() => setMethod('TARJETA')}
+              onClick={() => handleMethodChange('TARJETA')}
               className={cn(
                 "w-full p-8 rounded-[2.5rem] border-2 flex flex-col items-center gap-4 transition-all duration-300 group relative overflow-hidden",
                 method === 'TARJETA' 
@@ -191,7 +202,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
             </button>
 
             <button 
-              onClick={() => setMethod('WEBPAY_QR')}
+              onClick={() => handleMethodChange('WEBPAY_QR')}
               className={cn(
                 "w-full p-8 rounded-[2.5rem] border-2 flex flex-col items-center gap-4 transition-all duration-300 group relative overflow-hidden",
                 method === 'WEBPAY_QR' 
@@ -205,7 +216,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
             </button>
 
             <button 
-              onClick={() => setMethod('TERMINAL')}
+              onClick={() => handleMethodChange('TERMINAL')}
               className={cn(                "w-full p-8 rounded-[2.5rem] border-2 flex flex-col items-center gap-4 transition-all duration-300 group relative overflow-hidden",
                 method === 'TERMINAL' 
                   ? "bg-amber-500 border-amber-500 text-white shadow-2xl shadow-amber-500/30 scale-[1.02]" 
@@ -220,7 +231,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
             <div className="grid grid-cols-2 gap-2">
               {settings.junaebEnabled && (
                 <button 
-                  onClick={() => setMethod('JUNAEB')}
+                  onClick={() => handleMethodChange('JUNAEB')}
                   className={cn(
                     "p-6 rounded-[2rem] border-2 flex flex-col items-center gap-3 transition-all duration-300 group relative overflow-hidden",
                     method === 'JUNAEB' 
@@ -235,7 +246,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
 
               {settings.pluxeEnabled && settings.region === 'RM' && (
                 <button 
-                  onClick={() => setMethod('PLUXE')}
+                  onClick={() => handleMethodChange('PLUXE')}
                   className={cn(
                     "p-6 rounded-[2rem] border-2 flex flex-col items-center gap-3 transition-all duration-300 group relative overflow-hidden",
                     method === 'PLUXE' 
@@ -250,7 +261,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
 
               {settings.edenredEnabled && settings.region === 'REGIONES' && (
                 <button 
-                  onClick={() => setMethod('EDENRED')}
+                  onClick={() => handleMethodChange('EDENRED')}
                   className={cn(
                     "p-6 rounded-[2rem] border-2 flex flex-col items-center gap-3 transition-all duration-300 group relative overflow-hidden",
                     method === 'EDENRED' 
@@ -381,7 +392,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                     <RefreshCw className="w-4 h-4 animate-spin" />
                     <span className="text-xs font-bold uppercase tracking-widest">Esperando pago...</span>
                   </div>
-                  <button onClick={() => setMethod('EFECTIVO')} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 underline font-bold uppercase tracking-widest">
+                  <button onClick={() => handleMethodChange('EFECTIVO')} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 underline font-bold uppercase tracking-widest">
                     Cancelar pago
                   </button>
                 </div>
@@ -425,7 +436,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                   >
                     Reintentar
                   </button>
-                  <button onClick={() => setMethod('EFECTIVO')} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 underline font-bold uppercase tracking-widest">
+                  <button onClick={() => handleMethodChange('EFECTIVO')} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 underline font-bold uppercase tracking-widest">
                     Otro método de pago
                   </button>
                 </div>

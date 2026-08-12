@@ -29,15 +29,6 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true)
     
-    // Protección adicional: Si por alguna razón llega aquí en el dominio raíz, echarlo.
-    const host = window.location.host
-    const isRoot = host === 'localhost:3000' || host === 'yahpos.cl' || host === 'www.yahpos.cl'
-    if (isRoot) {
-      console.warn('[Security] Bloqueo de UI: Login no permitido en raíz. Redirigiendo...')
-      router.replace('/')
-      return
-    }
-
     // Auto-redirección si ya está logueado
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -93,7 +84,7 @@ export default function LoginPage() {
       const hostname = window.location.hostname
       const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost')
       const rootOrigin = isLocalhost ? 'http://localhost:3000' : 'https://yahpos.cl'
-      
+
       // En lugar de iniciar el login aquí (en el subdominio), redirigimos al dominio raíz
       // para que el flujo de PKCE ocurra íntegramente en el dominio del callback.
       const ssoUrl = new URL(`${rootOrigin}/api/auth/sso`)
@@ -101,7 +92,7 @@ export default function LoginPage() {
       if (nextPath !== '/') {
         ssoUrl.searchParams.set('next', nextPath)
       }
-      
+
       console.log(`[Auth] Redirigiendo a SSO Bridge: ${ssoUrl.toString()}`)
       window.location.href = ssoUrl.toString()
     } catch (error) {

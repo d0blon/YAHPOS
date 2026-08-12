@@ -5,7 +5,7 @@ import { KeyRound, ShieldCheck, Lock, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { verifyDeveloperAccessAction } from './actions'
+import { verifyDeveloperAccessAction } from './actions/auth'
 
 export default function LockScreen() {
   const [password, setPassword] = useState('')

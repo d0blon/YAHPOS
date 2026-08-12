@@ -23,7 +23,8 @@ export const supabase = typeof window !== 'undefined'
  * Solo usar en el servidor.
  */
 export function createAdminClient() {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? supabaseAnonKey
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurada — createAdminClient no puede operar con anon key.')
   return createSupabaseClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false }
   })

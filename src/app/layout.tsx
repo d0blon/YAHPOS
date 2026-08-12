@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Outfit, Sora, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 
@@ -10,6 +10,16 @@ const inter = Inter({
 
 const outfit = Outfit({
   variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
 });
 
@@ -67,7 +77,7 @@ export default async function RootLayout({
 
   return (
     <html lang="es" suppressHydrationWarning>
-      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} min-h-screen flex flex-col antialiased bg-background text-foreground relative`}>
+      <body suppressHydrationWarning className={`${inter.variable} ${outfit.variable} ${sora.variable} ${dmSans.variable} min-h-screen flex flex-col antialiased bg-background text-foreground relative`}>
         <div className="noise-overlay" />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AppProviders initialStoreId={storeId} initialConfig={initialConfig}>

@@ -127,8 +127,10 @@ Solo disponibles en Chromium (Chrome, Edge, Opera). No funcionan en Firefox ni S
 - **Estados:** idle, cart-update, payment-qr, payment-confirmed, reset
 - **Futuro:** Supabase Realtime para sincronización cross-device
 
-### ⚠️ Regla Crítica #2: Auth SSO Bug
-**Bug #1:** `src/app/api/auth/callback/route.ts:74-103` — `.limit(1)` ignora `from_origin`. Usuario con múltiples tiendas siempre redirige a la primera. **No arreglado.**
+### ⚠️ Regla Crítica #2: Auth SSO — RESUELTO (verificado 2026-07-28)
+`src/app/api/auth/callback/route.ts:74-108` respeta `fromOrigin` correctamente antes de caer al
+fallback `.limit(1)`. Ver `docs/archivo/AGENTS_secciones_obsoletas_2026-07-28.md` para el texto
+original de este bug (quedó desactualizado, nunca se corrigió el doc cuando se arregló el código).
 
 ### Investigación Pendiente: Inngest (Background Jobs)
 - **Investigado:** 2026-05-13
@@ -253,42 +255,28 @@ Solo disponibles en Chromium (Chrome, Edge, Opera). No funcionan en Firefox ni S
 
 ---
 
-## 6. Current Session Handoff (19 May 2026)
+## 6. Historial — cross-subdomain auth loop (mayo 2026, estado sin confirmar)
 
-### ⛔ ESTADO ACTUAL: BLOQUEADO
+Handoff del 19 de mayo sobre un loop de auth cross-subdominio quedó BLOQUEADO en ese momento
+(hipótesis H1/H2/H3 sobre propagación de cookies en session-sync). Texto completo movido a
+`docs/archivo/AGENTS_secciones_obsoletas_2026-07-28.md`.
 
-**Última instrucción del usuario:** intentar arreglar auth cross-subdomain loop en master.localhost:3000
-
-### Lo que se intentó
-- Se reescribió `session-sync/route.ts` para usar HTML 200 + `Set-Cookie` headers raw + `window.location.replace()`, en lugar de `NextResponse.redirect()` + `response.cookies.set()` que perdía cookies en el redirect.
-- Se agregó sanitización de trailing dots en middleware (path `/pos.` → `/pos`).
-
-### Lo que SÍ funciona
-- Turbopack (`npx next dev`) arranca y sirve páginas (login, root).
-- El flujo OAuth completo funciona hasta session-sync: callback (200) → session-sync (200).
-- `setSession()` captura cookies correctamente vía `setAll()` callback.
-
-### Lo que NO funciona
-1. **Webpack (`next dev --webpack`)**: Compilación se cuelga tras limpiar `.next` cache (cache cold). Permanece en `Compiling /pos ...`.
-2. **Auth session missing**: Después de session-sync, toda request subsecuente muestra `[Middleware] Auth Error: Auth session missing!`. Las cookies seteadas no son reconocidas por `getUser()`.
-
-### Hipótesis principales
-- **H1:** Los nombres de cookies capturados por `setAll()` en session-sync no coinciden con los que espera `getUser()` en el middleware.
-- **H2:** Timing: el `window.location.replace()` se ejecuta antes de que el browser persista los `Set-Cookie` headers.
-- **H3:** La PWA plugin (`@ducanh2912/next-pwa`) interfiere con webpack 5 en cache cold.
+**Estado 2026-07-28**: NO confirmado como resuelto ni como sigue roto. Hoy se cerró un bug
+DISTINTO (flag `secure:false` en cookies de middleware.ts) y el test manual de esa tarea
+(login cross-subdominio) no mostró loop — pero eso no confirma que el mecanismo H1/H2/H3
+específico de este handoff viejo se haya resuelto. Verificar puntualmente antes de dar por
+cerrado del todo.
 
 ### Pendiente (usuario)
-- Ejecutar `021_identity_verification.sql` y `022_fix_drafts_session_id.sql` en Supabase SQL Editor (cuando el auth esté funcional)
-
-### Ver TASK_HANDOFF.md para detalle completo
+- Ejecutar `021_identity_verification.sql` y `022_fix_drafts_session_id.sql` en Supabase SQL Editor (si no se hizo ya)
 
 ---
 
 ## 7. Bugs Conocidos (Backlog)
 
-### 🔴 Bloqueantes
-- [ ] **[Auth]** Session-sync no propaga cookies al middleware — `Auth session missing!` tras login exitoso
-- [ ] **[Build]** Webpack compilation hang con cache cold (PWA plugin maybe). Workaround: Turbopack
+### 🔴 Bloqueantes — desactualizado, ver nota en §6
+- [ ] **[Auth]** Session-sync cookie propagation — estado sin confirmar, ver §6
+- [x] **[Build]** Webpack compilation hang con cache cold — no se reprodujo en build de hoy (2026-07-28, `npm run build` limpio en 11.8s)
 
 ### 🟡 Backlog
 - [ ] **[Stab]** Invalid Refresh Token: Already Used (race condition Strict Mode)

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @next/next/no-img-element */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import ProductModal from '@/components/admin/ProductModal'
+import PendingAdjustmentsTab from '@/components/admin/PendingAdjustmentsTab'
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<any[]>([])
@@ -21,6 +23,23 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState<'catalog' | 'ia_pending'>('catalog')
+
+  const handleAddMissingProduct = (item: any) => {
+    setSelectedProduct({
+      name: item.name,
+      sku: item.barcode,
+      brand: item.brand || '',
+      volume: item.volume || '',
+      supplierName: item.supplierName || '',
+      supplierMetadata: item.supplierMetadata || {},
+      stock: item.quantity,
+      price: item.price || 0,
+      category: '',
+      image: ''
+    })
+    setIsModalOpen(true)
+  }
 
   const fetchProducts = async () => {
     try {
@@ -92,150 +111,184 @@ export default function AdminProducts() {
           </Button>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col md:flex-row gap-4 items-center bg-white/50 dark:bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input 
-              placeholder="Buscar por nombre, SKU o categoría..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 py-6 bg-white dark:bg-gray-900/50 border-none rounded-2xl text-lg font-medium shadow-inner w-full"
-            />
-          </div>
-          <div className="flex gap-2 w-full md:w-auto">
-            <Button variant="outline" className="flex-1 md:flex-none rounded-2xl py-6 border-white/40 bg-white/40 dark:bg-gray-800/40">
-              <Settings className="w-4 h-4 mr-2" />
-              Filtros
-            </Button>
-            <Button variant="outline" className="flex-1 md:flex-none rounded-2xl py-6 border-white/40 bg-white/40 dark:bg-gray-800/40">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Stocks Bajos
-            </Button>
-          </div>
+        {/* Tabs switcher */}
+        <div className="flex border-b border-gray-200 dark:border-gray-800">
+          <button
+            onClick={() => setActiveTab('catalog')}
+            className={`py-3 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all ${
+              activeTab === 'catalog'
+                ? 'border-brand-primary text-brand-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            Catálogo de Productos
+          </button>
+          <button
+            onClick={() => setActiveTab('ia_pending')}
+            className={`py-3 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all ${
+              activeTab === 'ia_pending'
+                ? 'border-brand-primary text-brand-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            Ingresos con IA (Facturas)
+          </button>
         </div>
 
-        <Card className="border-none shadow-sm overflow-hidden">
-          <CardHeader className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-black uppercase tracking-tighter italic">Lista de <span className="text-brand-primary">Productos</span></CardTitle>
-              <Badge className="bg-brand-primary/10 text-brand-primary border-none font-bold">{filteredProducts.length} Ítems</Badge>
+        {activeTab === 'catalog' ? (
+          <>
+            {/* Toolbar */}
+            <div className="flex flex-col md:flex-row gap-4 items-center bg-white/50 dark:bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input 
+                  placeholder="Buscar por nombre, SKU o categoría..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 py-6 bg-white dark:bg-gray-900/50 border-none rounded-2xl text-lg font-medium shadow-inner w-full"
+                />
+              </div>
+              <div className="flex gap-2 w-full md:w-auto">
+                <Button variant="outline" className="flex-1 md:flex-none rounded-2xl py-6 border-white/40 bg-white/40 dark:bg-gray-800/40">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Filtros
+                </Button>
+                <Button variant="outline" className="flex-1 md:flex-none rounded-2xl py-6 border-white/40 bg-white/40 dark:bg-gray-800/40">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Stocks Bajos
+                </Button>
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-900/50 text-left">
-                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
-                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
-                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Precio</th>
-                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
-                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={6} className="py-20 text-center">
-                        <Loader2 className="w-8 h-8 text-brand-primary animate-spin mx-auto" />
-                        <p className="mt-2 text-gray-500 font-medium">Cargando catálogo...</p>
-                      </td>
-                    </tr>
-                  ) : filteredProducts.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-20 text-center text-gray-500">
-                        No se encontraron productos
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredProducts.map((p) => (
-                      <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
-                              {p.image ? (
-                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Package className="w-6 h-6 text-gray-300" />
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-bold text-gray-900 dark:text-white leading-tight">{p.name}</p>
-                              <p className="text-xs text-gray-500 font-mono mt-1">{p.sku || 'SIN SKU'}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <Badge variant="secondary" className="font-medium text-xs bg-gray-100 text-gray-600">
-                            {typeof p.category === 'string' ? p.category : p.category?.name ?? 'Sin categoría'}
-                          </Badge>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-gray-900 dark:text-white">
-                            ${p.price.toLocaleString()}
-                            {p.discount > 0 && (
-                              <span className="ml-2 text-xs font-bold text-green-600">-{p.discount}%</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-bold ${p.stock <= p.lowStockThreshold ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                              {p.stock}
-                            </span>
-                            <span className="text-xs text-gray-500">{p.unit}</span>
-                            {p.stock <= p.lowStockThreshold && (
-                              <AlertTriangle className="w-4 h-4 text-red-500" />
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <button className="flex items-center gap-2 group">
-                            {p.isActive ? (
-                              <Badge variant="success" className="gap-1.5 font-bold">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                Activo
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="gap-1.5 font-bold">
-                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                                Inactivo
-                              </Badge>
-                            )}
-                          </button>
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleEdit(p)}
-                              className="h-9 w-9 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/5"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDelete(p.id, p.name)}
-                              className="h-9 w-9 text-gray-400 hover:text-red-500 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
+
+            <Card className="border-none shadow-sm overflow-hidden">
+              <CardHeader className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-black uppercase tracking-tighter italic">Lista de <span className="text-brand-primary">Productos</span></CardTitle>
+                  <Badge className="bg-brand-primary/10 text-brand-primary border-none font-bold">{filteredProducts.length} Ítems</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-900/50 text-left">
+                        <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
+                        <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
+                        <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Precio</th>
+                        <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {isLoading ? (
+                        <tr>
+                          <td colSpan={6} className="py-20 text-center">
+                            <Loader2 className="w-8 h-8 text-brand-primary animate-spin mx-auto" />
+                            <p className="mt-2 text-gray-500 font-medium">Cargando catálogo...</p>
+                          </td>
+                        </tr>
+                      ) : filteredProducts.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-20 text-center text-gray-500">
+                            No se encontraron productos
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredProducts.map((p) => (
+                          <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                                  {p.image ? (
+                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <Package className="w-6 h-6 text-gray-300" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900 dark:text-white leading-tight">{p.name}</p>
+                                  <p className="text-xs text-gray-500 font-mono mt-1">{p.sku || 'SIN SKU'}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <Badge variant="secondary" className="font-medium text-xs bg-gray-100 text-gray-600">
+                                {typeof p.category === 'string' ? p.category : p.category?.name ?? 'Sin categoría'}
+                              </Badge>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="font-bold text-gray-900 dark:text-white">
+                                ${p.price.toLocaleString()}
+                                {p.discount > 0 && (
+                                  <span className="ml-2 text-xs font-bold text-green-600">-{p.discount}%</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-bold ${p.stock <= p.lowStockThreshold ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  {p.stock}
+                                </span>
+                                <span className="text-xs text-gray-500">{p.unit}</span>
+                                {p.stock <= p.lowStockThreshold && (
+                                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6">
+                              <button className="flex items-center gap-2 group">
+                                {p.isActive ? (
+                                  <Badge variant="success" className="gap-1.5 font-bold">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                    Activo
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="gap-1.5 font-bold">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                    Inactivo
+                                  </Badge>
+                                )}
+                              </button>
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleEdit(p)}
+                                  className="h-9 w-9 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/5"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleDelete(p.id, p.name)}
+                                  className="h-9 w-9 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <PendingAdjustmentsTab 
+            products={products}
+            onProductSaved={fetchProducts}
+            onAddMissingProduct={handleAddMissingProduct}
+          />
+        )}
       </div>
 
       <ProductModal 

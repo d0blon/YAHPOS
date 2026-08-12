@@ -2,21 +2,15 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react'
-import { usePathname } from 'next/navigation';
 import {
   ShoppingCart, 
-  Menu, 
-  X, 
   Search, 
-  User, 
-  MapPin, 
-  Phone,
-  Sun,
-  Moon
+  Sun, 
+  Moon, 
+  Heart
 } from 'lucide-react'
 import { UserDropdown } from '@/components/layout/UserDropdown'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
@@ -27,14 +21,6 @@ import { ensureGsapRegistered } from '@/lib/gsap'
 
 // Eliminado useTheme local que causaba conflictos
 
-const navLinks = [
-  { href: '/', label: 'Inicio' },
-  { href: '/categoria/alimentos', label: 'Alimentos' },
-  { href: '/categoria/bebidas', label: 'Bebidas' },
-  { href: '/categoria/frescos', label: 'Frescos' },
-  { href: '/categoria/limpieza', label: 'Limpieza' },
-  { href: '/categoria/hogar', label: 'Hogar' },
-]
 
 import { useSaaS } from '@/providers/SaaSProvider'
 
@@ -42,11 +28,9 @@ export default function Header() {
   ensureGsapRegistered()
   const { config } = useSaaS()
   const [isScrolled, setIsScrolled] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const pathname = usePathname()
+
   const { totalItems } = useCartStore()
-  const { user, isAuthenticated, logout } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const headerRef = useRef<HTMLElement>(null)
@@ -56,15 +40,19 @@ export default function Header() {
   // En Plan Básico siempre YAHPOS! (no tienen ecommerce público)
   const hasEcommerce = (config.tier as string) === 'archipielago' || (config.tier as string) === 'patagonia'
   const displayName = hasEcommerce ? config.store_name : 'YAHPOS!'
-  const displayInitial = displayName.charAt(0).toUpperCase()
 
   useEffect(() => {
-    setMounted(true)
+    const raf = requestAnimationFrame(() => {
+      setMounted(true)
+    })
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
     }
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   // Entrance animation (fast, premium)
@@ -72,7 +60,6 @@ export default function Header() {
     if (!mounted) return
     const header = headerRef.current
     if (!header) return
-    const row = header.querySelector('.header-row')
     const logo = header.querySelector('.header-logo')
     const search = header.querySelector('.header-search')
     const actions = header.querySelector('.header-actions')
@@ -94,22 +81,19 @@ export default function Header() {
     <header 
       ref={headerRef} 
       className={cn(
-        "floating-header",
-        isScrolled && "header-scrolled"
+        "floating-header bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-900 sticky top-0 z-50 transition-all duration-300 py-3",
+        isScrolled && "shadow-md py-2"
       )}
     >
-      {/* Main Header Container */}
-      <div className={cn(
-        "px-6 transition-all duration-500",
-        isScrolled ? "py-2" : "py-3"
-      )}>
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
+        {/* DESKTOP HEADER & MOBILE ROW 1 */}
         <div className="flex items-center justify-between gap-6 header-row">
           
           {/* Logo Section */}
           <Link href="/" className="flex items-center gap-3 group header-logo shrink-0">
             <div className="relative">
               <div className={cn(
-                "w-11 h-11 rounded-2xl flex items-center justify-center transform group-hover:rotate-12 transition-all duration-500 overflow-hidden",
+                "w-10 h-10 rounded-xl flex items-center justify-center transform group-hover:rotate-12 transition-all duration-500 overflow-hidden",
                 hasEcommerce && config.store_logo 
                   ? "bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl" 
                   : "bg-primary shadow-xl shadow-primary/20"
@@ -126,62 +110,38 @@ export default function Header() {
                   <Image 
                     src={theme === 'dark' ? '/logos/yahpos_logo_master_dark.svg' : '/logos/yahpos_logo_master.svg'} 
                     alt="YAHPOS!" 
-                    width={44}
-                    height={44}
-                    className={cn(
-                      "w-full h-full object-contain p-1",
-                    )} 
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-contain p-1" 
                   />
                 )}
               </div>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+              <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none font-heading">
                 {displayName}
               </h1>
-              <p className={cn(
-                "text-[9px] font-black text-primary uppercase tracking-[0.2em] leading-none transition-all duration-700",
-                isScrolled ? "opacity-0 translate-y-[-5px] h-0 mt-0" : "opacity-70 translate-y-0 h-auto mt-1.5"
-              )}>
-                {hasEcommerce ? 'Smart Commerce' : 'Retail System'}
-              </p>
+              <span className="text-[9px] font-bold text-primary dark:text-brand-accent uppercase tracking-widest mt-0.5">
+                {hasEcommerce ? 'Supermercado' : 'Smart Commerce'}
+              </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation - Integrated in Header */}
-          <nav className="hidden lg:block">
-            <ul className="flex items-center gap-1">
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href}
-                    className={cn(
-                      "px-4 py-2 text-sm font-semibold transition-all duration-300 rounded-full hover:bg-gray-100 dark:hover:bg-white/5",
-                      pathname === link.href 
-                        ? "text-primary dark:text-primary-foreground" 
-                        : "text-gray-600 dark:text-gray-400"
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {/* Search bar simplified */}
-          <div className="hidden md:flex flex-1 max-w-sm header-search relative group">
-             <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <Search className="w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-             </div>
+          {/* Desktop Search Bar - Flex 1 */}
+          <div className="hidden md:flex flex-1 max-w-2xl header-search relative group">
              <input
                 type="text"
-                placeholder="Explorar..."
-                className="w-full h-10 pl-11 pr-4 rounded-full border-none bg-gray-100/50 dark:bg-white/5 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-sm font-medium"
+                placeholder="¿Qué necesitas hoy?"
+                className="w-full h-11 pl-4 pr-11 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-950 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 text-sm font-medium outline-none"
              />
+             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <Search className="w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-1 md:gap-2 header-actions">
+          {/* Actions - Right Side */}
+          <div className="flex items-center gap-2 md:gap-3 header-actions justify-end shrink-0">
+            {/* Theme Toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -191,59 +151,51 @@ export default function Header() {
               {theme === 'dark' ? <Sun className="w-4 h-4 text-brand-accent" /> : <Moon className="w-4 h-4 text-gray-600" />}
             </Button>
 
+            {/* Favorites (Heart) */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-gray-100 dark:hover:bg-white/5 relative"
+            >
+              <Heart className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <span className="absolute -top-1 -right-1 bg-primary text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+            </Button>
+
             <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1 hidden sm:block" />
 
+            {/* User Dropdown */}
             {isAuthenticated ? (
               <UserDropdown />
             ) : (
-              <Link href="/login">
+              <Link href="/login" className="hidden sm:block">
                 <Button variant="ghost" size="sm" className="rounded-full font-bold text-xs uppercase tracking-wider">
                   Acceder
                 </Button>
               </Link>
             )}
 
+            {/* Cart Button */}
             <Link href="/carrito">
-              <Button size="sm" className="relative rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-4">
+              <Button size="sm" className="relative rounded-xl bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-4 h-10 font-bold font-heading">
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                <span className="font-bold">{totalItems}</span>
+                <span>{totalItems}</span>
               </Button>
             </Link>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden rounded-full"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Mobile Menu - Enhanced */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-[110%] left-0 right-0 glass-card mx-2 p-6 rounded-[2rem] overflow-hidden animate-slide-up">
-          <ul className="space-y-1">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    "block px-6 py-4 rounded-2xl font-bold text-lg transition-all",
-                    pathname === link.href 
-                      ? "bg-primary text-white" 
-                      : "hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300"
-                  )}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {/* MOBILE ROW 2: SEARCH BAR (Full Width) */}
+        <div className="md:hidden mt-3 relative group">
+           <input
+              type="text"
+              placeholder="¿Qué necesitas hoy?"
+              className="w-full h-10 pl-4 pr-10 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 text-xs font-medium outline-none"
+           />
+           <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Search className="w-3.5 h-3.5 text-gray-400 group-focus-within:text-primary transition-colors" />
+           </div>
         </div>
-      )}
+      </div>
     </header>
   )
 }

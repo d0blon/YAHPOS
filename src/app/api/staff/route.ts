@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-utils'
+import { createAdminClient } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -35,7 +36,8 @@ export async function POST(request: Request) {
 
     const cleanedRut = rut.replace(/[^0-9kK]/g, '').toUpperCase()
 
-    const { data, error } = await auth.supabase
+    const adminSupabase = createAdminClient()
+    const { data, error } = await adminSupabase
       .from('profiles')
       .upsert({
         rut: cleanedRut,
@@ -72,7 +74,8 @@ export async function PATCH(request: Request) {
     if (current_area !== undefined) updateData.current_area = current_area
     if (role !== undefined) updateData.role = role
 
-    const { data, error } = await auth.supabase
+    const adminSupabase = createAdminClient()
+    const { data, error } = await adminSupabase
       .from('profiles')
       .update(updateData)
       .eq('id', id)
@@ -101,7 +104,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID es requerido' }, { status: 400 })
     }
 
-    const { data, error } = await auth.supabase
+    const adminSupabase = createAdminClient()
+    const { data, error } = await adminSupabase
       .from('profiles')
       .update({ 
         role: 'user',

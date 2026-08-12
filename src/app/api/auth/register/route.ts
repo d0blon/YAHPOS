@@ -48,7 +48,8 @@ export async function POST(req: Request) {
 
     // 2. Update/Create profile linked to auth user
     // The handle_new_user trigger already creates a basic profile, we enhance it
-    const { data: profile, error: profileError } = await supabase
+    const adminSupabase = createAdminClient()
+    const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
       .upsert({
         id: authData.user.id,

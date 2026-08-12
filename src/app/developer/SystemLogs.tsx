@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Terminal, Shield, AlertTriangle, CheckCircle2, Search, RefreshCw } from 'lucide-react'
-import { getRealLogsAction } from './actions'
+import { getRealLogsAction } from './actions/logs'
 import { cn } from '@/lib/utils'
 
 import { SystemLog } from '@/types'

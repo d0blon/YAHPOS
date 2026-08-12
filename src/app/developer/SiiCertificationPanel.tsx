@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ShieldCheck, Play, CheckCircle2, XCircle, FileText, ExternalLink, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { runSiiCertificationAction, toggleSiiEnvironmentAction } from './actions'
+import { runSiiCertificationAction, toggleSiiEnvironmentAction } from './actions/sii'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'

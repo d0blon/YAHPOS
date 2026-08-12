@@ -112,20 +112,16 @@ export function OfflineSyncManager() {
   const syncCafs = async () => {
     try {
       const { setToken, refreshFolios, setFoliosDisponibles } = useSiiStore.getState();
-      const { settings } = usePosStore.getState();
 
-      // Fix 3: Verificar si SII está configurado antes de intentar sincronizar
-      if (!settings?.sii?.enabled) {
-        console.warn('[OfflineSync] SII no configurado, saltando sincronización de folios');
-        setFoliosDisponibles(false);
-        return;
-      }
-      
       // 1. Obtener Token de Sesión SII
       const tokenRes = await fetch('/api/sii/auth/token');
       if (tokenRes.ok) {
         const { token } = await tokenRes.json();
         if (token) setToken(token);
+      } else {
+        // Tienda sin SII configurado (404) u otro error — no hay folios que refrescar
+        setFoliosDisponibles(false);
+        return;
       }
 
       // 2. Refrescar pools de folios básicos si están vacíos
