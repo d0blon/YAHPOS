@@ -3,6 +3,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { rateLimit } from '@/lib/ratelimit'
 
 import { DEVELOPER_EMAILS } from '@/lib/constants'
+import { normalizeRole, AppRole } from '@/lib/constants/roles'
 import { Store } from './types'
 
 export default async function middleware(request: NextRequest) {
@@ -197,17 +198,17 @@ export default async function middleware(request: NextRequest) {
   if (user && (isAdminRoute || isPosRoute)) {
     // Verificar rol global para bypass de developer ya se hizo arriba
     
-    // Si estamos en un subdominio, verificar membresía
+    // Si estamos en un subdominio, verificar rol/tienda del perfil.
+    // (antes leía user_stores, que ningún flujo real de creación de dueños/personal
+    // llena -- profiles.role/store_id es la fuente de verdad real, igual que en RLS)
     if (storeData) {
-      const { data: membership } = await supabase
-        .from('user_stores')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('store_id', storeData.id)
-        .eq('is_active', true)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, store_id')
+        .eq('id', user.id)
         .single()
 
-      let userRole = membership?.role || 'customer'
+      let userRole = (profile?.store_id === storeData.id) ? (profile?.role || 'customer') : 'customer'
       if (isDeveloper) userRole = 'developer'
 
       const isSuperUser = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(userRole.toLowerCase())
@@ -217,7 +218,7 @@ export default async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/?error=unauthorized_admin', request.url))
       }
 
-      if (isPosRoute && !isSuperUser && userRole !== 'cajero') {
+      if (isPosRoute && !isSuperUser && normalizeRole(userRole) !== AppRole.CASHIER) {
         return NextResponse.redirect(new URL('/?error=unauthorized_pos', request.url))
       }
     }

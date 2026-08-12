@@ -76,6 +76,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Faltan datos obligatorios (total, paymentMethod)' }, { status: 400 })
     }
 
+    // Validar que todos los productos existan ANTES de crear orden/pago -- evita dejar
+    // una orden pagada huérfana si algún productId es inválido (ej. IDs del catálogo demo
+    // que se filtraron al carrito por error, no numéricos, no existen en esta tienda).
+    if (items?.length) {
+      const productIds = items.map((i: any) => i.productId).filter(Boolean)
+      if (productIds.length > 0) {
+        const { data: existingProducts } = await auth.supabase
+          .from('products')
+          .select('id')
+          .eq('store_id', auth.storeId)
+          .in('id', productIds)
+
+        const existingIds = new Set((existingProducts || []).map((p: any) => String(p.id)))
+        const missingIds = productIds.filter((id: any) => !existingIds.has(String(id)))
+
+        if (missingIds.length > 0) {
+          return NextResponse.json({ error: `Producto(s) inválido(s): ${missingIds.join(', ')}` }, { status: 400 })
+        }
+      }
+    }
+
     if (offlineId) {
       const { data: existingOrder } = await auth.supabase
         .from('orders')

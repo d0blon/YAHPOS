@@ -34,11 +34,12 @@ export async function apiFetch(path: string, init?: RequestInit) {
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
-export async function getProducts(branchId?: string, category?: string): Promise<Product[]> {
+export async function getProducts(branchId?: string, category?: string, search?: string): Promise<Product[]> {
   try {
     const params = new URLSearchParams();
     if (branchId) params.set('branch_id', branchId);
     if (category) params.set('category', category);
+    if (search) params.set('search', search);
     const qs = params.toString();
     const data = await apiFetch(`/products${qs ? `?${qs}` : ''}`);
     return Array.isArray(data) ? data : (data?.products ?? []);

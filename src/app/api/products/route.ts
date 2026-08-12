@@ -61,6 +61,7 @@ function serveDemoCatalog(req?: Request) {
     const url = req ? new URL(req.url) : null
     const slug = url?.searchParams.get('slug')
     const category = url?.searchParams.get('category')
+    const search = url?.searchParams.get('search')
 
     if (slug && req) {
       const item = catalog.find((p: any) => generateSlug(p.name) === slug)
@@ -77,6 +78,9 @@ function serveDemoCatalog(req?: Request) {
         const itemSlug = (item.category_main || '').toLowerCase().replace(/\s+/g, '-')
         return itemSlug === category.toLowerCase()
       })
+    } else if (search) {
+      const term = generateSlug(search)
+      filtered = catalog.filter((item: any) => generateSlug(item.name || '').includes(term))
     }
 
     const transformed = filtered.map((item: any, i: number) => transformCatalogItem(item, i))
@@ -144,6 +148,7 @@ export async function GET(req: Request) {
   const branchId = searchParams.get('branch_id')
   const slug = searchParams.get('slug')
   const categorySlug = searchParams.get('category')
+  const searchTerm = searchParams.get('search')
 
     // Usamos el cliente normal (respetando RLS) si es posible.
     // Si la tienda es pública, las políticas RLS deben permitir SELECT anónimo filtrado por store_id.
@@ -211,12 +216,48 @@ export async function GET(req: Request) {
       })
     }
 
+    let matchingIds: number[] | null = null
+    if (categorySlug) {
+      const { data: allCategories, error: catError } = await supabase
+        .from('products')
+        .select('id, category')
+        .eq('store_id', storeId)
+
+      if (catError) {
+        console.error('[API /products] Category Lookup Error:', catError.message)
+        return NextResponse.json({ error: catError.message }, { status: 500 })
+      }
+
+      matchingIds = (allCategories ?? [])
+        .filter((p: any) => generateSlug(p.category ?? '') === categorySlug.toLowerCase())
+        .map((p: any) => p.id)
+    } else if (searchTerm) {
+      const { data: allSearchable, error: searchLookupError } = await supabase
+        .from('products')
+        .select('id, name, sku, barcode')
+        .eq('store_id', storeId)
+
+      if (searchLookupError) {
+        console.error('[API /products] Search Lookup Error:', searchLookupError.message)
+        return NextResponse.json({ error: searchLookupError.message }, { status: 500 })
+      }
+
+      const normalizedTerm = generateSlug(searchTerm)
+      matchingIds = (allSearchable ?? [])
+        .filter((p: any) =>
+          generateSlug(p.name ?? '').includes(normalizedTerm) ||
+          (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (p.barcode && p.barcode.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+        .map((p: any) => p.id)
+    }
+
     let listQuery = supabase
       .from('products')
       .select('*, inventory(*)')
       .eq('store_id', storeId)
-    if (categorySlug) {
-      listQuery = listQuery.eq('category', categorySlug)
+    if (matchingIds !== null) {
+      listQuery = listQuery.in('id', matchingIds.length > 0 ? matchingIds : [-1])
     }
     const { data: products, error: listError } = await listQuery.order('name')
 
@@ -227,8 +268,10 @@ export async function GET(req: Request) {
 
     const dataList = products ?? []
 
-    // Si no hay productos en DB, servir catálogo demo (útil para dev local)
-    if (dataList.length === 0) {
+    // Si no hay productos en DB (tienda vacía, SIN filtro de categoría), servir catálogo
+    // demo -- útil para dev local. Si HAY filtro de categoría y da 0 resultados reales,
+    // NO mostrar el demo -- es una categoría real vacía, se debe ver vacía.
+    if (dataList.length === 0 && !categorySlug && !searchTerm) {
       return serveDemoCatalog(req)
     }
 

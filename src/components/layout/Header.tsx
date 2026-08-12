@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react'
 import {
@@ -23,11 +24,72 @@ import { ensureGsapRegistered } from '@/lib/gsap'
 
 
 import { useSaaS } from '@/providers/SaaSProvider'
+import { getProducts } from '@/lib/api'
+import type { Product } from '@/types'
+
+function SearchSuggestions({ suggestions, query, onSelect }: { suggestions: Product[]; query: string; onSelect: () => void }) {
+  if (suggestions.length === 0) return null
+  return (
+    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl overflow-hidden z-50">
+      {suggestions.map((product) => (
+        <Link
+          key={product.id}
+          href={`/producto/${product.slug || product.id}`}
+          onClick={onSelect}
+          className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-900 overflow-hidden shrink-0">
+            {product.image && (
+              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{product.name}</span>
+        </Link>
+      ))}
+      <Link
+        href={`/buscar?q=${encodeURIComponent(query)}`}
+        onClick={onSelect}
+        className="block px-4 py-2.5 text-center text-xs font-black uppercase tracking-widest text-primary hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
+      >
+        Ver todos los resultados
+      </Link>
+    </div>
+  )
+}
 
 export default function Header() {
   ensureGsapRegistered()
   const { config } = useSaaS()
   const [isScrolled, setIsScrolled] = useState(false)
+  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [suggestions, setSuggestions] = useState<Product[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  useEffect(() => {
+    const term = searchTerm.trim()
+    if (term.length < 2) {
+      setSuggestions([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const results = await getProducts(undefined, undefined, term)
+        setSuggestions(results.slice(0, 6))
+      } catch (err) {
+        console.error('Error buscando sugerencias:', err)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const term = searchTerm.trim()
+    if (term) {
+      router.push(`/buscar?q=${encodeURIComponent(term)}`)
+    }
+  }
 
   const { totalItems } = useCartStore()
   const { isAuthenticated } = useAuthStore()
@@ -128,16 +190,27 @@ export default function Header() {
           </Link>
 
           {/* Desktop Search Bar - Flex 1 */}
-          <div className="hidden md:flex flex-1 max-w-2xl header-search relative group">
+          <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-2xl header-search relative group">
              <input
                 type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 placeholder="¿Qué necesitas hoy?"
                 className="w-full h-11 pl-4 pr-11 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-950 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 text-sm font-medium outline-none"
              />
-             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+             <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2">
                 <Search className="w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-             </div>
-          </div>
+             </button>
+             {showSuggestions && (
+               <SearchSuggestions
+                 suggestions={suggestions}
+                 query={searchTerm.trim()}
+                 onSelect={() => { setShowSuggestions(false); setSearchTerm('') }}
+               />
+             )}
+          </form>
 
           {/* Actions - Right Side */}
           <div className="flex items-center gap-2 md:gap-3 header-actions justify-end shrink-0">
@@ -185,16 +258,27 @@ export default function Header() {
         </div>
 
         {/* MOBILE ROW 2: SEARCH BAR (Full Width) */}
-        <div className="md:hidden mt-3 relative group">
+        <form onSubmit={handleSearchSubmit} className="md:hidden mt-3 relative group">
            <input
               type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="¿Qué necesitas hoy?"
               className="w-full h-10 pl-4 pr-10 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 text-xs font-medium outline-none"
            />
-           <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+           <button type="submit" className="absolute right-3.5 top-1/2 -translate-y-1/2">
               <Search className="w-3.5 h-3.5 text-gray-400 group-focus-within:text-primary transition-colors" />
-           </div>
-        </div>
+           </button>
+           {showSuggestions && (
+             <SearchSuggestions
+               suggestions={suggestions}
+               query={searchTerm.trim()}
+               onSelect={() => { setShowSuggestions(false); setSearchTerm('') }}
+             />
+           )}
+        </form>
       </div>
     </header>
   )

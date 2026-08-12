@@ -70,11 +70,12 @@ export const useAuthStore = create<AuthState>()(
           // 1. Obtener Perfil Básico
           const { data: profile } = await supabase
             .from('profiles')
-            .select('rut, first_name, last_name, phone, loyalty_points')
+            .select('rut, first_name, last_name, phone, loyalty_points, role, store_id')
             .eq('id', data.user.id)
             .single()
 
-          // 2. Obtener Membresías (RBAC Multi-tienda)
+          // 2. Obtener Membresías (RBAC Multi-tienda) -- hoy casi siempre vacío, profiles es
+          // la fuente de verdad real (mismo fix que ya se hizo en middleware.ts)
           const { data: memberships } = await supabase
             .from('user_stores')
             .select('store_id, role, is_active, stores(tier, name)')
@@ -93,6 +94,18 @@ export const useAuthStore = create<AuthState>()(
           }))
 
           const primaryMembership = formattedMemberships[0]
+          const resolvedStoreId = primaryMembership?.store_id || profile?.store_id
+
+          // Tier: si hay membership úsalo, si no, resolver desde el store del profile
+          let tier: 'austral' | 'archipielago' | 'patagonia' = 'austral'
+          if (isDev) {
+            tier = 'patagonia'
+          } else if (primaryMembership?.stores?.tier) {
+            tier = primaryMembership.stores.tier
+          } else if (resolvedStoreId) {
+            const { data: storeRow } = await supabase.from('stores').select('tier').eq('id', resolvedStoreId).single()
+            if (storeRow?.tier) tier = storeRow.tier as 'austral' | 'archipielago' | 'patagonia'
+          }
           
           const appUser: AppUser = {
             id: data.user.id,
@@ -100,11 +113,11 @@ export const useAuthStore = create<AuthState>()(
             firstName: profile?.first_name || metadata?.given_name || metadata?.first_name || 'Usuario',
             lastName: profile?.last_name || metadata?.family_name || metadata?.last_name || '',
             phone: profile?.phone || '',
-            role: isDev ? AppRole.DEVELOPER : (primaryMembership?.role as AppRole || AppRole.CUSTOMER),
+            role: isDev ? AppRole.DEVELOPER : (primaryMembership?.role as AppRole || profile?.role as AppRole || AppRole.CUSTOMER),
             rut: profile?.rut || '',
             loyaltyPoints: profile?.loyalty_points ?? 0,
-            storeId: primaryMembership?.store_id,
-            tier: isDev ? 'patagonia' : (primaryMembership?.stores?.tier || 'austral'),
+            storeId: resolvedStoreId,
+            tier,
             identityVerified: false,
             wishlist: [],
             purchaseHistory: [],
@@ -118,7 +131,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true, 
             isLoading: false,
             memberships: formattedMemberships,
-            currentStoreRole: isDev ? AppRole.DEVELOPER : (primaryMembership?.role || AppRole.CUSTOMER)
+            currentStoreRole: isDev ? AppRole.DEVELOPER : (primaryMembership?.role || profile?.role || AppRole.CUSTOMER)
           })
         } catch (error) {
           set({ isLoading: false })
@@ -212,6 +225,19 @@ export const useAuthStore = create<AuthState>()(
             ? formattedMemberships.find(m => m.store_id === currentStoreId)
             : formattedMemberships[0]
 
+          const resolvedStoreId = activeMembership?.store_id || profile?.store_id || currentUser.storeId
+
+          // Tier: si hay membership úsalo, si no, resolver desde el store del profile
+          let tier: 'austral' | 'archipielago' | 'patagonia' = 'austral'
+          if (isDev) {
+            tier = 'patagonia'
+          } else if (activeMembership?.stores?.tier) {
+            tier = activeMembership.stores.tier
+          } else if (resolvedStoreId) {
+            const { data: storeRow } = await supabase.from('stores').select('tier').eq('id', resolvedStoreId).single()
+            if (storeRow?.tier) tier = storeRow.tier as 'austral' | 'archipielago' | 'patagonia'
+          }
+
           // Actualizar estado incluso si no hay perfil (usando datos de auth.users como fallback)
           set({ 
             user: { 
@@ -222,9 +248,9 @@ export const useAuthStore = create<AuthState>()(
               rut: profile?.rut || currentUser.rut || '',
               phone: profile?.phone || currentUser.phone || '',
               loyaltyPoints: profile?.loyalty_points ?? 0,
-              storeId: activeMembership?.store_id || profile?.store_id || currentUser.storeId,
+              storeId: resolvedStoreId,
               identityVerified: profile?.identity_verified ?? false,
-              tier: isDev ? 'patagonia' : (activeMembership?.stores?.tier || 'austral'),
+              tier,
               updatedAt: profile?.updated_at || new Date().toISOString()
             },
             memberships: formattedMemberships,
