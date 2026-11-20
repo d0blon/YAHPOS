@@ -123,7 +123,7 @@ Yo: sintetizo y recomiendo la mejor
 
 ## 4. Estado Actual del Proyecto
 
-**Framework:** Next.js 16.2.3 (App Router) + Webpack  
+**Framework:** Next.js 16.4.6 (App Router) + Webpack  
 **Styling:** Tailwind CSS v4 + CSS variables  
 **Auth:** Supabase SSR (OAuth Google)  
 **DB:** Supabase PostgreSQL  
@@ -182,6 +182,144 @@ original de este bug (quedó desactualizado, nunca se corrigió el doc cuando se
 ---
 
 ## 5. Últimos Cambios
+
+### 2026-11-20 (fix `orders.filter is not a function`) — sin commit
+| Archivo | Cambio |
+|---------|--------|
+| `src/app/admin/pedidos/page.tsx` | `fetchOrders()` con `response.ok` + `Array.isArray` antes de `setOrders`; fail-closed `[]`. tsc 0; build verde; lint 247 (baseline). |
+
+Hermanos del mismo patrón corregidos con autorización del dueño: `admin/configuracion/page.tsx:592-607` (`r.ok` + `Array.isArray` + `[]` en catch) y `pos/CustomerModal.tsx:63-85` (`res.ok` + forma válida; `null` sigue siendo "no encontrado"). Gates finales: tsc 0, build verde, lint 247 (baseline), Jest 76/76.
+
+### 2026-11-19/20 (preparación de 040 + scripts) — sin ejecución, sin commit
+| Archivo | Cambio |
+|---------|--------|
+| `supabase/migrations/040_lints_hardening.sql` (nuevo) | Guards fail-closed: REVOKE `PUBLIC, anon` en 2 funciones, DROP condicional de `public_read_store_logos`, índices `uq_*` solo por definición exacta, `search_path` de `audit_sensitive_changes()`. `store_isolation_policy`, `settings_pkey`, `reserve_folios` y `get_store_by_domain` intactos. |
+| `scripts/verify_040.mjs`, `scripts/test_signup_store_metadata.mjs` (nuevos) | Verificación read-only de ACLs/policies/índices; prueba controlada del vector de signup con limpieza en `finally` y doble fail-closed (`ALLOW_SIGNUP_PROBE=1`). |
+
+**Gates:** tsc 0; `node --check` 0; build global verde; Jest 7/76; lint 5 errores / 242 warnings (baseline). Sin SQL en vivo ni credenciales nuevas.
+
+### 2026-11-19 (triaje de lints Supabase snapshot 20:15Z) — solo plan, sin ejecución
+
+| Archivo | Cambio |
+|---------|--------|
+| `BITACORA.md`, `TASK_HANDOFF.md`, `AGENTS.md` | Diff del snapshot 20:15Z contra los 4 CSV de 02:52Z; hallazgos priorizados con evidencia `archivo:línea`; plan ordenado con 9 fases, gates y prueba real + negativa; registro de decisión. |
+
+Sin SQL en vivo, sin PAT, sin código, sin commit. Hallazgo nuevo a probar con autorización: signup
+directo a Auth con `store_id` ajeno en metadata (`038:124-131` + `001:131-134`, el trigger bloquea
+solo UPDATE). `store_isolation_policy` no se dropea: es la red de `WITH_CHECK` por tienda.
+
+### 2026-11-20 (limpieza de lint ESLint) — sin commit
+| Archivo | Cambio |
+|---------|--------|
+| 84 archivos de `src/**` + `eslint.config.mjs` | 241 → 5 errores de lint. `any` → tipos reales; `Math.random` fuera de render; `let`→`const`; entidades escapadas; `scratch/**` ignorado. Supresiones solo en hidratación/fetch donde el fix real cambiaría comportamiento. |
+| 6 archivos admin/developer | 7 errores TS resultantes del nuevo tipado corregidos sin tocar lógica. |
+
+**Evidencia:** tsc 0; Jest 76/76; build global verde; HTTP 200; SW 10/0; lint 5 errores / 242 warnings.
+**Excluidos por decisión:** `login/page.tsx`, `PlatformLanding.tsx` (NO tocar) y `SaaSProvider.tsx` (zona roja) concentran los 5 errores restantes. Sin commit.
+
+### 2026-11-19/20 (lints Supabase + build global + hardcodeos) — sin commit
+| Archivo | Cambio |
+|---------|--------|
+| `tsconfig.json` | `scripts/**` fuera del type-check → `tsc` global 0, `npm run build` global verde |
+| `scripts/setup_test_user.mjs`, `test-supabase.mjs`, `scratch/*.{mjs,ts}`, 5 scripts SII | Service key y `STORE_ID` desde env; fail-closed; 0 secretos literales en repo |
+| `EditorProvider.tsx`, `api/v1/bot/inventory/pending/route.ts` | `.eq('store_id', …)` en 2 queries sin scope |
+| `api/blumi/prueba-motor`, `lib/blumi/client.ts`, `.env.example` | Sin emisor ajeno de fallback; `BLUMI_SANDBOX_URL` obligatoria en prod |
+| `developer/actions/stores.ts` | `admin_finances` con `createAdminClient()` y error chequeado |
+| `supabase/migrations/039_function_privileges_hardening.sql` (nuevo) | REVOKEs críticos, `search_path`, storage y deny. **Aplicada en vivo el 2026-11-20** |
+
+**Evidencia:** tsc 0; build global 0; Jest 7/76; lint 509 (241 errores preexistentes); HTTP 200;
+SW 10 cachés de assets, 0 handlers `/api/`; 0 llaves literales; 0 UUID de tenant en `src/`.
+039 aplicada y verificada: 4 RPC críticos → `42501` con anon; `get_store_by_domain` → 200.
+**Pendiente CRÍTICO:** revocar el PAT Supabase (expuesto en chat), rotar service keys y PFX.
+`DEVELOPER_EMAILS`/dominio raíz/contacto de tenant siguen en decisión.
+
+### 2026-11-19 (set SII en facturación + voucher POS) — 6 ST, sin commit
+| Archivo | Cambio |
+|---------|--------|
+| `admin/facturacion/{actions.ts,page.tsx,components/DocumentTabs.tsx}`, `api/sii/caf` | store/rol desde sesión, `tipo` validado, gate por CAF vigente (fecha Chile), link al set |
+| `admin/facturacion/pruebas/**`, `lib/sii/test-cases.ts`, `api/sii/estado/[id]` | Set E2E: emite → verifica BD → envía → track_id + veredicto real; 4 casos 39, resto bloqueado por CAF; cuota UI de 1 folio |
+| `lib/pos/sii-decision.ts`, `(pos)/pos/page.tsx`, `PaymentModal`, `PosSettingsModal`, `posStore` | Decisión `dte/voucher/blocked`, bloqueo antes de cobrar, SumUp unificado, sin terminal heredado |
+| `PosReceiptModal`, `hardware/{types,printer}`, `customer-display/**`, `api/{orders,sii/sync}`, `OfflineSyncManager`, `validations/orders` | Voucher no-SII explícito, persistencia `document_kind`, 409 en sync, sin falso folio |
+| `lib/sii/{auth,engine,caf,pdf-generator,pdf-datos}.ts` | **Zona roja autorizada**: fail-closed MOCK, CAF `RE`, PDF con detalle. Bitácora línea por línea en `TASK_HANDOFF.md` |
+| `migrations/037_orders_offline_id_unique.sql` | Índice único de `offline_id`; aplicado en vivo, 0 duplicados previos |
+
+**Evidencia:** Jest 6 suites/46; tsc 0 global; build global verde (`scripts/**` excluido en tsconfig);
+eslint 509 preexistentes; HTTP 307/401/405 esperados; CSP 7/7 nonce same-request;
+golden autofirmado `6a4182ed…f67e89` en 2 procesos (SHA histórico no reproducible).
+**Pendiente:** ejecutar 1 caso real con sesión/PFX/CAF 39, verificar voucher impreso, aplicar 037 en
+producción, revocar token Supabase. Sin commit.
+
+### 2026-11-19 (auditoría final v1.5) — 15 ✅ / 5 ⚠️ / 0 ❌ abiertos
+| Archivo | Cambio |
+|---------|--------|
+| 4 auditores + gates | Revisión de los 20 controles contra código real; v1.4 tenía afirmaciones falsas y regresiones |
+| `api/auth/{sso,register,session-sync}`, `api/sii/{caf,documentos/*}`, `api/wizard/caf` | `secure` prod, scope `store_id`, escape `<`/`>`/`&`, rol antes de body/doc, RUT CAF fail-closed |
+| `src/lib/security.ts`, `.env.example`, `validations/{orders,staff,api}.ts`, `api/customers` | salt unificado, `SII_ENCRYPTION_KEY`, `.strict()`, `parseQuery` en DELETE |
+| 19 selectores + 4 fixes TS | 0 `select('*')`/`.select()` en `src`; columnas explícitas + `.limit()` |
+| `CHECKLIST_SEGURIDAD.md` v1.5, `TASK_HANDOFF.md`, `BITACORA.md` | tabla honesta, handoff de residuales, changelog |
+
+**Evidencia:** tsc 0 en `src/`; Jest 10/10; build compila; audit 5 (0 critical); HTTP 20/20 → 401; CSP 4/4 + nonce same-request; DB 36/36 RLS+FORCE.
+**Handoff:** service key en zonas rojas, `httpOnly:false` por diseño SSR, sin redirect HTTPS en repo, buckets Storage sin versionar, `serialize-javascript` high vetado, PFX real y revocación del token. Sin commit.
+
+### 2026-11-19 (cierre real v1.4) — auditoría 20 ✅ / 0 ❌
+| Archivo | Cambio |
+|---------|--------|
+| `src/lib/sii/caf-store.ts` (nuevo), `engine.ts`, `emisor-config.ts`, `api/sii/caf` | CAF cifrada en reposo (AES-256-GCM), `decodeCaf` fail-closed, backfill `encrypted=5`, 0 CAF planos, golden DTE byte-idéntico |
+| `src/stores/siiStore.ts`, `OfflineSyncManager.tsx`, `api/sii/auth/token` | Store v2 con `migrate` que borra CAF/token de IndexedDB; sin secretos en respuestas |
+| `supabase/migrations/036_final_security_fixes.sql` (nuevo) | `environment` auditado, índice `profiles_staff_store_rut_key`, 6 deny policies |
+| `src/middleware.ts` → `src/proxy.ts`, `next.config.ts` | CSP con nonce real por request; bug `.join(' ')` corregido a `.join('; ')`; CSP estática removida |
+| `src/app/api/**`, `developer/actions/stores.ts` | `select('*')`/`.select()` → columnas explícitas + `.limit()`; sin XML en JSON; staff scoping `store_id+rut` |
+| `src/app/api/orders`, `session-sync`, `MovementReceiptModal`, fixtures Jest | R5 auth-first; `<script nonce>`; impresión sin inline; tests 10/10 |
+| `docs/seguridad/CHECKLIST_SEGURIDAD.md`, `BITACORA.md`, `TASK_HANDOFF.md` | v1.4 con tabla final, 9/9 hallazgos cerrados y plan de pruebas de zonas rojas |
+
+**Evidencia:** tsc 0 global; Jest 10/10; build global verde (`scripts/**` excluido en tsconfig);
+eslint global 519 preexistentes ⚠️; audit 0 critical; CSP 4/4; HTTP 20/20 → 401; DB 36/36 RLS+FORCE.
+**Pendiente del dueño:** revocar token Supabase; verificar contraseña cifrada con el PFX real. Sin commit.
+
+### 2026-11-19 (revalidación final) — auditoría re-abierta: 12 ✅ / 6 ⚠️ / 2 ❌
+| Archivo | Cambio |
+|---------|--------|
+| `docs/seguridad/CHECKLIST_SEGURIDAD.md` | v1.3: 9 hallazgos nuevos confirmados por revisión independiente; ítems 5 (cifrado de CAF) y 7 (upsert staff cross-tenant) pasan a ❌ |
+| `BITACORA.md` | Registro de revalidación: gates, matriz HTTP, DB en vivo y nota de integridad del valor cifrado de `sii_config` |
+
+**Pendiente del dueño:** cerrar token Supabase; decidir fix de R1/R3 antes de operar en producción; verificar certificado con el PFX real (el ciphertext original se reemplazó por GCM funcional durante la prueba de redacción). Sin commit.
+
+### 2026-11-19 (tanda final) — auditoría 20/20 cerrada
+| Archivo | Cambio |
+|---------|--------|
+| `src/app/api/sii/**`, `wizard/**`, `blumi/**` (18 rutas) | Zod + roles desde `profiles.role`; auth antes del body; sin XML/certificados en respuestas |
+| `src/lib/validations/sii.ts` | Esquemas DTE/SII/wizard/Blumi (CAF, rangos, ambiente, cola offline) |
+| `src/lib/crypto.ts` | AES-256-GCM `02:` + fallback CBC |
+| `next.config.ts` | CSP prod sin `unsafe-eval` + HSTS |
+| `supabase/migrations/035_audit_triggers.sql` | (nuevo) auditoría con `[REDACTED]`, aplicada y verificada |
+| `customers`, `orders`, `ai/generate-description`, `products` POST | Últimos `req.json()` → `parseBody`; products auth-first |
+| `package.json` / lock | `zod@4.6.7`, `node-forge@1.4.3`, `fast-xml-parser@5.12.1`, `xml-crypto@6.4.0`, `next@16.4.6`, `eslint-config-next@16.4.6` + `npm audit fix` |
+| `docs/seguridad/CHECKLIST_SEGURIDAD.md`, `BITACORA.md` | v1.2: 12 ✅ / 8 ⚠️ / 0 ❌; golden DTE byte-idéntico; audit 24 → 5 |
+
+**Residuales:** `serialize-javascript` vía `next-pwa` (fix exige downgrade major), DEK/KMS,
+paginación, nonce de CSP, 3 tablas sin policies, 1 `store_id` huérfano. Sin commit.
+
+### 2026-11-19 (tanda 2)
+| Archivo | Cambio |
+|---------|--------|
+| `src/lib/dev-auth.ts` | (nuevo) `dev_token` HMAC-SHA256 con expiración 2h; rechaza valor estático/tampered/expirado/futuro |
+| `src/lib/ratelimit.ts`, `src/middleware.ts` | Fail-closed en producción + fallback memoria en dev; `critical`/`operational`/`public`; sin logs de cookies |
+| `src/lib/constants/roles.ts`, `src/app/api/staff/route.ts` | Whitelist de roles; bloqueo de escalada a `owner`/`developer` |
+| `src/lib/validations/{http,api,staff}.ts` | (nuevos) `parseBody`/`parseQuery`/`parseFormData` + esquemas zod centralizados |
+| ~30 API routes | Zod en writes no-DTE; `orders` PATCH y `products/[id]` PATCH restringidos |
+| `docs/seguridad/CHECKLIST_SEGURIDAD.md`, `BITACORA.md` | Checklist v1.1: 11 ✅ / 8 ⚠️ / 1 ❌; evidencia de pruebas reales |
+
+**Pendiente:** tanda final DTE/SII (`/api/sii/*`, `/api/wizard/*`, `/api/blumi/*`), ítems 5/13/15-20, y dependencias (`next`, `node-forge`).
+
+### 2026-11-19
+| Archivo | Cambio |
+|---------|--------|
+| `src/middleware.ts` | Eliminado bypass de autenticación `?audit=true` |
+| `src/app/api/dashboard/route.ts`, `series/route.ts` | `store_id` sin confiar en header del cliente; fallback a dominio resuelto en servidor para cuentas globales |
+| `src/app/api/auth/register/route.ts` | `store_id` resuelto desde Host; fail-closed si dominio inválido |
+| `supabase/migrations/034_security_fix_cross_tenant_and_rls.sql` | Scope de tienda en policies + FORCE RLS (aplicado y verificado en vivo) |
+| `docs/seguridad/CHECKLIST_SEGURIDAD.md` | Checklist de 20 controles para revisión futura |
+| `BITACORA.md` | Registro completo del handoff |
 
 ### 2026-05-13
 | Archivo | Cambio |
@@ -403,3 +541,13 @@ Si la tarea requiere tocar `middleware.ts`, `SaaSProvider.tsx`, `src/lib/sii/eng
 ---
 
 *Última actualización: 2026-05-14*
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
