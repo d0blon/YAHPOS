@@ -1,15 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase'
+import { parseBody, parseQuery } from '@/lib/validations/http'
+import { productLookupQuerySchema, productSubmissionSchema } from '@/lib/validations/api'
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const code = searchParams.get('code')
-    
-    if (!code || code.length < 8) {
-      return NextResponse.json({ success: false, error: 'Código inválido' }, { status: 400 })
-    }
+    const parsedQuery = parseQuery(request, productLookupQuerySchema)
+    if ('error' in parsedQuery) return parsedQuery.error
+    const code = parsedQuery.data.code
 
     const supabase = await createClient()
 
@@ -71,12 +69,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Tienda no encontrada' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { sku, name, brand, category, image_url } = body
-
-    if (!sku || !name) {
-      return NextResponse.json({ success: false, error: 'SKU y nombre requeridos' }, { status: 400 })
-    }
+    const parsed = await parseBody(request, productSubmissionSchema)
+    if ('error' in parsed) return parsed.error
+    const { sku, name, brand, category, image_url } = parsed.data
 
     // Insertar usando el admin client porque la tabla deniega todo acceso por RLS a 'authenticated'
     const adminClient = createAdminClient()

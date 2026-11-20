@@ -3,8 +3,6 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';
 import { motion, Variants } from 'framer-motion';

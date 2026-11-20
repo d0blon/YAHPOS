@@ -1,4 +1,6 @@
 import { DtePayload, SiiConfig } from '../types';
+import { xmlText } from '../xml-text';
+import { timestampChile } from '../fecha-chile';
 
 export function generateNotaDebitoXml(payload: DtePayload, config: SiiConfig, tedXml?: string): string {
   const { Encabezado, Detalles } = payload;
@@ -6,10 +8,10 @@ export function generateNotaDebitoXml(payload: DtePayload, config: SiiConfig, te
   const detallesXml = Detalles.map((item, index) => `
     <Detalle>
         <NroLinDet>${index + 1}</NroLinDet>
-        <NmbItem>${item.NmbItem.substring(0, 80).replace(/[<>&"']/g, '')}</NmbItem>
-        <QtyItem>${item.QtyItem}</QtyItem>
-        <PrcItem>${Math.round(item.PrcItem)}</PrcItem>
         ${item.IndExe ? `<IndExe>${item.IndExe}</IndExe>` : ''}
+        <NmbItem>${xmlText(item.NmbItem, 80)}</NmbItem>
+        <QtyItem>${item.QtyItem}</QtyItem>
+        <PrcItem>${item.PrcItem}</PrcItem>
         <MontoItem>${Math.round(item.MontoItem)}</MontoItem>
     </Detalle>`).join('');
 
@@ -20,7 +22,7 @@ export function generateNotaDebitoXml(payload: DtePayload, config: SiiConfig, te
         <FolioRef>${ref.FolioRef}</FolioRef>
         <FchRef>${ref.FchRef}</FchRef>
         <CodRef>${ref.CodRef || 1}</CodRef>
-        <RazonRef>${(ref.RazonRef || 'AUMENTO DE MONTO').substring(0, 90)}</RazonRef>
+        <RazonRef>${xmlText(ref.RazonRef || 'AUMENTO DE MONTO', 90)}</RazonRef>
     </Referencia>`).join('');
 
   return `<?xml version="1.0" encoding="ISO-8859-1"?>
@@ -33,16 +35,17 @@ export function generateNotaDebitoXml(payload: DtePayload, config: SiiConfig, te
                 <FchEmis>${Encabezado.FchEmis}</FchEmis>
             </IdDoc>
             <Emisor>
-                <RUTEmisor>${config.rutEmisor}</RUTEmisor>
-                <RznSoc>${config.razonSocial.substring(0, 100)}</RznSoc>
-                <GiroEmis>${config.giro.substring(0, 80)}</GiroEmis>
-                <DirOrigen>${config.direccion.substring(0, 70)}</DirOrigen>
-                <CmnaOrigen>${config.comuna.substring(0, 20)}</CmnaOrigen>
-                <CiudadOrigen>${config.ciudad.substring(0, 20)}</CiudadOrigen>
+                <RUTEmisor>${xmlText(config.rutEmisor)}</RUTEmisor>
+                <RznSoc>${xmlText(config.razonSocial, 100)}</RznSoc>
+                <GiroEmis>${xmlText(config.giro, 80)}</GiroEmis>
+                ${config.acteco ? `<Acteco>${config.acteco}</Acteco>` : ''}
+                <DirOrigen>${xmlText(config.direccion, 70)}</DirOrigen>
+                <CmnaOrigen>${xmlText(config.comuna, 20)}</CmnaOrigen>
+                <CiudadOrigen>${xmlText(config.ciudad, 20)}</CiudadOrigen>
             </Emisor>
             <Receptor>
-                <RUTRecep>${Encabezado.RUTRecep}</RUTRecep>
-                <RznSocRecep>${(Encabezado.RznSocRecep || 'CLIENTE').substring(0, 40)}</RznSocRecep>
+                <RUTRecep>${xmlText(Encabezado.RUTRecep)}</RUTRecep>
+                <RznSocRecep>${xmlText(Encabezado.RznSocRecep || 'CLIENTE', 40)}</RznSocRecep>
             </Receptor>
             <Totales>
                 <MntNeto>${Math.round(Encabezado.MntNeto || 0)}</MntNeto>
@@ -55,7 +58,7 @@ export function generateNotaDebitoXml(payload: DtePayload, config: SiiConfig, te
         ${detallesXml}
         ${referenciasXml}
         ${tedXml || ''}
-        <TmstFirma>${new Date().toISOString().replace(/\.\d{3}Z$/, '')}</TmstFirma>
+        <TmstFirma>${timestampChile()}</TmstFirma>
     </Documento>
 </DTE>`.trim();
 }

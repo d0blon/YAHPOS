@@ -5,6 +5,8 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware'
 import { get, set, del } from 'idb-keyval'
 import { Product, User, Category } from '@/types'
 import { getStoreSettingsAction, updateStoreSettingsAction } from '@/app/developer/actions'
+import type { SiiDecision } from '@/lib/pos/sii-decision'
+import { TENANT_MARKER_KEY, clearTenantState, createTenantStorage, getActiveStoreId, registerTenantResetHandler, registerTenantStoreSync } from '@/lib/tenant-state'
 
 export interface CashSession {
   id: number;
@@ -40,6 +42,8 @@ export interface PosSettings {
   region?: 'RM' | 'REGIONES';
   maxSeals?: number;
   siiModel?: 'SII_ALWAYS' | 'SII_VOUCHER_SKIP';
+  siiEmission: 'always' | 'voucher_only';
+  terminalsDte?: Record<string, boolean>;
   getnetIsBoleta?: boolean;
   sii?: {
     enabled: boolean;
@@ -120,6 +124,12 @@ export interface OrderRecord {
   discount?: number;
   pointsRedeemed?: number;
   siiSkipped?: boolean;
+  /** Decisión SII calculada antes del cobro; ST4b la consume para documentKind/impresión. */
+  siiDecision?: SiiDecision;
+  /** `sii_documents.id` del DTE que representa esta venta (lo setea el sync). */
+  siiDocumentId?: string;
+  cashierName?: string;
+  terminalName?: string;
 }
 
 interface PosState extends PosCart {
@@ -143,6 +153,8 @@ interface PosState extends PosCart {
   setInventory: (products: Product[]) => void;
   processCheckoutStock: () => void;
   addSale: (sale: OrderRecord) => void;
+  /** Enlaza una venta del historial con el DTE emitido (para reimprimir el PDF). */
+  setSaleSiiDocument: (saleId: string, documentId: string) => void;
   addCashMovement: (movement: CashMovement) => void;
   clearCashMovements: () => void;
   queueOrderForSync: (sale: OrderRecord) => void;
@@ -170,6 +182,7 @@ interface PosState extends PosCart {
   selectedBranchId: string | null;
   setSelectedBranchId: (id: string | null) => void;
   loadSettings: () => Promise<void>;
+  resetForStore: () => Promise<void>;
 }
 
 const calculatePosTotals = (items: PosItem[], pointsRedeemed = 0, settings?: PosSettings): Omit<PosCart, 'items' | 'customerRut' | 'customerName' | 'customerPoints'> => {
@@ -193,47 +206,54 @@ const idbStorage: StateStorage = {
   removeItem: async (name: string): Promise<void> => await del(name),
 }
 
+const initialPosState = {
+  items: [] as PosItem[],
+  totalItems: 0,
+  subtotal: 0,
+  total: 0,
+  pointsToEarn: 0,
+  pointsRedeemed: 0,
+  inventory: [] as Product[],
+  suspendedOrders: [] as SuspendedOrder[],
+  salesHistory: [] as OrderRecord[],
+  pendingSyncOrders: [] as OrderRecord[],
+  pendingSiiDocuments: [] as SiiDocument[],
+  cashMovements: [] as CashMovement[],
+  auditLog: [] as AuditEntry[],
+  currentUser: null as User | null,
+  settings: {
+    blindClosureEnabled: true,
+    pinRequiredForDelete: true,
+    supervisorPin: '',
+    loyaltyEnabled: true,
+    loyalty: {
+      accumulationRate: 0.01,
+      redemptionRate: 1,
+      redemptionMultiple: 100
+    },
+    junaebEnabled: false,
+    pluxeEnabled: false,
+    edenredEnabled: false,
+    region: 'REGIONES' as const,
+    maxSeals: 2,
+    siiModel: 'SII_ALWAYS' as const,
+    siiEmission: 'always' as const,
+    getnetIsBoleta: true,
+    sii: {
+      enabled: false
+    }
+  } as PosSettings,
+  isTrainingMode: false,
+  cashSession: null as CashSession | null,
+  selectedBranchId: null as string | null,
+  isSyncing: false,
+  isInitialLoading: false,
+}
+
 export const usePosStore = create<PosState>()(
   persist(
     (set, get) => ({
-      items: [],
-      totalItems: 0,
-      subtotal: 0,
-      total: 0,
-      pointsToEarn: 0,
-      pointsRedeemed: 0,
-      inventory: [],
-      suspendedOrders: [],
-      salesHistory: [],
-      pendingSyncOrders: [],
-      pendingSiiDocuments: [],
-      cashMovements: [],
-      auditLog: [],
-      currentUser: null,
-      settings: {
-        blindClosureEnabled: true,
-        pinRequiredForDelete: true,
-        supervisorPin: '', // Dynamically loaded from DB
-        loyaltyEnabled: true,
-        loyalty: {
-          accumulationRate: 0.01,
-          redemptionRate: 1,
-          redemptionMultiple: 100
-        },
-        junaebEnabled: false,
-        pluxeEnabled: false,
-        edenredEnabled: false,
-        region: 'REGIONES',
-        maxSeals: 2,
-        siiModel: 'SII_ALWAYS',
-        getnetIsBoleta: true,
-        sii: {
-          enabled: false
-        }
-      },
-      isTrainingMode: false,
-      cashSession: null,
-      selectedBranchId: null,
+      ...initialPosState,
 
       setSelectedBranchId: (id: string | null) => {
         set({ selectedBranchId: id });
@@ -258,6 +278,8 @@ export const usePosStore = create<PosState>()(
                   edenredEnabled: config.edenredEnabled ?? state.settings.edenredEnabled,
                   region: config.region ?? state.settings.region,
                   maxSeals: config.maxSeals ?? state.settings.maxSeals,
+                  siiEmission: config.siiEmission ?? state.settings.siiEmission ?? 'always',
+                  terminalsDte: config.terminalsDte ?? state.settings.terminalsDte,
                   getnetIsBoleta: config.getnetIsBoleta ?? state.settings.getnetIsBoleta,
                   sii: config.sii ?? state.settings.sii,
                 }
@@ -385,6 +407,14 @@ export const usePosStore = create<PosState>()(
         }));
       },
 
+      setSaleSiiDocument: (saleId: string, documentId: string) => {
+        set((state) => ({
+          salesHistory: state.salesHistory.map((sale) =>
+            sale.id === saleId ? { ...sale, siiDocumentId: documentId } : sale
+          )
+        }));
+      },
+
       addCashMovement: (movement: CashMovement) => {
         const { isTrainingMode } = get();
         if (isTrainingMode) return;
@@ -499,9 +529,6 @@ export const usePosStore = create<PosState>()(
         set({ suspendedOrders: orders })
       },
 
-      isSyncing: false,
-      isInitialLoading: false,
-
       syncDraftToServer: async () => {
         const { cashSession, items, suspendedOrders } = get()
         if (!cashSession) return
@@ -593,11 +620,27 @@ export const usePosStore = create<PosState>()(
           timestamp: Date.now()
         };
         set((state) => ({ auditLog: [newEntry, ...state.auditLog].slice(0, 1000) }));
+      },
+
+      resetForStore: async () => {
+        set({ ...initialPosState })
+        await clearTenantState()
       }
     }),
     {
       name: 'austral-market-pos-session',
-      storage: createJSONStorage(() => idbStorage),
+      storage: createJSONStorage(() => createTenantStorage(idbStorage)),
+      merge: (persisted, current) => {
+        const stored = persisted as (Partial<PosState> & { __storeId?: string | null }) | undefined
+        const active = getActiveStoreId()
+        if (!stored || !active || stored.__storeId !== active) return current
+        const safe: Record<string, unknown> = { ...stored }
+        delete safe[TENANT_MARKER_KEY]
+        return { ...current, ...(safe as Partial<PosState>) }
+      }
     }
   )
 )
+
+registerTenantResetHandler(() => { usePosStore.setState({ ...initialPosState }) })
+registerTenantStoreSync(() => { void usePosStore.persist.rehydrate() })

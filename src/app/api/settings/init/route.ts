@@ -24,7 +24,7 @@ export async function POST() {
     // Verificar si ya existen configuraciones para esta tienda
     const { count } = await supabase
       .from('settings')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('store_id', profile.store_id);
 
     if (count && count > 0) {
@@ -66,8 +66,8 @@ export async function POST() {
       success: true, 
       message: 'Configuración inicializada correctamente.' 
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[POST /api/settings/init] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: (error as { message?: string } | null)?.message || 'Error interno del servidor' }, { status: 500 })
   }
 }

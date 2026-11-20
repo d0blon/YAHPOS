@@ -14,7 +14,7 @@ const PlatformLanding = () => {
   const featuresRef = useRef<HTMLDivElement>(null)
   const pricingRef = useRef<HTMLDivElement>(null)
 
-  useGSAP(() => {
+  useGSAP((context, contextSafe) => {
     // 1. Hero Entrance - High impact split-text style
     const tl = gsap.timeline({ defaults: { ease: 'power4.out' } })
     
@@ -82,28 +82,42 @@ const PlatformLanding = () => {
     })
 
     // 5. Magnetic Button Effect
-    const magneticBtns = document.querySelectorAll('.magnetic-btn')
-    magneticBtns.forEach((btn: any) => {
-      btn.addEventListener('mousemove', (e: MouseEvent) => {
-        const rect = btn.getBoundingClientRect()
-        const x = e.clientX - rect.left - rect.width / 2
-        const y = e.clientY - rect.top - rect.height / 2
-        gsap.to(btn, {
-          x: x * 0.4,
-          y: y * 0.4,
-          duration: 0.6,
-          ease: 'power3.out'
+    if (contextSafe) {
+      const magneticBtns = document.querySelectorAll<HTMLElement>('.magnetic-btn')
+      const attachedMagneticBtns = Array.from(magneticBtns, (btn) => {
+        const handleMagneticMouseMove = contextSafe((event: MouseEvent) => {
+          const rect = btn.getBoundingClientRect()
+          const x = event.clientX - rect.left - rect.width / 2
+          const y = event.clientY - rect.top - rect.height / 2
+          gsap.to(btn, {
+            x: x * 0.4,
+            y: y * 0.4,
+            duration: 0.6,
+            ease: 'power3.out'
+          })
         })
-      })
-      btn.addEventListener('mouseleave', () => {
-        gsap.to(btn, {
-          x: 0,
-          y: 0,
-          duration: 0.8,
-          ease: 'elastic.out(1, 0.3)'
+        const handleMagneticMouseLeave = contextSafe(() => {
+          gsap.to(btn, {
+            x: 0,
+            y: 0,
+            duration: 0.8,
+            ease: 'elastic.out(1, 0.3)'
+          })
         })
+
+        btn.addEventListener('mousemove', handleMagneticMouseMove)
+        btn.addEventListener('mouseleave', handleMagneticMouseLeave)
+
+        return { btn, handleMagneticMouseMove, handleMagneticMouseLeave }
       })
-    })
+
+      return () => {
+        attachedMagneticBtns.forEach(({ btn, handleMagneticMouseMove, handleMagneticMouseLeave }) => {
+          btn.removeEventListener('mousemove', handleMagneticMouseMove)
+          btn.removeEventListener('mouseleave', handleMagneticMouseLeave)
+        })
+      }
+    }
 
   }, { scope: mainRef })
 

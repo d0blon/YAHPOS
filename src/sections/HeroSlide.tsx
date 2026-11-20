@@ -1,13 +1,31 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import { motion, AnimatePresence, Variants } from 'framer-motion'
-import { ArrowRight, ShoppingBag, ChevronLeft, ChevronRight, Plus, Trash2, ImagePlus, Loader2, Upload } from 'lucide-react'
+import { ArrowRight, ShoppingBag, ChevronLeft, ChevronRight, Plus, Trash2, Loader2, Upload } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEditor } from '@/providers/EditorProvider'
 import { EditableText } from '@/components/editor/EditableText'
 import { Button } from '@/components/ui/button'
+
+const subscribeClientOnly = () => () => {}
+
+interface Particle {
+  x: string
+  y: string
+  opacity: number
+  duration: number
+  delay: number
+}
+
+const PARTICLES: Particle[] = [...Array(12)].map(() => ({
+  x: Math.random() * 100 + '%',
+  y: Math.random() * 100 + '%',
+  opacity: Math.random() * 0.5,
+  duration: 10 + Math.random() * 20,
+  delay: Math.random() * 10
+}))
 
 export default function HeroSlide() {
   const editor = useEditor()
@@ -23,6 +41,7 @@ export default function HeroSlide() {
           description: 'Calidad artesanal, frescura patagónica y una experiencia de compra diseñada para tu comodidad absoluta.',
           ctaPrimary: 'Ver Productos',
           ctaSecondary: 'Ofertas Hoy',
+          imageUrl: '',
         }
       ]
     },
@@ -37,29 +56,26 @@ export default function HeroSlide() {
   const slides = content.hero.slides || []
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const mounted = useSyncExternalStore(subscribeClientOnly, () => true, () => false)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  // Índice válido derivado: evita setState en efecto al eliminar el último slide.
+  const safeIndex = slides.length > 0 ? Math.min(currentIndex, slides.length - 1) : 0
 
-  // Asegurar que el índice sea válido si se elimina el último slide
-  useEffect(() => {
-    if (currentIndex >= slides.length) {
-      setCurrentIndex(Math.max(0, slides.length - 1))
-    }
-  }, [slides.length, currentIndex])
-
-  const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % slides.length)
-  const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length)
+  const slideCount = slides.length
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % slideCount)
+  }, [slideCount])
+  const prevSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + slideCount) % slideCount)
+  }, [slideCount])
 
   // Autoplay desactivado en modo editor
   useEffect(() => {
-    if (editor?.isEditorMode || slides.length <= 1) return
+    if (editor?.isEditorMode || slideCount <= 1) return
     const timer = setInterval(nextSlide, 6000)
     return () => clearInterval(timer)
-  }, [editor?.isEditorMode, slides.length])
+  }, [editor?.isEditorMode, slideCount, nextSlide])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -68,7 +84,7 @@ export default function HeroSlide() {
     setIsUploading(true)
     try {
       const publicUrl = await editor.uploadImage(file)
-      editor.updateField(`hero.slides.${currentIndex}.imageUrl`, publicUrl)
+      editor.updateField(`hero.slides.${safeIndex}.imageUrl`, publicUrl)
     } catch (err) {
       console.error('Upload failed:', err)
       alert('Error al subir la imagen. Intenta de nuevo.')
@@ -78,7 +94,7 @@ export default function HeroSlide() {
     }
   }
 
-  const slide = slides[currentIndex]
+  const slide = slides[safeIndex]
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -113,24 +129,24 @@ export default function HeroSlide() {
         
         {/* Floating Particles */}
         <div className="absolute inset-0 overflow-hidden">
-          {mounted && [...Array(12)].map((_, i) => (
+          {mounted && PARTICLES.map((p, i) => (
             <motion.div
               key={i}
               className="absolute w-1 h-1 bg-white/20 rounded-full"
-              initial={{ 
-                x: Math.random() * 100 + '%', 
-                y: Math.random() * 100 + '%',
-                opacity: Math.random() * 0.5
+              initial={{
+                x: p.x,
+                y: p.y,
+                opacity: p.opacity
               }}
               animate={{ 
                 y: [null, '-20%', '120%'],
                 opacity: [0, 0.5, 0]
               }}
               transition={{ 
-                duration: 10 + Math.random() * 20, 
+                duration: p.duration,
                 repeat: Infinity, 
                 ease: "linear",
-                delay: Math.random() * 10
+                delay: p.delay
               }}
             />
           ))}
@@ -146,7 +162,7 @@ export default function HeroSlide() {
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div className="px-4 text-white font-bold">
-            Slide {currentIndex + 1} de {slides.length}
+            Slide {safeIndex + 1} de {slides.length}
           </div>
           <Button variant="ghost" size="icon" onClick={nextSlide} className="text-white hover:bg-white/10">
             <ChevronRight className="w-5 h-5" />
@@ -163,7 +179,7 @@ export default function HeroSlide() {
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => editor.removeHeroSlide(currentIndex)}
+            onClick={() => editor.removeHeroSlide(safeIndex)}
             disabled={slides.length <= 1}
             className="text-red-400 hover:bg-red-400/10 hover:text-red-300 disabled:opacity-50"
           >
@@ -187,7 +203,7 @@ export default function HeroSlide() {
       <div className="container relative z-10 px-4 md:px-6 h-full flex flex-col justify-center">
         <AnimatePresence mode="wait">
           <motion.div 
-            key={slide.id || currentIndex}
+            key={slide.id || safeIndex}
             className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center h-full"
             variants={containerVariants}
             initial="hidden"
@@ -204,7 +220,7 @@ export default function HeroSlide() {
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
                   </span>
                   <EditableText
-                    field={`hero.slides.${currentIndex}.badge`}
+                    field={`hero.slides.${safeIndex}.badge`}
                     value={slide.badge}
                     className="text-xs font-bold uppercase tracking-widest text-brand-accent-200"
                   />
@@ -217,25 +233,25 @@ export default function HeroSlide() {
                 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] text-white mb-6 uppercase"
               >
                 {slide.titlePrimary && (
-                  <EditableText field={`hero.slides.${currentIndex}.titlePrimary`} value={slide.titlePrimary} className="block" as="span" />
+                  <EditableText field={`hero.slides.${safeIndex}.titlePrimary`} value={slide.titlePrimary} className="block" as="span" />
                 )}
                 {slide.titleAccent && (
                   <EditableText
-                    field={`hero.slides.${currentIndex}.titleAccent`}
+                    field={`hero.slides.${safeIndex}.titleAccent`}
                     value={slide.titleAccent}
                     as="span"
                     className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-400 via-brand-400 to-pink-400 block"
                   />
                 )}
                 {slide.titleSecondary && (
-                  <EditableText field={`hero.slides.${currentIndex}.titleSecondary`} value={slide.titleSecondary} className="block" as="span" />
+                  <EditableText field={`hero.slides.${safeIndex}.titleSecondary`} value={slide.titleSecondary} className="block" as="span" />
                 )}
               </motion.h1>
 
               {/* Description */}
               <motion.div variants={itemVariants}>
                 <EditableText
-                  field={`hero.slides.${currentIndex}.description`}
+                  field={`hero.slides.${safeIndex}.description`}
                   value={slide.description}
                   as="p"
                   className="text-lg md:text-xl text-gray-400 font-medium leading-relaxed max-w-lg mb-10"
@@ -249,7 +265,7 @@ export default function HeroSlide() {
                   className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest overflow-hidden transition-transform hover:scale-105 active:scale-95"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-accent-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <EditableText field={`hero.slides.${currentIndex}.ctaPrimary`} value={slide.ctaPrimary} className="relative" />
+                  <EditableText field={`hero.slides.${safeIndex}.ctaPrimary`} value={slide.ctaPrimary} className="relative" />
                   <ShoppingBag className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 
@@ -257,7 +273,7 @@ export default function HeroSlide() {
                   href="#offers" 
                   className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 hover:border-white/20 transition-all active:scale-95 backdrop-blur-md"
                 >
-                  <EditableText field={`hero.slides.${currentIndex}.ctaSecondary`} value={slide.ctaSecondary} />
+                  <EditableText field={`hero.slides.${safeIndex}.ctaSecondary`} value={slide.ctaSecondary} />
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-brand-400" />
                 </Link>
               </motion.div>
@@ -267,7 +283,7 @@ export default function HeroSlide() {
                 <div className="flex -space-x-4">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="w-10 h-10 rounded-full border-2 border-[#030712] bg-gray-800 overflow-hidden relative">
-                      <Image src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" fill sizes="40px" className="object-cover opacity-80" />
+                      <Image src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" fill sizes="40px" className="object-cover opacity-80" unoptimized />
                     </div>
                   ))}
                 </div>
@@ -314,7 +330,7 @@ export default function HeroSlide() {
                         ) : (
                           <Upload className="w-5 h-5" />
                         )}
-                        { (slide as any).imageUrl ? 'Subir Nueva Imagen' : 'Subir Imagen'}
+                        { slide.imageUrl ? 'Subir Nueva Imagen' : 'Subir Imagen'}
                       </Button>
 
                       <Button 
@@ -323,21 +339,21 @@ export default function HeroSlide() {
                         className="text-white/60 hover:text-white"
                         disabled={isUploading}
                         onClick={() => {
-                          const url = window.prompt('URL de la imagen (ej: https://...):', (slide as any).imageUrl || '')
+                          const url = window.prompt('URL de la imagen (ej: https://...):', slide.imageUrl || '')
                           if (url !== null) {
-                            editor.updateField(`hero.slides.${currentIndex}.imageUrl`, url)
+                            editor.updateField(`hero.slides.${safeIndex}.imageUrl`, url)
                           }
                         }}
                       >
-                        {(slide as any).imageUrl ? 'Pegar URL diferente' : 'Pegar URL de imagen'}
+                        {slide.imageUrl ? 'Pegar URL diferente' : 'Pegar URL de imagen'}
                       </Button>
                       
-                      {(slide as any).imageUrl && (
+                      {slide.imageUrl && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                          onClick={() => editor.updateField(`hero.slides.${currentIndex}.imageUrl`, '')}
+                          onClick={() => editor.updateField(`hero.slides.${safeIndex}.imageUrl`, '')}
                         >
                           Remover Imagen
                         </Button>
@@ -346,14 +362,14 @@ export default function HeroSlide() {
                   </div>
                 )}
 
-                {(slide as any).imageUrl ? (
+                {slide.imageUrl ? (
                   <div className="absolute inset-4 rounded-[3rem] border border-white/20 bg-white/5 shadow-2xl overflow-hidden">
-                    <Image 
-                      src={(slide as any).imageUrl} 
-                      alt={slide.titlePrimary || 'Hero Image'} 
-                      fill 
+                    <Image
+                      src={slide.imageUrl}
+                      alt={slide.titlePrimary || 'Hero Image'}
+                      fill
                       className="object-cover"
-                      unoptimized={(slide as any).imageUrl.startsWith('http')} 
+                      unoptimized={!slide.imageUrl.startsWith('/')}
                     />
                   </div>
                 ) : (
@@ -406,7 +422,7 @@ export default function HeroSlide() {
               <button
                 key={i}
                 onClick={() => setCurrentIndex(i)}
-                className={`transition-all duration-300 rounded-full ${i === currentIndex ? 'w-8 h-2 bg-brand-accent-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'w-2 h-2 bg-white/20 hover:bg-white/40'}`}
+                className={`transition-all duration-300 rounded-full ${i === safeIndex ? 'w-8 h-2 bg-brand-accent-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'w-2 h-2 bg-white/20 hover:bg-white/40'}`}
                 aria-label={`Ir al slide ${i + 1}`}
               />
             ))}

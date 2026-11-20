@@ -3,6 +3,7 @@ import { DocumentTabs } from "./components/DocumentTabs";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase"; 
+import { roleIn, SII_OPERATION_ROLES } from "@/lib/constants/roles";
 
 export const metadata: Metadata = {
   title: "Facturación | YAHPOS!",
@@ -24,8 +25,8 @@ export default async function FacturacionPage() {
     .eq("id", user.id)
     .single();
   
-  const allowedRoles = ["owner", "developer", "employee", "admin"];
-  if (!profile || !allowedRoles.includes(profile.role)) {
+  const allowedRoles = [...SII_OPERATION_ROLES, "superadmin"] as const;
+  if (!roleIn(profile?.role, allowedRoles)) {
     redirect("/?error=unauthorized");
   }
 

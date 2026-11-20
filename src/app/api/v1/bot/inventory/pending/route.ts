@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import crypto from 'crypto';
+import { parseBody } from '@/lib/validations/http'
+import { botInventoryPendingSchema } from '@/lib/validations/api'
 
 export async function POST(req: Request) {
   try {
@@ -35,12 +37,9 @@ export async function POST(req: Request) {
     }
 
     // 3. Obtener el cuerpo de la petición
-    const body = await req.json();
-    const { invoice_number, supplier_name, invoice_url, items, supplier_metadata } = body;
-
-    if (!items || !Array.isArray(items)) {
-      return NextResponse.json({ error: 'Invalid body format. Expected { items: [{ barcode: string, name: string, quantity: number }] }' }, { status: 400 });
-    }
+    const parsed = await parseBody(req, botInventoryPendingSchema);
+    if ('error' in parsed) return parsed.error;
+    const { invoice_number, supplier_name, invoice_url, items, supplier_metadata } = parsed.data;
 
     // 4. Resolver mapeo inteligente para ítems sin código
     const resolvedItems = [];
@@ -62,6 +61,7 @@ export async function POST(req: Request) {
               .from('products')
               .select('barcode, sku')
               .eq('id', mapping.mapped_product_id)
+              .eq('store_id', keyData.store_id)
               .maybeSingle();
 
             if (prod) {
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
         items: resolvedItems,
         status: 'pending'
       }])
-      .select()
+      .select('id')
       .single();
 
     if (insertError) {

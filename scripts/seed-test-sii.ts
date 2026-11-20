@@ -1,9 +1,11 @@
 import { createAdminClient } from '../src/lib/supabase';
 import { encrypt } from '../src/lib/crypto';
+import { encodeCaf } from '../src/lib/sii/caf-store';
 
 async function seedSii() {
   const supabase = createAdminClient();
-  const storeId = 'c828f16e-4572-4700-97e6-66b6180d6a9d';
+  const storeId = process.env.STORE_ID;
+  if (!storeId) throw new Error('Falta STORE_ID');
 
   console.log('🌱 Sembrando datos de prueba SII para la tienda Austral Market...');
 
@@ -68,7 +70,7 @@ async function seedSii() {
         folio_desde: 1,
         folio_hasta: 1000,
         folio_actual: 1,
-        caf_xml: mockCafXml,
+        caf_xml: encodeCaf(mockCafXml),
         activo: true
       }, { onConflict: 'store_id,tipo_dte,folio_desde' });
 

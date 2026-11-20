@@ -21,11 +21,11 @@ export async function logAIUsage(record: AIUsageRecord) {
     .insert([{
       store_id: record.store_id,
       user_id: record.user_id,
-      model: record.model,
+      model_name: record.model,
       prompt_tokens: record.prompt_tokens,
       completion_tokens: record.completion_tokens,
-      cost: record.cost,
-      feature: record.feature
+      cost_usd: record.cost,
+      feature_name: record.feature
     }])
 
   if (error) {

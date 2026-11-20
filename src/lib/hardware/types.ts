@@ -31,6 +31,8 @@ export interface PrintOptions {
   total: string
   paymentMethod: string
   footer?: string[]
+  /** Leyendas obligatorias (ej. voucher NO SII). Se imprimen en negrita/doble ancho antes del cut. */
+  disclaimerLines?: string[]
 }
 
 export const ESCPOS = {

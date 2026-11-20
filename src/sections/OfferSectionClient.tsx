@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from 'react';
-import { Percent, ArrowRight, Zap, Flame } from 'lucide-react';
+import { ArrowRight, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/shop/ProductCard';
 import type { Product } from '@/types';

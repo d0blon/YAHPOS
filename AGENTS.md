@@ -75,7 +75,7 @@ Antes de tocar código:
 
 | # | Regla |
 |---|-------|
-| 1 | Siempre empieza la sesión leyendo `AGENTS.md`, `TASK_HANDOFF.md`, `BITACORA.md`, `YAHPOS Kanban.md` |
+| 1 | Siempre empieza la sesión leyendo `AGENTS.md`, `TASK_HANDOFF.md`, `BITACORA.md`, `YAHPOS Kanban.md`, `docs/operacion/REGISTRO_BUGS.md` y `docs/operacion/TAREAS_COLABORADOR.md` (§12) |
 | 2 | **No ejecutes si puedes delegar.** Si una subtarea es independiente y tiene scope claro, úsala para un subagente. |
 | 3 | Evidence gates (build + lint) **deben pasar** antes de reportar. Si fallan, no escondas el error. |
 | 4 | Mismo error 3 veces seguidas → STOP → reporta. No sigas iterando. |
@@ -182,6 +182,36 @@ original de este bug (quedó desactualizado, nunca se corrigió el doc cuando se
 ---
 
 ## 5. Últimos Cambios
+
+### 2026-11-20 (HAL-001 / BUG-001: CSS roto por CSP sobre HTTP) — sin commit
+
+`src/proxy.ts` condiciona `upgrade-insecure-requests`: solo producción o request HTTPS. Antes rompía CSS/chunks en `http://IP-Tailscale:3000` (`ERR_SSL_PROTOCOL_ERROR`). Verificado en navegador (root y `/developer/catalog` con estilos), tsc 0, lint 0, build 0. Además, `stores.custom_domain` de la tienda `master` apunta a `master.100.111.116.27.nip.io:3000` para que el colaborador vea la tienda sin editar `hosts`; guía actualizada. Detalle en `BITACORA.md` y `docs/operacion/REGISTRO_BUGS.md`.
+
+### 2026-11-20 (cierre ESLint + segunda ola sin hardcodes) — sin commit
+
+7 scopes disjuntos, todos con tests. Auth: `src/lib/auth/sso-target.ts` valida `from_origin`/`next`
+en servidor; open redirect con exfiltración de tokens cerrado (62 tests). Infra: helper
+`src/lib/config/root-domain.ts` + `proxy.ts`, `EditorToggle`, `session-sync`, `lib/api.ts`,
+`api/products`, developer, admin, hardware y contacto derivan de env; `0` dominios literales en
+producción y `0` `any`. `QuickStockPanel` scopea `inventory` por tienda/sucursal.
+
+**Gates:** lint 0; tsc 0; Jest 45 suites/297 tests; build 0. Sin commit/push.
+
+**Requerido antes de operar:** configurar `NEXT_PUBLIC_ROOT_ORIGIN` en `.env.local` — si falta, el
+proxy fail-closed responde 500. También `NEXT_PUBLIC_ROOT_DOMAIN` y `NEXT_PUBLIC_SUPPORT_EMAIL`.
+`domain_verified` no existe en migraciones (DDL pendiente). PAT/service keys/PFX siguen pendientes
+de revocación/rotación; 040 no ejecutada.
+
+### 2026-11-20 (limpieza global de basura y código muerto) — sin commit
+| Archivo | Cambio |
+|---------|--------|
+| Raíz del workspace (sin git) | Lote 1: 71 archivos one-off (43 `.js`, 21 JSON ~67 MB, 3 SQL, 2 txt, `package.json`/`lock`) + `scrapers/` + `node_modules/` ≈100 MB. 0 refs en código vivo. |
+| `austral-market-next/screenshots/` | 4 PNG byte-idénticos borrados (02_Nosotros, 07_Perfil, 15_Admin_Inventario, 16_Admin_Reportes). Quedan 14. |
+| `.trae/`, `austral-market-next/.agents/` | 74 archivos duplicados borrados. `.agents` root conservado: es el que carga OpenCode. |
+| `austral-market-next/public/images/categories/` | 8 PNG idénticos a los `cat_*_premium_*.png` conservados. `sw.js` regenerado por build sin refs a la ruta eliminada. |
+| `docs/README.md`, `docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md` | Refs muertas → nota de eliminación; enlace al plan corregido. Plan y archivo NO editados (regla #6). |
+
+**Gates:** tsc 0; build verde; Jest 7/76; lint 247 (5/242) = baseline. Grafo: 4297 nodos / 7582 edges / 347 comunidades. Sin commit ni push. Dueño borró además `pdf_parser/` y `pdfs_productos/` fuera de este handoff.
 
 ### 2026-11-20 (fix `orders.filter is not a function`) — sin commit
 | Archivo | Cambio |
@@ -540,7 +570,46 @@ Si la tarea requiere tocar `middleware.ts`, `SaaSProvider.tsx`, `src/lib/sii/eng
 
 ---
 
-*Última actualización: 2026-05-14*
+## 12. Trabajo conjunto con el colaborador — «Cazabugs» (vigente 2026-11-20)
+
+El dueño trabaja con un **colaborador** (su amigo), ya definido en
+`docs/guias/CURRICULUM_COLABORADOR.md`: arranca de cero, plan oct→dic, 80% aprender a **REVISAR**,
+Etapa 3 «cazar mentiras de la IA», Etapa 5 RLS y Etapa 6 primera tarea. Reportar fallos es parte
+de ese entrenamiento, no un rol aparte. El sistema vive en el repo para no perderlo entre sesiones:
+
+- **Protocolo:** `docs/operacion/PROTOCOLO_CAZABUGS.md` (flujo conjunto, cómo encaja con el curriculum,
+  severidades, riesgo de cambio, plantillas, evidencia; roles históricos en `docs/operacion/COLLABORATION_PROTOCOL.md`).
+- **Tareas que el dueño asigna:** `docs/operacion/TAREAS_COLABORADOR.md` (IDs `T-###`, una a la vez,
+  búsqueda visual/lógica — no código).
+- **Fuente única de verdad:** `docs/operacion/REGISTRO_BUGS.md` (bandeja `HAL-###` con el hallazgo en
+  palabras del colaborador + `ANÁLISIS IA`, y bugs confirmados `BUG-###` / diferidos `D-###`).
+- **Backlog diferido:** los 10 items acordados para después están en la sección «Diferidos» del registro,
+  con puntero a `TASK_HANDOFF.md` / `BITACORA.md`. No se inventaron valores ni se ejecutó nada en vivo.
+- **Guía entregable:** `docs/guias/ACCESO_Y_MAPA_COLABORADOR.md` (accesos de prueba, mapa pantalla→archivo, orden de lectura y prompt para la IA del colaborador; modo solo lectura).
+
+Reglas para esta sesión y las siguientes:
+
+1. Leer el registro al iniciar (regla #1). Si el dueño o el colaborador menciona algo que no funciona,
+   **registrarlo con ID antes de arreglarlo** — aunque parezca menor.
+2. El colaborador NO edita código, Kanban, AGENTS, BITACORA ni TASK_HANDOFF; reporta con la
+   plantilla. Tampoco hace commit/push ni toca `main` (reglas finales del CURRICULUM). Si lo hace,
+   se avisa al dueño y se corrige el registro, no se ignora. Su reporte semanal (CURRICULUM §«El
+   ritual semanal») debe incluir los IDs abiertos/cerrados.
+3. Triar por severidad (S1 seguridad/RLS/datos/dinero/DTE primero). Verificar siempre el reporte:
+   reproducirlo o demostrar por qué no es bug. «No es bug» va a su sección con la decisión documentada.
+4. Arreglar con scopes aislados + tests. Si toca auth/roles/`store_id`/RLS, agregar **prueba real y caso
+   negativo** (Regla de Oro §0). Cerrar solo con evidencia (lint/tsc/tests/build + prueba real cuando aplica).
+5. Nunca mover un item a «Cerrados» sin evidencia. Nunca borrar entradas, nunca reutilizar IDs.
+6. No tocar `YAHPOS Kanban.md` (regla #6). El registro de bugs es el puente entre Cazabugs y este protocolo.
+7. **Modo IA — SOLO ANOTAR.** Ante un `HAL-###`, copiar el hallazgo **literal, en las palabras del
+   colaborador** (no corregir redacción) y agregar solo el bloque `ANÁLISIS IA`: cómo funciona esa
+   parte con `archivo:línea`, idea de arreglo (máx. 2 opciones, sin código), riesgo (S1–S4 + cambio
+   BAJO/MEDIO/ALTO), archivos/rutas/tablas exactos, blast radius, pruebas sugeridas y DO NOT.
+   No editar código, no ejecutar fixes, no crear `BUG-###`, no cerrar nada, no hacer commit/push.
+   Si algo no se puede verificar, escribir «no verificado». El dueño decide NO_BUG / DIFERIDO / AUTORIZAR.
+8. Sin commit ni push sin confirmación explícita del dueño.
+
+*Última actualización: 2026-11-20*
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -1,12 +1,17 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { getStoreSettingsAction } from '@/app/developer/actions'
 import { supabase } from '@/lib/supabase'
+import { setActiveStoreId } from '@/lib/tenant-state'
+
+type Tier = 'austral' | 'archipielago' | 'patagonia'
+
+const TIERS: readonly Tier[] = ['austral', 'archipielago', 'patagonia']
 
 interface SaaSConfig {
   id?: string
-  tier: 'austral' | 'archipielago' | 'patagonia'
+  tier: Tier
   store_name: string
   store_logo: string | null
   tax_id: string | null
@@ -22,23 +27,92 @@ interface SaaSContextType {
   isLoading: boolean
   isFeatureEnabled: (feature: 'ecommerce' | 'picking-fees' | 'logistics' | 'multi-branch' | 'api') => boolean
   isDocumentTypeEnabled: (tipoDte: number) => boolean
-  tier: 'austral' | 'archipielago' | 'patagonia'
+  tier: Tier
   refreshConfig: () => Promise<void>
+}
+
+interface StoreConfig {
+  store_logo?: string | null
+  tax_id?: string | null
+  white_label_enabled?: boolean
+  accent_color?: string | null
+  appearance_primary_color?: string | null
+  surface_color?: string | null
+}
+
+interface StoreRow {
+  id: string
+  name: string | null
+  slug: string | null
+  tier: string | null
+  config: StoreConfig | null
+  is_active: boolean | null
 }
 
 const SaaSContext = createContext<SaaSContextType | undefined>(undefined)
 
-export function SaaSProvider({ 
-  children, 
-  initialStoreId = null,
-  initialConfig = null
-}: { 
-  children: React.ReactNode,
-  initialStoreId?: string | null,
-  initialConfig?: Partial<SaaSConfig> | null
-}) {
-  const [config, setConfig] = useState<SaaSConfig>({
-    tier: (initialConfig?.tier as any) || 'austral',
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null
+}
+
+function readBoolean(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null
+}
+
+function parseStoreConfig(value: unknown): StoreConfig | null {
+  if (!isRecord(value)) return null
+
+  return {
+    store_logo: readString(value.store_logo),
+    tax_id: readString(value.tax_id),
+    white_label_enabled: readBoolean(value.white_label_enabled) ?? false,
+    accent_color: readString(value.accent_color),
+    appearance_primary_color: readString(value.appearance_primary_color),
+    surface_color: readString(value.surface_color),
+  }
+}
+
+function parseStoreRow(value: unknown): StoreRow | null {
+  if (!isRecord(value)) return null
+
+  const id = readString(value.id)
+  if (!id) return null
+
+  return {
+    id,
+    name: readString(value.name),
+    slug: readString(value.slug),
+    tier: readString(value.tier),
+    config: parseStoreConfig(value.config),
+    is_active: readBoolean(value.is_active),
+  }
+}
+
+function normalizeTier(value: unknown): Tier {
+  return TIERS.find((tier) => tier === value) ?? 'austral'
+}
+
+function buildConfig(row: Pick<StoreRow, 'id' | 'name' | 'tier' | 'config'>): SaaSConfig {
+  return {
+    id: row.id,
+    tier: normalizeTier(row.tier),
+    store_name: row.name || 'YAHPOS!',
+    store_logo: row.config?.store_logo || null,
+    tax_id: row.config?.tax_id || null,
+    white_label_enabled: row.config?.white_label_enabled || false,
+    accent_color: row.config?.accent_color || '#003399',
+    appearance_primary_color: row.config?.appearance_primary_color || '#4b0082',
+    surface_color: row.config?.surface_color || null,
+  }
+}
+
+function buildInitialConfig(initialConfig: Partial<SaaSConfig> | null): SaaSConfig {
+  return {
+    tier: normalizeTier(initialConfig?.tier),
     store_name: initialConfig?.store_name || 'YAHPOS!',
     store_logo: initialConfig?.store_logo || null,
     tax_id: initialConfig?.tax_id || null,
@@ -46,59 +120,79 @@ export function SaaSProvider({
     accent_color: initialConfig?.accent_color || '#003399',
     appearance_primary_color: initialConfig?.appearance_primary_color || '#4b0082',
     surface_color: initialConfig?.surface_color || null,
-  })
+  }
+}
+
+async function fetchStoreConfig(storeId: string): Promise<StoreRow | null> {
+  const data = await getStoreSettingsAction(storeId)
+  return parseStoreRow(data)
+}
+
+export function SaaSProvider({
+  children,
+  initialStoreId = null,
+  initialConfig = null
+}: {
+  children: React.ReactNode,
+  initialStoreId?: string | null,
+  initialConfig?: Partial<SaaSConfig> | null
+}) {
+  const [config, setConfig] = useState<SaaSConfig>(() => buildInitialConfig(initialConfig))
   const [storeId, setStoreId] = useState<string | null>(initialStoreId)
-  const [isLoading, setIsLoading] = useState(!initialConfig)
+  const [isLoading, setIsLoading] = useState(() => Boolean(initialStoreId && !initialConfig))
+  const initialConfigRef = useRef(initialConfig)
+  const initialStoreIdRef = useRef(initialStoreId)
 
-  const fetchConfig = async (force = false) => {
-    // Si no hay storeId (dominio raíz), no necesitamos buscar nada
-    if (!initialStoreId) {
-      setIsLoading(false)
-      return
-    }
+  useEffect(() => {
+    setActiveStoreId(storeId)
+  }, [storeId])
 
-    // Skip re-fetch on mount si ya tenemos config inicial de headers
-    if (!force && initialConfig && initialStoreId) {
+  const refreshConfig = useCallback(async () => {
+    if (!storeId) {
       setIsLoading(false)
       return
     }
 
     setIsLoading(true)
     try {
-      // Pasar initialStoreId (puede ser null). Si es null, getStoreSettingsAction no ejecutará el fallback.
-      const data = await getStoreSettingsAction(initialStoreId)
-      
-      if (data) {
+      const data = await fetchStoreConfig(storeId)
+      if (data && data.id === storeId) {
         setStoreId(data.id)
-        const normalizedConfig: SaaSConfig = {
-          id: data.id,
-          tier: data.tier || 'austral',
-          store_name: data.name || 'YAHPOS!',
-          store_logo: data.config?.store_logo || null,
-          tax_id: data.config?.tax_id || null,
-          white_label_enabled: data.config?.white_label_enabled || false,
-          accent_color: data.config?.accent_color || '#003399',
-          appearance_primary_color: data.config?.appearance_primary_color || '#4b0082',
-          surface_color: data.config?.surface_color || null,
-        }
-        setConfig(normalizedConfig)
+        setActiveStoreId(data.id)
+        setConfig(buildConfig(data))
       }
     } catch (error) {
       console.error('Error fetching SaaS config:', error)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const refreshConfig = useCallback(() => fetchConfig(true), [])
+  }, [storeId])
 
   useEffect(() => {
-    fetchConfig()
+    if (!storeId) return
 
-    // Solo activar suscripciones en tiempo real si hay una tienda seleccionada
-    if (!storeId) return;
+    const startFetch = () => {
+      void Promise.resolve()
+        .then(() => setIsLoading(true))
+        .then(() => fetchStoreConfig(storeId))
+        .then((data) => {
+          if (!data || data.id !== storeId) return
+          setStoreId(data.id)
+          setActiveStoreId(data.id)
+          setConfig(buildConfig(data))
+        })
+        .catch((error: unknown) => {
+          console.error('Error fetching SaaS config:', error)
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
 
-    // Suscripción en tiempo real a cambios en la tabla stores
+    const skipInitialFetch = storeId === initialStoreIdRef.current && initialConfigRef.current !== null
+
+    if (!skipInitialFetch) startFetch()
+
     const channel = supabase
       .channel(`store-changes-${storeId}`)
       .on(
@@ -110,37 +204,35 @@ export function SaaSProvider({
           filter: `id=eq.${storeId}`
         },
         (payload) => {
-          console.log('Store updated in real-time!', payload)
-          if (payload.new) {
-            const updated = payload.new as any
-            setConfig(prev => ({
-              ...prev,
-              tier: updated.tier || prev.tier,
-              store_name: updated.name || prev.store_name,
-              store_logo: updated.config?.store_logo ?? prev.store_logo,
-              tax_id: updated.config?.tax_id ?? prev.tax_id,
-              white_label_enabled: updated.config?.white_label_enabled ?? prev.white_label_enabled,
-              accent_color: updated.config?.accent_color ?? prev.accent_color,
-              appearance_primary_color: updated.config?.appearance_primary_color ?? prev.appearance_primary_color,
-              surface_color: updated.config?.surface_color ?? prev.surface_color,
-            }))
-          }
+          const updated = parseStoreRow(payload.new)
+          if (!updated || updated.id !== storeId) return
+
+          setConfig(prev => ({
+            ...prev,
+            tier: updated.tier ? normalizeTier(updated.tier) : prev.tier,
+            store_name: updated.name || prev.store_name,
+            store_logo: updated.config?.store_logo ?? prev.store_logo,
+            tax_id: updated.config?.tax_id ?? prev.tax_id,
+            white_label_enabled: updated.config?.white_label_enabled ?? prev.white_label_enabled,
+            accent_color: updated.config?.accent_color ?? prev.accent_color,
+            appearance_primary_color: updated.config?.appearance_primary_color ?? prev.appearance_primary_color,
+            surface_color: updated.config?.surface_color ?? prev.surface_color,
+          }))
         }
       )
       .subscribe()
 
-    // También escuchar cambios de autenticación para actualizar store_id
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        fetchConfig()
-      }
+      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return
+      if (initialConfigRef.current) return
+      startFetch()
     })
 
     return () => {
       supabase.removeChannel(channel)
       subscription.unsubscribe()
     }
-  }, [storeId]) // Re-ejecutar si cambia el storeId
+  }, [storeId])
 
   const isFeatureEnabled = (feature: 'ecommerce' | 'picking-fees' | 'logistics' | 'multi-branch' | 'api') => {
     switch (feature) {
@@ -191,4 +283,3 @@ export function useSaaS() {
   }
   return context
 }
-

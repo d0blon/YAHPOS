@@ -1,4 +1,4 @@
-import { CheckCircle2, Rocket, ShieldCheck, Zap, ArrowRight, MessageCircle } from 'lucide-react'
+import { CheckCircle2, Rocket, ShieldCheck, Zap, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SalesLanding() {

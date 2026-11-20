@@ -1,5 +1,128 @@
 # Bitácora — YAHPOS!
 
+### 2026-11-20 (acceso real a la tienda master vía Tailscale) — sin commit
+
+El dueño necesita que el colaborador vea **tiendas**, no solo el catálogo. La store `master` tenía
+un `custom_domain` viejo de ngrok; se reemplaza por un host que ya resuelve a la IP de Tailscale.
+Cero cambios de código y sin editar `hosts` en la PC del socio.
+
+| Archivo | Contenido |
+|---|---|
+| Supabase `public.stores` (1 fila) | `custom_domain` de `master` (`c828f16e-…6a9d`): `ca35-181-226-57-21.ngrok-free.app` → `master.100.111.116.27.nip.io:3000`. Guarda por `id` + valor viejo; las otras 2 tiendas quedaron intactas. Script en `scratch/set_master_domain.mjs`. |
+| `docs/guias/ACCESO_Y_MAPA_COLABORADOR.md` | Sección «URLs de revisión en vivo (conectado a Tailscale)» con la URL de la tienda master, root y catálogo. |
+| `BITACORA.md` | Changelog: esta entrada. |
+
+**Evidencia:** `master.100.111.116.27.nip.io:3000/` → 200 con `x-store-slug: master` y
+`x-store-id: c828f16e-…6a9d`; `/api/products` → 200 con los mismos headers; `/admin` y `/pos` → 307
+a login (sin sesión, esperado). Navegador real: homepage con CSS (DM Sans, `styleSheets=3`) y
+productos. Root `100.111.116.27:3000/` y `/developer/catalog` siguen 200. Sin commit/push.
+
+### 2026-11-20 (HAL-001 / BUG-001: CSS y chunks por HTTPS sobre HTTP) — sin commit
+
+El dueño reportó que la landing y `/developer/catalog` se veían planas al entrar por la IP de
+Tailscale. `HAL-001` registró el hallazgo con `ANÁLISIS IA` (sin implementar) y el dueño autorizó
+arreglarlo: «hace lo que haya que hacer sin romper nada obviamente necesito que esto este
+funcionando».
+
+| Archivo | Contenido |
+|---|---|
+| `src/proxy.ts` | `buildCsp(nonce, protocol)`; `upgrade-insecure-requests` solo en producción o si la request llegó por HTTPS. Antes era incondicional (`src/proxy.ts:31`) y el navegador pedía CSS/chunks por HTTPS sobre un server HTTP → `ERR_SSL_PROTOCOL_ERROR`. Nonce y resto del CSP intactos. |
+| `docs/operacion/REGISTRO_BUGS.md` | `HAL-001` pasa a `AUTORIZAR_BUG`; `BUG-001` abierto y cerrado con evidencia: antes `styleSheets=0`, después `link.sheet=true` + 115 reglas + DM Sans; CSP verificado con `x-forwarded-proto=http/https`. |
+| `BITACORA.md` | Changelog: esta entrada. |
+
+**Gates:** tsc 0; lint 0 errores; `npm run build` exit 0; root y `/developer/catalog` con CSS en
+navegador real. Residual no bloqueante: error de HMR websocket en consola de dev. Sin commit/push.
+
+### 2026-11-20 (guía de acceso para el colaborador y su IA) — sin commit
+
+El dueño entrega la guía al colaborador y él se la pasa a su IA; incluye accesos de prueba, mapa
+pantalla→archivo, orden de lectura y prompt de solo lectura.
+
+| Archivo | Contenido |
+|---|---|
+| `docs/guias/ACCESO_Y_MAPA_COLABORADOR.md` (nuevo) | Guía entregable: accesos de prueba, mapa pantalla→archivo, orden de lectura y prompt para la IA del colaborador, en modo solo lectura. |
+| `docs/README.md` | Índice: entrada 6º en orden de lectura y fila en `guias/`. |
+| `AGENTS.md` §12 | Puntero a la guía en la lista de viñetas del sistema conjunto. |
+| `BITACORA.md` | Changelog: esta entrada. |
+
+### 2026-11-20 (sistema de trabajo conjunto: tareas, hallazgos y análisis IA) — sin commit
+
+El dueño trabaja con un **colaborador** (su amigo), ya documentado en
+`docs/guias/CURRICULUM_COLABORADOR.md` (oct→dic, desde cero, 80% revisar, Etapa 3 «cazar mentiras
+de la IA», Etapa 6 primera tarea). No sabe programar: explora de forma visual/lógica. Se crea un
+sistema persistente en el repo (no depende de memoria de sesión): el dueño asigna `T-###`, el
+colaborador sube `HAL-###` **en sus palabras**, la IA agrega solo `ANÁLISIS IA` (cómo funciona,
+idea de arreglo, riesgo, archivos exactos) y el dueño decide si se convierte en `BUG-###`.
+
+| Archivo | Contenido |
+|---|---|
+| `docs/operacion/PROTOCOLO_CAZABUGS.md` (nuevo) | Flujo conjunto en 7 pasos, modo IA «solo anotar», encaje con el CURRICULUM, riesgo S1–S4 + cambio BAJO/MEDIO/ALTO, plantillas `T-###`/`HAL-###` y prompts copy/paste. |
+| `docs/operacion/TAREAS_COLABORADOR.md` (nuevo) | Tablero de tareas asignadas por el dueño (una a la vez, búsqueda visual/lógica, sin código). No reemplaza el Kanban. |
+| `docs/operacion/REGISTRO_BUGS.md` (nuevo) | Bandeja `HAL-###` (palabras del colaborador + `ANÁLISIS IA`), bugs abiertos, 10 diferidos (`D-001`…`D-010`), cerrados y «no es bug». |
+| `AGENTS.md` | Regla #1 lee registro + tablero; §12 con flujo conjunto y regla de modo IA (nunca implementa sin autorización). |
+| `docs/README.md` | Enlaces al protocolo, tablero y registro desde `operacion/`. |
+
+Los residuales de la ola anterior quedan anotados como **DIFERIDOS** con sus IDs, sin valores
+inventados ni acciones en vivo. Solo el agente/dueño puede cerrar un bug, y siempre con evidencia.
+Sin commit, sin push, sin tocar `YAHPOS Kanban.md`.
+
+### 2026-11-20 (cierre ESLint + segunda ola: cero hardcodes de infra) — sin commit
+
+**Decisión del dueño:** «Lo que tu creas mejor pero no quiero nada hardcodeado y necesito que todo
+quede funcional y probado». Todo implemented con tests; sin `eslint-disable` nuevo, sin `_`,
+sin `as any`, sin commit ni push.
+
+| Scope | Cambio |
+|---|---|
+| Auth/open redirect | `src/lib/auth/sso-target.ts` (nuevo) valida `from_origin` server-side (root, subdominios, RPC `get_store_by_domain`) y `next` con doble pasada canónica. 3 rutas auth endurecidas; `evil.tld` → `/login?error=invalid_origin` **antes** del `exchangeCodeForSession` (sin tokens en host ajeno). 62 tests del helper/flujo + test legacy actualizado a subdominio confiable. |
+| Root centralizado | `src/lib/config/root-origin.ts` + `src/lib/config/root-domain.ts` (nuevo): `getRootOriginSafe`, host, `isRootRequestHost`, `getRequestProtocol`, `getRootRedirectUrl`, todo desde `NEXT_PUBLIC_ROOT_ORIGIN`. `proxy.ts` dejó de hardcodear `yahpos.cl`/`localhost` y responde 500 fail-closed si falta config; inyecta protocolo canónico en `x-forwarded-proto` (no confía en el header del cliente). `EditorToggle` y `session-sync` usan los mismos helpers. |
+| SSR/API base | `src/lib/api.ts`: `VERCEL_URL`/`PORT`/`localhost` eliminados; base SSR = root origin, sin lanzar en import. `.env.example` documenta `NEXT_PUBLIC_ROOT_DOMAIN`. |
+| Products | `src/app/api/products/route.ts`: 3 ramas de sufijos dev → UNA RPC `get_store_by_domain` con host completo; 17 `any` tipados; disable file-level eliminado. Demo visitante vs sesión intacto. |
+| Developer | `verifyDnsAction` usa `new URL('/api/verify-dns', getRootOrigin())` + `response.ok`, sin `NEXT_PUBLIC_APP_URL` ni localhost; instrucciones DNS desde env; `_shared.ts` y `next_payment_date` tipados. |
+| Admin + hardware + DTE | File-level disables removidos de `configuracion`, `admin/productos`, `PendingAdjustmentsTab`, `products/[id]`, `settings`, inventory upload, hardware; WebUSB `Uint8Array<ArrayBuffer>`; `ted.ts` sin `any` (golden DTE sin cambios); `z.any()` → `z.unknown()`. |
+| UI de contacto | Footer, Upgrade y EditorProvider derivan email/dominio de env (`NEXT_PUBLIC_SUPPORT_EMAIL`, root origin); sin config, se oculta el dato — queda 0 dominio literal en `src/**` salvo fixture de test. |
+| POS | `QuickStockPanel` escribe `inventory` por `product_id + branch_id + store_id` y espeja `products` con `.eq('store_id', …)`; hidratación del terminal con `useSyncExternalStore` (sin `queueMicrotask`); navegación a `/admin` absoluta. |
+
+**Gates finales (workspace quieto):** `npm run lint` **0 problemas**; `npx tsc --noEmit` **0**;
+`npm test -- --runInBand` **45 suites / 297 tests verdes**; `npm run build` **exit 0**.
+Residual de supresiones: 16 `eslint-disable`, todos de hidratación/fetch legítimos. `any` en
+código de producción: 0.
+
+**Bloqueantes de configuración (no inventados):** `.env.local` no define `NEXT_PUBLIC_ROOT_ORIGIN`
+→ el proxy responde 500 hasta configurarlo; también requeridos `NEXT_PUBLIC_ROOT_DOMAIN` (DNS) y
+`NEXT_PUBLIC_SUPPORT_EMAIL` (contacto). Sin commit, sin push, sin SQL en vivo. `domain_verified`
+se lee/escribe en developer pero **ninguna migración crea la columna**: requiere DDL del dueño.
+Sigue pendiente la revocación del PAT Supabase y la rotación de service keys/PFX; 040 no ejecutada.
+
+### 2026-11-20 (limpieza global de basura y código muerto) — sin commit
+
+Inventario con grafo actualizado: 649 archivos indexados, 399 orphans (filtrados falsos positivos
+por convención: `page.tsx`, `layout.tsx`, `route.ts`, tests y skills), 101 grupos duplicados.
+Dos lotes ejecutados con autorización explícita del dueño.
+
+| Lote | Alcance | Peso | Evidencia |
+|---|---|---|---|
+| Pipeline one-off de catálogo (raíz, sin git) | 71 archivos + `scrapers/` + `node_modules/` | ~100 MB | 0 refs en código vivo |
+| Screenshots duplicados | 4 PNG byte-idénticos | ~190 KB | 18 → 14; 0 refs por nombre |
+| Skills duplicadas | `.trae/` + `austral-market-next/.agents/` (74 archivos) | <1 MB | contraparte en `.agents` root |
+| PNG de categoría duplicados | `public/images/categories/` (8 PNG) | ~5.8 MB | premium en código vivo; `images/categories` solo en `sw.js` generado |
+
+Conservado: `.agents` root (18 skills activos en OpenCode), `skills-lock.json`, `dte-parity/`,
+`Documentos_SII/`, `graphify-out/`, migraciones y zonas rojas.
+
+Docs actualizados: `docs/README.md` y `docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md` (refs
+muertas convertidas en nota de eliminación; enlace al plan corregido a ruta relativa). NO editados:
+`docs/planes/PLAN_LIMPIEZA_CATALOGO.md`, `docs/archivo/session-ses_2182.md` y `YAHPOS Kanban.md`
+(regla #6 de AGENTS.md).
+
+**Gates:** `npx tsc --noEmit` 0; `npm run build` verde; Jest 7 suites/76 tests; `npm run lint`
+247 (5 errores / 242 warnings) = baseline. Grafo re-sincronizado: 4297 nodos / 7582 edges /
+347 comunidades. Sin SQL, sin DB, sin commit, sin push.
+
+**Nota:** borrado en raíz irreversible (workspace no versionado). `pdf_parser/` y
+`pdfs_productos/` fueron eliminados por el dueño fuera de este handoff; no estaban en el
+manifiesto ejecutado.
+
 ### 2026-11-20 (fix runtime `orders.filter is not a function`) — sin commit
 
 | Archivo | Cambio |

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react'
 import Link from 'next/link';
+import Image from 'next/image'
 import { 
   ShoppingCart, 
   Trash2, 
@@ -10,14 +11,11 @@ import {
   ArrowLeft, 
   Package,
   Truck,
-  Tag,
-  AlertCircle,
   CreditCard,
   ArrowRight,
   ShieldCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useCartStore } from '@/stores'
 import { formatPrice } from '@/lib/utils'
@@ -37,6 +35,7 @@ export default function CartPage() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación/fetch sin cambio de comportamiento
     setIsHydrated(true)
   }, [])
 
@@ -143,9 +142,11 @@ export default function CartPage() {
                     {/* Image */}
                     <Link href={`/producto/${item.product.slug || item.product.id}`} className="shrink-0">
                       <div className="w-full md:w-32 h-32 bg-white/5 rounded-2xl overflow-hidden relative group-hover:scale-105 transition-transform duration-500">
-                        <img
+                        <Image
                           src={item.product.image}
                           alt={item.product.name}
+                          fill
+                          unoptimized
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<ConsumoFolios xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte ConsumoFolio_v10.xsd" version="1.0">
+    <DocumentoConsumoFolios ID="RCOF_PRUEBA_1">
+        <Caratula version="1.0">
+            <RutEmisor>76123456-0</RutEmisor>
+            <RutEnvia>11111111-1</RutEnvia>
+            <FchResol>2025-03-14</FchResol>
+            <NroResol>1234</NroResol>
+            <FchInicio>2026-11-15</FchInicio>
+            <FchFinal>2026-11-15</FchFinal>
+            <SecEnvio>1</SecEnvio>
+            <TmstFirmaEnv>2026-11-16T04:17:18</TmstFirmaEnv>
+        </Caratula>
+        <Resumen>
+            <TipoDocumento>39</TipoDocumento>
+            <MntNeto>5000</MntNeto>
+            <MntIva>950</MntIva>
+            <TasaIVA>19</TasaIVA>
+            <MntTotal>5950</MntTotal>
+            <FoliosEmitidos>5</FoliosEmitidos>
+            <FoliosAnulados>0</FoliosAnulados>
+            <FoliosUtilizados>5</FoliosUtilizados>
+            <RangoUtilizados><Inicial>1001</Inicial><Final>1005</Final></RangoUtilizados>
+        </Resumen>
+        <Resumen>
+            <TipoDocumento>41</TipoDocumento>
+            <MntExento>5000</MntExento>
+            <MntTotal>5000</MntTotal>
+            <FoliosEmitidos>1</FoliosEmitidos>
+            <FoliosAnulados>1</FoliosAnulados>
+            <FoliosUtilizados>2</FoliosUtilizados>
+            <RangoUtilizados><Inicial>2001</Inicial><Final>2002</Final></RangoUtilizados>
+            <RangoAnulados><Inicial>2002</Inicial></RangoAnulados>
+        </Resumen>
+    </DocumentoConsumoFolios><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#RCOF_PRUEBA_1"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>22LNbIO5JQQFnHHsRJ587q354/U=</DigestValue></Reference></SignedInfo><SignatureValue>ESjQsQba7rphYIkN4jQ9JFrPshh8ir5IOqHP77mlvWT5uDmKLOTFeND/zjaKOAsWITGUhAgBzqyLYsrOj23mq+A0GtSrx+kPsWsQyzZBsqPU1S3y7fVM6MJGohPVefCnMsr6+CS3PQTrNjp8gz9EoZBMrTp6rfIlNVywrDdCDJG1OCsw9t6sRY32WpLp3+FRYHKe1e2LUuJFJd83OA7AFBjWc59hJt2LYlSZ8fH6LMzikQWEY2SfZAePdlUqWXTthUDZchOc2K0d2RynBJYjNFYT8HZngggfSy2X0M74dLxcMHI8SSBjpzweU9lFs86EHMDPecDl3i2NUtw6yMpr5A==</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>nxLDruRlRaKLe1xPaMbHyc4YwtO1q8WAyReLbWthkNsXpKc9jtnVK+NhIbPTMCrN4CNlMCDFdKAA3WxO82/HRUcP9zIP4yGoi7AGyFA9bF8zmZxda6hASKwwxbW1C2UnkT+Gm8CoyhKO3aEAwqI8MqQhwkt93rn+jpwjfgqHPO/C7NPEzCJcv9LjjhMnzFptmwc5aXMtgN/HL3RIO28jNF8HEy27IEAP/05MFcBAHNHgUTs7wBeTY2J9fVbpBjU9zC87kTErFRaRRRlWn8FxAbT8iyHzMsVFh5Ug/TcResCjYgq+t9geli6L6XN2RW+B0TlXejdOfCaySoQNZsTM4Q==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIDyzCCArOgAwIBAgIHICYRAQAAATANBgkqhkiG9w0BAQsFADB2MRkwFwYDVQQDExBFTUlTT1IgREUgUFJVRUJBMRkwFwYDVQQKExBFTUlTT1IgREUgUFJVRUJBMRwwGgYDVQQLExNIQVJORVNTIFBBUklEQUQgRFRFMQswCQYDVQQGEwJDTDETMBEGA1UEBRMKNzYxMjM0NTYtMDAeFw0yNjAxMDEwMDAwMDBaFw0yODAxMDEwMDAwMDBaMHYxGTAXBgNVBAMTEEVNSVNPUiBERSBQUlVFQkExGTAXBgNVBAoTEEVNSVNPUiBERSBQUlVFQkExHDAaBgNVBAsTE0hBUk5FU1MgUEFSSURBRCBEVEUxCzAJBgNVBAYTAkNMMRMwEQYDVQQFEwo3NjEyMzQ1Ni0wMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnxLDruRlRaKLe1xPaMbHyc4YwtO1q8WAyReLbWthkNsXpKc9jtnVK+NhIbPTMCrN4CNlMCDFdKAA3WxO82/HRUcP9zIP4yGoi7AGyFA9bF8zmZxda6hASKwwxbW1C2UnkT+Gm8CoyhKO3aEAwqI8MqQhwkt93rn+jpwjfgqHPO/C7NPEzCJcv9LjjhMnzFptmwc5aXMtgN/HL3RIO28jNF8HEy27IEAP/05MFcBAHNHgUTs7wBeTY2J9fVbpBjU9zC87kTErFRaRRRlWn8FxAbT8iyHzMsVFh5Ug/TcResCjYgq+t9geli6L6XN2RW+B0TlXejdOfCaySoQNZsTM4QIDAQABo14wXDAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwQwHQYDVR0OBBYEFFBIc1602ZHf5hbEdCdy7UfoJ0UpMA0GCSqGSIb3DQEBCwUAA4IBAQAQztdABg+Nqj/Uc89DCQIx6BgCLfEWNIU/4RxWdeSXt1xawkiC5ziZWlLH/o3Ouqrvx4CjduFg6b+OexH3KxmmURsV06Dytb3Pd9Z8RNiUbhe6pMblU35KVlrFTLMtMlnnTuUEhjMLgtio69K6ZKPK9UciRWcJ3o8AZ4DW3ZmhF84fgONhXvZ9ev/qU6ohcBZ3myBDgvqvc6WPbKp2LyQJgilvGm1wgZy54YA9S5zOehkBdz4qHTHZKo9zgE8lubQC/T/FO5XY07y3O/kzX7DFz8or2rf8zQnNk7mYcR8mfrgkkvzTibFy2G1MEDyGDqK1j5noVzUBYoAcseveFv2A</X509Certificate></X509Data></KeyInfo></Signature>
+</ConsumoFolios>

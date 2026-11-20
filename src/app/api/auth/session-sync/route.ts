@@ -1,17 +1,17 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { sanitizeNextPath } from '@/lib/auth/sso-target'
+import { getRequestProtocol } from '@/lib/config/root-domain'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const accessToken = requestUrl.searchParams.get('access_token')
   const refreshToken = requestUrl.searchParams.get('refresh_token')
-  let next = requestUrl.searchParams.get('next') || '/admin'
-  // Sanitizar: eliminar trailing dots del path
-  next = next.replace(/\.+$/, '')
 
   const host = request.headers.get('host') || ''
-  const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https'
+  const protocol = getRequestProtocol(request.headers)
   const origin = `${protocol}://${host}`
+  const next = sanitizeNextPath(requestUrl.searchParams.get('next') ?? '/admin', origin)
 
   console.log(`[Session Sync Log] GET request. Host: ${host}, Origin: ${origin}, Next: ${next}`)
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   const secure = protocol === 'https'
-  const cookiesToSetArray: { name: string; value: string; options: any }[] = []
+  const cookiesToSetArray: { name: string; value: string; options: CookieOptions }[] = []
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,18 +54,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=sync_failed`)
   }
 
-  console.log(`[Session Sync Log] setSession SUCCESS for: ${data.session.user.email}. Redirecting to: ${next}`)
+  console.log('[Session Sync Log] setSession SUCCESS')
 
-  const redirectTo = `${origin}${next.startsWith('/') ? next : '/' + next}`
+  const redirectTo = new URL(next, origin).toString()
 
+  // Route Handler: Next no inyecta el nonce acá. El proxy lo pone en el request.
+  const nonce = request.headers.get('x-nonce') ?? ''
+  // JSON.stringify escapa comillas pero no `<`/`>`: sin esto, un `next` con
+  // `</script>` cerraría el tag inline. Escapar a \u003c/\u003e/\u0026 evita el breakout.
+  const safeRedirectTo = JSON.stringify(redirectTo)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
   const body = `<!DOCTYPE html>
 <html><head>
   <meta charset="utf-8">
   <title>Redirigiendo...</title>
 </head><body>
-  <script>
+  <script nonce="${nonce}">
     setTimeout(function() {
-      window.location.replace(${JSON.stringify(redirectTo)});
+      window.location.replace(${safeRedirectTo});
     }, 100);
   </script>
 </body></html>`
@@ -82,7 +90,6 @@ export async function GET(request: NextRequest) {
       sameSite: 'lax' as const,
       path: '/',
     }
-    console.log(`[Session Sync Log] Setting cookie via response.cookies: ${name} | Options:`, opts)
     response.cookies.set(name, value, opts)
   })
 

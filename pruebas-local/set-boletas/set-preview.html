@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Set de Pruebas - Boletas Electrónicas</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+      color: #1a1a1a;
+    }
+    h1.page-title {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #2c3e50;
+    }
+    .set-info {
+      background: #e8f4f8;
+      border-left: 4px solid #3498db;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      border-radius: 4px;
+    }
+    .boleta {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #eee;
+    }
+    .emisor h2 {
+      color: #2c3e50;
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+    }
+    .emisor p {
+      color: #666;
+      font-size: 0.9rem;
+      margin: 0.2rem 0;
+    }
+    .doc-info {
+      text-align: right;
+    }
+    .doc-info h1 {
+      color: #e74c3c;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .doc-info p {
+      margin: 0.3rem 0;
+      font-size: 0.95rem;
+    }
+    .doc-info p strong {
+      font-size: 1.3rem;
+      color: #2c3e50;
+    }
+    .ref {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .receptor {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+    }
+    .receptor h3 {
+      font-size: 1rem;
+      margin-bottom: 0.3rem;
+    }
+    .receptor p {
+      color: #666;
+      font-size: 0.9rem;
+    }
+    .items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+    }
+    .items th {
+      background: #2c3e50;
+      color: white;
+      padding: 0.8rem;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .items td {
+      padding: 0.8rem;
+      border-bottom: 1px solid #eee;
+    }
+    .items tr.exento {
+      background: #fff8e1;
+    }
+    .badge-exento {
+      background: #ffc107;
+      color: #333;
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .totales {
+      margin-left: auto;
+      width: 300px;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
+    }
+    .total-row.total-final {
+      border-top: 2px solid #2c3e50;
+      border-bottom: none;
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-top: 0.5rem;
+      padding-top: 0.8rem;
+    }
+    .footer {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .ted-status, .firma-status {
+      margin: 0.3rem 0;
+    }
+    .caso-label {
+      display: inline-block;
+      background: #3498db;
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">Set de Pruebas - Boletas Electrónicas</h1>
+  
+  <div class="set-info">
+    <strong>RUT Emisor:</strong> 21012281-8<br>
+    <strong>Contribuyente:</strong> RODRIGO ALEJANDRO NUNEZ CHAURA<br>
+    <strong>Ambiente:</strong> Certificación (maullin.sii.cl)<br>
+    <strong>Fecha:</strong> 2026-11-16<br>
+    <strong>Folios:</strong> 1-5 (CAF: 1-10)
+  </div>
+
+  <div class="caso-label">CASO-1</div>
+    <div class="boleta">
+      <div class="header">
+        <div class="emisor">
+          <h2>RODRIGO ALEJANDRO NUNEZ CHAURA</h2>
+          <p>RUT: 21012281-8</p>
+          <p>Giro: Consultor�a inform�tica y gesti�n de instalaciones inform�ticas</p>
+          <p>Ernesto Novoa, Castro, Castro</p>
+        </div>
+        <div class="doc-info">
+          <h1>BOLETA ELECTRÓNICA</h1>
+          <p><strong>N° 1</strong></p>
+          <p>Tipo 39</p>
+          <p>Fecha: 2026-11-16</p>
+          <p class="ref">Ref: SET - CASO-1</p>
+        </div>
+      </div>
+
+      <div class="receptor">
+        <h3>RUT: 66666666-6</h3>
+        <p>Consumidor Final</p>
+      </div>
+
+      <table class="items">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Descripción</th>
+            <th>Cant.</th>
+            <th>P. Unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+      </table>
+
+      <div class="totales">
+        <div class="total-row"><span>Monto Neto:</span><span>$25.042</span></div>
+        
+        <div class="total-row"><span>IVA (19%):</span><span>$4.758</span></div>
+        <div class="total-row total-final"><span>TOTAL:</span><span>$29.800</span></div>
+      </div>
+
+      <div class="footer">
+        <p class="ted-status">✅ TED presente</p>
+        <p class="firma-status">✅ Firmada (SHA1withRSA)</p>
+      </div>
+    </div>
+  
+<div class="caso-label">CASO-2</div>
+    <div class="boleta">
+      <div class="header">
+        <div class="emisor">
+          <h2>RODRIGO ALEJANDRO NUNEZ CHAURA</h2>
+          <p>RUT: 21012281-8</p>
+          <p>Giro: Consultor�a inform�tica y gesti�n de instalaciones inform�ticas</p>
+          <p>Ernesto Novoa, Castro, Castro</p>
+        </div>
+        <div class="doc-info">
+          <h1>BOLETA ELECTRÓNICA</h1>
+          <p><strong>N° 2</strong></p>
+          <p>Tipo 39</p>
+          <p>Fecha: 2026-11-16</p>
+          <p class="ref">Ref: SET - CASO-2</p>
+        </div>
+      </div>
+
+      <div class="receptor">
+        <h3>RUT: 66666666-6</h3>
+        <p>Consumidor Final</p>
+      </div>
+
+      <table class="items">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Descripción</th>
+            <th>Cant.</th>
+            <th>P. Unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+      </table>
+
+      <div class="totales">
+        <div class="total-row"><span>Monto Neto:</span><span>$1.717</span></div>
+        
+        <div class="total-row"><span>IVA (19%):</span><span>$323</span></div>
+        <div class="total-row total-final"><span>TOTAL:</span><span>$2.040</span></div>
+      </div>
+
+      <div class="footer">
+        <p class="ted-status">✅ TED presente</p>
+        <p class="firma-status">✅ Firmada (SHA1withRSA)</p>
+      </div>
+    </div>
+  
+<div class="caso-label">CASO-3</div>
+    <div class="boleta">
+      <div class="header">
+        <div class="emisor">
+          <h2>RODRIGO ALEJANDRO NUNEZ CHAURA</h2>
+          <p>RUT: 21012281-8</p>
+          <p>Giro: Consultor�a inform�tica y gesti�n de instalaciones inform�ticas</p>
+          <p>Ernesto Novoa, Castro, Castro</p>
+        </div>
+        <div class="doc-info">
+          <h1>BOLETA ELECTRÓNICA</h1>
+          <p><strong>N° 3</strong></p>
+          <p>Tipo 39</p>
+          <p>Fecha: 2026-11-16</p>
+          <p class="ref">Ref: SET - CASO-3</p>
+        </div>
+      </div>
+
+      <div class="receptor">
+        <h3>RUT: 66666666-6</h3>
+        <p>Consumidor Final</p>
+      </div>
+
+      <table class="items">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Descripción</th>
+            <th>Cant.</th>
+            <th>P. Unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+      </table>
+
+      <div class="totales">
+        <div class="total-row"><span>Monto Neto:</span><span>$3.446</span></div>
+        
+        <div class="total-row"><span>IVA (19%):</span><span>$654</span></div>
+        <div class="total-row total-final"><span>TOTAL:</span><span>$4.100</span></div>
+      </div>
+
+      <div class="footer">
+        <p class="ted-status">✅ TED presente</p>
+        <p class="firma-status">✅ Firmada (SHA1withRSA)</p>
+      </div>
+    </div>
+  
+<div class="caso-label">CASO-4</div>
+    <div class="boleta">
+      <div class="header">
+        <div class="emisor">
+          <h2>RODRIGO ALEJANDRO NUNEZ CHAURA</h2>
+          <p>RUT: 21012281-8</p>
+          <p>Giro: Consultor�a inform�tica y gesti�n de instalaciones inform�ticas</p>
+          <p>Ernesto Novoa, Castro, Castro</p>
+        </div>
+        <div class="doc-info">
+          <h1>BOLETA ELECTRÓNICA</h1>
+          <p><strong>N° 4</strong></p>
+          <p>Tipo 39</p>
+          <p>Fecha: 2026-11-16</p>
+          <p class="ref">Ref: SET - CASO-4</p>
+        </div>
+      </div>
+
+      <div class="receptor">
+        <h3>RUT: 66666666-6</h3>
+        <p>Consumidor Final</p>
+      </div>
+
+      <table class="items">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Descripción</th>
+            <th>Cant.</th>
+            <th>P. Unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+      </table>
+
+      <div class="totales">
+        <div class="total-row"><span>Monto Neto:</span><span>$10.688</span></div>
+        <div class="total-row"><span>Monto Exento:</span><span>$2.000</span></div>
+        <div class="total-row"><span>IVA (19%):</span><span>$2.032</span></div>
+        <div class="total-row total-final"><span>TOTAL:</span><span>$14.720</span></div>
+      </div>
+
+      <div class="footer">
+        <p class="ted-status">✅ TED presente</p>
+        <p class="firma-status">✅ Firmada (SHA1withRSA)</p>
+      </div>
+    </div>
+  
+<div class="caso-label">CASO-5</div>
+    <div class="boleta">
+      <div class="header">
+        <div class="emisor">
+          <h2>RODRIGO ALEJANDRO NUNEZ CHAURA</h2>
+          <p>RUT: 21012281-8</p>
+          <p>Giro: Consultor�a inform�tica y gesti�n de instalaciones inform�ticas</p>
+          <p>Ernesto Novoa, Castro, Castro</p>
+        </div>
+        <div class="doc-info">
+          <h1>BOLETA ELECTRÓNICA</h1>
+          <p><strong>N° 5</strong></p>
+          <p>Tipo 39</p>
+          <p>Fecha: 2026-11-16</p>
+          <p class="ref">Ref: SET - CASO-5</p>
+        </div>
+      </div>
+
+      <div class="receptor">
+        <h3>RUT: 66666666-6</h3>
+        <p>Consumidor Final</p>
+      </div>
+
+      <table class="items">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Descripción</th>
+            <th>Cant.</th>
+            <th>P. Unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+      </table>
+
+      <div class="totales">
+        
+        <div class="total-row"><span>Monto Exento:</span><span>$3.500</span></div>
+        
+        <div class="total-row total-final"><span>TOTAL:</span><span>$3.500</span></div>
+      </div>
+
+      <div class="footer">
+        <p class="ted-status">✅ TED presente</p>
+        <p class="firma-status">✅ Firmada (SHA1withRSA)</p>
+      </div>
+    </div>
+  
+</body>
+</html>

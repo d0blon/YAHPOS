@@ -28,23 +28,21 @@ function statusIcon(status: ServiceStatus['status'], className = 'w-4 h-4') {
   return <XCircle className={cn(className, "text-red-400")} />
 }
 
-function statusBadge(status: ServiceStatus['status']) {
-  const map = {
-    checking: 'bg-amber-500/5 text-amber-500/30 border-amber-500/10',
-    online:   'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    degraded: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    offline:  'bg-red-500/10 text-red-400 border-red-500/20',
-  }
-  const labels = { checking: 'Verificando', online: 'En Línea', degraded: 'Degradado', offline: 'Sin Conexión' }
-  return (
-    <span className={cn("text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border", map[status])}>
-      {labels[status]}
-    </span>
-  )
-}
-
 interface SystemHealthProps {
   storeId?: string
+}
+
+interface CheckResult {
+  latency: number
+  detail: string
+}
+
+async function fetchHealth(url: string, describe: (latency: number, status: number) => string): Promise<CheckResult> {
+  const t0 = Date.now()
+  const res = await fetch(url, { cache: 'no-store' })
+  const latency = Date.now() - t0
+  if (!res.ok) throw new Error(`Error ${res.status}`)
+  return { latency, detail: describe(latency, res.status) }
 }
 
 export default function SystemHealth({ storeId }: SystemHealthProps) {
@@ -52,60 +50,48 @@ export default function SystemHealth({ storeId }: SystemHealthProps) {
   const [lastChecked, setLastChecked] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const check = useCallback(async () => {
-    setIsRefreshing(true)
-    setServices(prev => prev.map(s => ({ ...s, status: 'checking', latency: null, detail: 'Verificando...' })))
+  const fetchResults = useCallback(() => Promise.allSettled([
+    fetchHealth('/api/settings', latency => `Respuesta en ${latency}ms`),
+    fetchHealth('/api/products?limit=1', (latency, status) => `${latency}ms — ${status} OK`),
+    fetchHealth('/api/staff', latency => `Auth service ${latency}ms`),
+    fetchHealth('/api/settings', latency => `Bucket accesible — ${latency}ms`),
+  ]), [])
 
-    const results = await Promise.allSettled([
-      // DB check via settings API
-      (async () => {
-        const t0 = Date.now()
-        const res = await fetch('/api/settings', { cache: 'no-store' })
-        const latency = Date.now() - t0
-        if (!res.ok) throw new Error('Error ' + res.status)
-        return { name: 'database', latency, detail: `Respuesta en ${latency}ms` }
-      })(),
-      // API check via products
-      (async () => {
-        const t0 = Date.now()
-        const res = await fetch('/api/products?limit=1', { cache: 'no-store' })
-        const latency = Date.now() - t0
-        if (!res.ok) throw new Error('Error ' + res.status)
-        return { name: 'api', latency, detail: `${latency}ms — ${res.status} OK` }
-      })(),
-      // Auth check via staff
-      (async () => {
-        const t0 = Date.now()
-        const res = await fetch('/api/staff', { cache: 'no-store' })
-        const latency = Date.now() - t0
-        return { name: 'auth', latency, detail: `Auth service ${latency}ms` }
-      })(),
-      // Storage: check a public endpoint
-      (async () => {
-        const t0 = Date.now()
-        const res = await fetch('/api/settings', { cache: 'no-store' })
-        const latency = Date.now() - t0
-        return { name: 'storage', latency, detail: `Bucket accesible — ${latency}ms` }
-      })(),
-    ])
-
+  const applyResults = useCallback((results: PromiseSettledResult<CheckResult>[]) => {
     setServices(prev => prev.map((svc, i) => {
       const result = results[i]
       if (result.status === 'fulfilled') {
-        const val = result.value as { latency: number, detail: string }
-        const { latency } = val
+        const { latency, detail } = result.value
         const status = latency < 800 ? 'online' : latency < 2000 ? 'degraded' : 'offline'
-        return { ...svc, status, latency, detail: val.detail }
-      } else {
-        return { ...svc, status: 'offline', latency: null, detail: 'Error de conexión' }
+        return { ...svc, status, latency, detail }
       }
+      const reason = result.reason
+      const detail = reason instanceof Error ? reason.message : 'Error de conexión'
+      return { ...svc, status: 'offline', latency: null, detail }
     }))
 
     setLastChecked(new Date().toLocaleTimeString('es-CL'))
-    setIsRefreshing(false)
   }, [])
 
-  useEffect(() => { check() }, [check])
+  const check = useCallback(async () => {
+    setIsRefreshing(true)
+    setServices(prev => prev.map(svc => ({ ...svc, status: 'checking', latency: null, detail: 'Verificando...' })))
+    try {
+      applyResults(await fetchResults())
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [applyResults, fetchResults])
+
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      const results = await fetchResults()
+      if (active) applyResults(results)
+    }
+    void load()
+    return () => { active = false }
+  }, [applyResults, fetchResults])
 
   const allOnline = services.every(s => s.status === 'online')
   const anyOffline = services.some(s => s.status === 'offline')

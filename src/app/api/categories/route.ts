@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-utils'
 
+function errorMessage(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+    ? error.message
+    : undefined
+}
+
 export async function GET() {
   try {
     const auth = await withAuth()
@@ -22,7 +28,7 @@ export async function GET() {
 
     return NextResponse.json(mockCategories)
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 })
   }
 }

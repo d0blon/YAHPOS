@@ -3,7 +3,7 @@
 import { useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Clock, Tag, Sparkles, Truck, Flame } from 'lucide-react'
+import { ArrowRight, Clock, Sparkles, Truck, Flame } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import gsap from 'gsap'

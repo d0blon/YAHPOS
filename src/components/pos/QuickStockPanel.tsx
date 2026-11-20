@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { X, Search, Package, Save, RefreshCw, AlertTriangle, ArrowUpRight, ArrowDownRight, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,7 @@ import { usePosStore } from '@/stores/posStore'
 import { formatPrice, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import { useSaaS } from '@/providers/SaaSProvider'
 
 interface QuickStockPanelProps {
   isOpen: boolean
@@ -16,6 +18,7 @@ interface QuickStockPanelProps {
 
 export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
   const { inventory, setInventory, selectedBranchId } = usePosStore()
+  const { storeId } = useSaaS()
   const [search, setSearch] = useState('')
   const [isUpdating, setIsUpdating] = useState<string | null>(null)
   const [stockChanges, setStockChanges] = useState<Record<string, number>>({})
@@ -51,11 +54,34 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
 
       const newStock = product.stock + change
 
-      // 1. Update in Supabase
+      if (!storeId) {
+        console.error('[QuickStockPanel] storeId no disponible, update sin scoping — bloqueado')
+        throw new Error('No se pudo determinar la tienda actual')
+      }
+
+      // Con sucursal activa el stock mostrado viene de inventory; sin fila propia
+      // se usa el stock global del producto (mismo fallback que GET /products).
+      if (selectedBranchId) {
+        const { data: branchRows, error: branchError } = await supabase
+          .from('inventory')
+          .update({ stock: newStock })
+          .eq('product_id', productId)
+          .eq('branch_id', selectedBranchId)
+          .eq('store_id', storeId)
+          .select('id')
+
+        if (branchError) throw branchError
+        if (!branchRows || branchRows.length === 0) {
+          console.warn('[QuickStockPanel] Sin fila de inventario para la sucursal; se actualiza el stock global')
+        }
+      }
+
+      // Espejo del flujo de checkout: stock de sucursal y stock global se mueven juntos.
       const { error } = await supabase
         .from('products')
         .update({ stock: newStock })
         .eq('id', productId)
+        .eq('store_id', storeId)
 
       if (error) throw error
 
@@ -135,7 +161,11 @@ export function QuickStockPanel({ isOpen, onClose }: QuickStockPanelProps) {
                      <div className="flex items-start justify-between gap-4">
                         <div className="flex gap-4">
                            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-surface-200 overflow-hidden border border-slate-100 dark:border-gray-700 p-2 shrink-0">
-                              <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
+                              {p.image ? (
+                                  <Image src={p.image} alt={p.name} width={64} height={64} className="w-full h-full object-contain" unoptimized />
+                                ) : (
+                                  <Package className="w-full h-full object-contain text-slate-300" aria-hidden />
+                                )}
                            </div>
                            <div className="min-w-0">
                               <h4 className="font-black text-slate-900 dark:text-white leading-tight uppercase text-sm line-clamp-1">{p.name}</h4>

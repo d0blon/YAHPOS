@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useRef, useState, useMemo } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { 
   Plus, Trash2, FileText, Send, 
-  User, MapPin, Tag, Calculator, 
-  Truck, AlertCircle, CheckCircle2, Loader2 
+  User, Tag, 
+  Truck, AlertCircle, Loader2 
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { emitManualDte } from '@/app/admin/facturacion/actions'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { Lock } from 'lucide-react'
+import type { DtePayload } from '@/lib/sii/types'
 
 interface ItemRow {
   id: string
@@ -25,14 +27,15 @@ interface ItemRow {
   isExempt: boolean
 }
 
+type DteType = 33 | 39 | 41 | 52 | 56 | 61
+type TipoDespacho = 1 | 2 | 3
+type IndTraslado = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
 export function ManualEmissionTabs() {
-  const { isDocumentTypeEnabled, tier } = useSaaS()
-  const [dteType, setDteType] = useState<33 | 39 | 41 | 52 | 56 | 61>(33)
+  const { isDocumentTypeEnabled } = useSaaS()
+  const [dteType, setDteType] = useState<DteType>(33)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  const canEmitFactura = isDocumentTypeEnabled(33)
-  const canEmitGuia = isDocumentTypeEnabled(52)
-  
+
   // Receptor State
   const [receptor, setReceptor] = useState({
     rut: '',
@@ -45,21 +48,29 @@ export function ManualEmissionTabs() {
 
   // Specific Guia fields
   const [guiaConfig, setGuiaConfig] = useState({
-    tipoDespacho: 1 as 1 | 2 | 3,
-    indTraslado: 1 as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+    tipoDespacho: 1 as TipoDespacho,
+    indTraslado: 1 as IndTraslado
   })
 
   // Reference for Notas
   const [reference, setReference] = useState({
-    tpoDocRef: 33,
+    tpoDocRef: 33 as DteType,
     folioRef: '',
     razonRef: '',
     codRef: 1 as 1 | 2 | 3
   })
 
-  // Items State
+  // Items State — IDs estables generados con un contador (sin Math.random en render)
+  const itemIdCounter = useRef(1)
+  const createItem = (): ItemRow => ({
+    id: `item-${itemIdCounter.current++}`,
+    name: '',
+    qty: 1,
+    price: 0,
+    isExempt: false
+  })
   const [items, setItems] = useState<ItemRow[]>([
-    { id: Math.random().toString(36).substr(2, 9), name: '', qty: 1, price: 0, isExempt: false }
+    { id: 'item-0', name: '', qty: 1, price: 0, isExempt: false }
   ])
 
   // Calculations
@@ -84,8 +95,8 @@ export function ManualEmissionTabs() {
 
   const addItem = () => {
     setItems([
-      ...items, 
-      { id: Math.random().toString(36).substr(2, 9), name: '', qty: 1, price: 0, isExempt: false }
+      ...items,
+      createItem()
     ])
   }
 
@@ -95,7 +106,7 @@ export function ManualEmissionTabs() {
     }
   }
 
-  const updateItem = (id: string, field: keyof ItemRow, value: any) => {
+  const updateItem = (id: string, field: keyof ItemRow, value: ItemRow[keyof ItemRow]) => {
     setItems(items.map(i => i.id === id ? { ...i, [field]: value } : i))
   }
 
@@ -152,19 +163,18 @@ export function ManualEmissionTabs() {
         }))
       }
 
-      // We use a default store ID or we could pass it as prop
-      const result = await emitManualDte('main_store', dteType, payload as any)
+      const result = await emitManualDte('', dteType, payload as DtePayload)
 
       if (result.success) {
         toast.success(`Documento emitido correctamente. Folio: ${result.folio}`)
         // Reset form
-        setItems([{ id: Math.random().toString(36).substr(2, 9), name: '', qty: 1, price: 0, isExempt: false }])
+        setItems([createItem()])
         setReceptor({ rut: '', name: '', giro: '', address: '', commune: '', city: '' })
       } else {
         toast.error(`Error: ${result.error}`)
       }
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al emitir documento')
     } finally {
       setIsSubmitting(false)
     }
@@ -188,21 +198,21 @@ export function ManualEmissionTabs() {
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Tipo de Documento</Label>
               <div className="grid grid-cols-2 gap-2">
-                {[
+                {([
                   { id: 33, label: 'Factura', icon: FileText, tier: 'ARCHIPIELAGO' },
                   { id: 39, label: 'Boleta', icon: FileText, tier: 'AUSTRAL' },
                   { id: 41, label: 'B. Exenta', icon: FileText, tier: 'AUSTRAL' },
                   { id: 52, label: 'Guía', icon: Truck, tier: 'PATAGONIA' },
                   { id: 61, label: 'N. Crédito', icon: FileText, tier: 'ARCHIPIELAGO' },
                   { id: 56, label: 'N. Débito', icon: FileText, tier: 'ARCHIPIELAGO' }
-                ].map((type) => {
+                ] as { id: DteType; label: string; icon: LucideIcon; tier: string }[]).map((type) => {
                   const enabled = isDocumentTypeEnabled(type.id)
                   const Icon = type.icon
                   return (
                     <div key={type.id} className="relative group">
                       <Button 
                         variant={dteType === type.id ? 'default' : 'outline'}
-                        onClick={() => enabled && setDteType(type.id as any)}
+                        onClick={() => enabled && setDteType(type.id)}
                         disabled={!enabled}
                         className={cn(
                           "w-full h-12 rounded-xl font-black uppercase tracking-tighter text-[10px] transition-all",
@@ -239,7 +249,7 @@ export function ManualEmissionTabs() {
                     <select 
                       className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 focus:ring-2 focus:ring-brand-primary/20 outline-none"
                       value={guiaConfig.tipoDespacho}
-                      onChange={(e) => setGuiaConfig({...guiaConfig, tipoDespacho: Number(e.target.value) as any})}
+                      onChange={(e) => setGuiaConfig({...guiaConfig, tipoDespacho: Number(e.target.value) as TipoDespacho})}
                     >
                       <option value={1}>1 - Emisor a otros (Venta)</option>
                       <option value={2}>2 - Emisor a bodegas (Traslado)</option>
@@ -252,7 +262,7 @@ export function ManualEmissionTabs() {
                     <select 
                       className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 focus:ring-2 focus:ring-brand-primary/20 outline-none"
                       value={guiaConfig.indTraslado}
-                      onChange={(e) => setGuiaConfig({...guiaConfig, indTraslado: Number(e.target.value) as any})}
+                      onChange={(e) => setGuiaConfig({...guiaConfig, indTraslado: Number(e.target.value) as IndTraslado})}
                     >
                       <option value={1}>1 - Operación constituye venta</option>
                       <option value={2}>2 - Ventas por efectuar</option>
@@ -282,7 +292,7 @@ export function ManualEmissionTabs() {
                     <select 
                       className="w-full h-9 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-lg text-[10px] px-2 outline-none"
                       value={reference.tpoDocRef}
-                      onChange={(e) => setReference({...reference, tpoDocRef: Number(e.target.value)})}
+                      onChange={(e) => setReference({...reference, tpoDocRef: Number(e.target.value) as DteType})}
                     >
                       <option value={33}>Factura (33)</option>
                       <option value={39}>Boleta (39)</option>

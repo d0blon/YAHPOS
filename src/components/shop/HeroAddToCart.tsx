@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Heart } from 'lucide-react'
 import { Product as StoreProduct } from '@/types'
 
-export default function HeroAddToCart({ product: customProduct }: { product?: any }) {
+export default function HeroAddToCart({ product: customProduct }: { product?: StoreProduct }) {
   const { addItem } = useCartStore()
 
   const handleAdd = () => {
@@ -32,11 +32,11 @@ export default function HeroAddToCart({ product: customProduct }: { product?: an
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       store_id: null
-    }
+    } as unknown as StoreProduct
 
-    const product = customProduct || defaultProduct
+    const product = customProduct ?? defaultProduct
 
-    addItem(product as unknown as StoreProduct, 1)
+    addItem(product, 1)
     toast.success(`${product.name} Agregado`, {
       description: `Se agregó 1 unidad de ${product.name} al carrito.`,
       duration: 2000

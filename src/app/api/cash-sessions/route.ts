@@ -1,29 +1,33 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { withAuth } from '@/lib/api-utils'
+import { parseBody, parseQuery } from '@/lib/validations/http'
+import { cashSessionOpenSchema, cashSessionQuerySchema } from '@/lib/validations/api'
+
+function errorMessage(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+    ? error.message
+    : undefined
+}
 
 // GET - Find active session by user ID or terminal
 export async function GET(req: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { searchParams } = new URL(req.url)
-    const terminalId = searchParams.get('terminal_id')
+    const auth = await withAuth()
+    if (auth.error) return auth.error
 
-    let query = supabase
+    const parsedQuery = parseQuery(req, cashSessionQuerySchema)
+    if ('error' in parsedQuery) return parsedQuery.error
+    const terminalId = parsedQuery.data.terminal_id
+
+    let query = auth.supabase
       .from('cash_sessions')
-      .select('*, terminals(name)')
+      .select('id, store_id, terminal_id, cashier_name, opening_amount, status, opened_at, terminals(name)')
       .eq('status', 'open')
+      .eq('store_id', auth.storeId)
+      .eq('user_id', auth.user.id)
       .order('opened_at', { ascending: false })
       .limit(1)
 
-    // Priorizar búsqueda por user_id si está disponible
-    if (user) {
-      query = query.eq('user_id', user.id)
-    } else {
-      const cashierName = searchParams.get('cashier')
-      if (cashierName) query = query.eq('cashier_name', cashierName)
-    }
-    
     if (terminalId) query = query.eq('terminal_id', terminalId)
 
     const { data, error } = await query
@@ -33,100 +37,96 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ session: data?.[0] ?? null, tableExists: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GET /api/cash-sessions] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error) || 'Error interno del servidor' }, { status: 500 })
   }
 }
 
 // POST - Open a new cash session
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const auth = await withAuth()
+    if (auth.error) return auth.error
 
-    const body = await req.json()
-    const terminalId = body.terminal_id
+    const parsed = await parseBody(req, cashSessionOpenSchema)
+    if ('error' in parsed) return parsed.error
+    const { terminal_id: terminalId, cashier_name, opening_amount } = parsed.data
 
-    // 1. Verificar disponibilidad del terminal
-    const { data: terminal } = await supabase
+    // 1. Verificar disponibilidad del terminal (scoping por store_id de la sesión)
+    const { data: terminal } = await auth.supabase
       .from('terminals')
       .select('name, status, current_user_id')
       .eq('id', terminalId)
+      .eq('store_id', auth.storeId)
       .single()
 
-    if (terminal?.status === 'open' && terminal.current_user_id !== user.id) {
+    if (terminal?.status === 'open' && terminal.current_user_id !== auth.user.id) {
       return NextResponse.json({ error: 'Este terminal ya está siendo usado por otro cajero.' }, { status: 409 })
     }
 
     // 2. Cerrar cualquier sesión previa del usuario y LIBERAR sus terminales
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('store_id')
-      .eq('id', user.id)
-      .single()
-
-    const { data: oldSessions } = await supabase
+    const { data: oldSessions } = await auth.supabase
       .from('cash_sessions')
       .select('terminal_id')
-      .eq('user_id', user.id)
+      .eq('user_id', auth.user.id)
       .eq('status', 'open')
-      .eq('store_id', profile?.store_id)
+      .eq('store_id', auth.storeId)
 
     if (oldSessions && oldSessions.length > 0) {
       // 2.1 Cerrar sesiones
-      await supabase
+      await auth.supabase
         .from('cash_sessions')
         .update({ status: 'closed', closed_at: new Date().toISOString() })
-        .eq('user_id', user.id)
+        .eq('user_id', auth.user.id)
         .eq('status', 'open')
-        .eq('store_id', profile?.store_id)
+        .eq('store_id', auth.storeId)
 
       // 2.2 Liberar terminales
       const oldTerminalIds = oldSessions.map(s => s.terminal_id)
-      await supabase
+      await auth.supabase
         .from('terminals')
         .update({ status: 'active', current_user_id: null })
         .in('id', oldTerminalIds)
-        .eq('store_id', profile?.store_id)
+        .eq('store_id', auth.storeId)
     }
 
     // 3. Crear nueva sesión
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await auth.supabase
       .from('cash_sessions')
       .insert([{
         terminal_id: terminalId,
-        cashier_name: body.cashier_name,
-        user_id: user.id,
-        store_id: profile?.store_id,
-        opening_amount: body.opening_amount,
+        cashier_name,
+        user_id: auth.user.id,
+        store_id: auth.storeId,
+        opening_amount,
         status: 'open',
       }])
-      .select()
+      .select('id, store_id, terminal_id, user_id, cashier_name, opening_amount, status, opened_at')
       .single()
 
     if (sessionError) return NextResponse.json({ error: sessionError.message }, { status: 500 })
 
     // 4. BLOQUEAR TERMINAL
-    await supabase
+    await auth.supabase
       .from('terminals')
       .update({
         status: 'open',
-        current_user_id: user.id
+        current_user_id: auth.user.id
       })
       .eq('id', terminalId)
-      .eq('store_id', profile?.store_id)
+      .eq('store_id', auth.storeId)
 
     // 5. ACTUALIZAR AREA EN PERFIL
-    await supabase
+    await auth.supabase
       .from('profiles')
       .update({ current_area: terminal?.name ?? 'Caja' })
-      .eq('id', user.id)
+      .eq('id', auth.user.id)
+      .eq('store_id', auth.storeId)
 
     return NextResponse.json(session, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[POST /api/cash-sessions] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error) || 'Error interno del servidor' }, { status: 500 })
   }
 }

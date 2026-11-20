@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { 
   ShoppingCart, 
   Heart, 
@@ -16,6 +16,7 @@ import {
   ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -138,9 +139,11 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.15),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                 
                 <div className="main-product-image w-full h-full relative z-10 flex items-center justify-center">
-                  <img 
+                  <Image 
                     src={images[selectedImage] || product.image} 
                     alt={product.name} 
+                    fill
+                    unoptimized
                     className="w-full h-full object-contain drop-shadow-[0_40px_80px_rgba(0,0,0,0.6)] group-hover:scale-105 transition-transform duration-1000" 
                   />
                 </div>
@@ -178,7 +181,7 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
                       onClick={() => setSelectedImage(idx)}
                       className={`hero-reveal relative w-24 h-24 rounded-3xl overflow-hidden border-2 transition-all duration-500 shrink-0 ${selectedImage === idx ? 'border-brand-accent-500 scale-105 bg-brand-accent-500/10' : 'border-white/5 bg-white/5 hover:border-white/20'}`}
                     >
-                      <img src={img} alt={`${product.name} ${idx}`} className="w-full h-full object-cover" />
+                      <Image src={img} alt={`${product.name} ${idx}`} fill unoptimized className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -347,9 +350,10 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
 
           {/* Luxury Banner */}
           <div className="mt-40 rounded-[4rem] overflow-hidden relative h-[400px] group">
-             <img 
+             <Image 
                src="/premium_offer_bg_1777248447917.png" 
                alt="Luxury Experience" 
+               fill
                className="w-full h-full object-cover transition-transform duration-[3s] group-hover:scale-110"
              />
              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent p-16 flex flex-col justify-center">

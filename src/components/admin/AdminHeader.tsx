@@ -5,22 +5,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
   Bell, 
-  Search, 
   Monitor, 
   Store, 
   ChevronRight, 
   Sparkles,
-  User,
-  Settings,
-  HelpCircle,
   Menu,
-  X,
   LayoutDashboard
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
-import { useSaaS } from '@/providers/SaaSProvider'
 import { DesignWishlistModal } from './DesignWishlistModal'
 
 interface AdminHeaderProps {
@@ -30,7 +24,6 @@ interface AdminHeaderProps {
 export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const pathname = usePathname()
   const { user } = useAuthStore()
-  const { config } = useSaaS()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isWishlistOpen, setIsWishlistOpen] = useState(false)
 

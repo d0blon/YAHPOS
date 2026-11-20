@@ -1,9 +1,7 @@
 import { headers } from 'next/headers'
 import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
 import BottomNav from '@/components/layout/BottomNav'
 import EcommerceUpgradePage from '@/components/saas/EcommerceUpgradePage'
-import ShopBackdrop from '@/components/layout/ShopBackdrop'
 import RouteTransition from '@/components/gsap/RouteTransition'
 
 export default async function ShopLayout({

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE xmlns="http://www.sii.cl/SiiDte" version="1.0">
+    <Documento ID="F1001T39">
+        <Encabezado>
+            <IdDoc>
+                <TipoDTE>39</TipoDTE>
+                <Folio>1001</Folio>
+                <FchEmis>2026-11-14</FchEmis>
+                <IndServicio>3</IndServicio>
+            </IdDoc>
+            <Emisor>
+                <RUTEmisor>76123456-7</RUTEmisor>
+                <RznSocEmisor>Austral Market SpA</RznSocEmisor>
+                <GiroEmisor>Venta de Alimentos</GiroEmisor>
+                <DirOrigen>Av. Siempre Viva 123</DirOrigen>
+                <CmnaOrigen>Santiago</CmnaOrigen>
+                <CiudadOrigen>Santiago</CiudadOrigen>
+            </Emisor>
+            <Receptor>
+                <RUTRecep>66666666-6</RUTRecep>
+                <RznSocRecep>Consumidor Final</RznSocRecep>
+            </Receptor>
+            <Totales>
+                <MntNeto>840</MntNeto>
+                
+                <IVA>160</IVA>
+                <MntTotal>1000</MntTotal>
+            </Totales>
+        </Encabezado>
+        
+    <Detalle>
+        <NroLinDet>1</NroLinDet>
+        
+        <NmbItem>Producto de prueba YAHPOS!</NmbItem>
+        <QtyItem>1</QtyItem>
+        <PrcItem>840</PrcItem>
+        <MontoItem>840</MontoItem>
+    </Detalle>
+        
+        <TmstFirma>2026-11-14T01:21:00</TmstFirma>
+    </Documento>
+</DTE>

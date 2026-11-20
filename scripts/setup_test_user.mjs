@@ -1,7 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+﻿import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://bddpzqayurvhgpllykku.supabase.co';
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkZHB6cWF5dXJ2aGdwbGx5a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDg0ODQxNCwiZXhwIjoyMDkwNDI0NDE0fQ.W3I5xzSR469ndL4FUU13_PJM0HWMB49PARrK4qlYC38';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY. Ejecuta con: node --env-file=.env.local scripts/setup_test_user.mjs');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

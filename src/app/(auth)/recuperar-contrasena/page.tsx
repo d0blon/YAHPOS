@@ -27,8 +27,9 @@ export default function RecuperarContrasenaPage() {
 
       setIsSent(true)
       toast.success('Correo de recuperación enviado')
-    } catch (err: any) {
-      toast.error(err.message || 'Error al enviar el correo')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      toast.error(message || 'Error al enviar el correo')
     } finally {
       setIsLoading(false)
     }

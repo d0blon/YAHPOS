@@ -10,7 +10,7 @@ export default async function Categories() {
   ];
   
   const counts = categories.reduce((acc, slug) => {
-    acc[slug] = products.filter((p: any) => p.categorySlug === slug).length
+    acc[slug] = products.filter(p => p.categorySlug === slug).length
     return acc;
   }, {} as Record<string, number>);
 

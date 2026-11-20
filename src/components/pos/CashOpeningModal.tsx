@@ -1,14 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Monitor, DollarSign, User, Loader2, ChevronRight, RefreshCw, AlertCircle, LogOut } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Monitor, DollarSign, Loader2, ChevronRight, RefreshCw, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { formatPrice } from '@/lib/utils'
 import { CashSession } from '@/stores/posStore'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
+
+const OFFLINE_TERMINAL: Terminal = { id: 'offline-1', name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }
 
 interface Terminal {
   id: string | number
@@ -40,14 +41,33 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
   const [openingAmount, setOpeningAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [existingSession, setExistingSession] = useState<CashSession | null>(null)
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
 
-  useEffect(() => {
-    if (!isOpen || !cashierName) return
-    checkForExistingSession()
-  }, [isOpen, cashierName])
+  const fetchTerminals = useCallback(async (): Promise<Terminal[]> => {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000)
 
-  const checkForExistingSession = async () => {
-    setStep('checking')
+      const res = await fetch('/api/terminals', { signal: controller.signal })
+      clearTimeout(timeoutId)
+
+      const data: unknown = await res.json()
+      return Array.isArray(data) ? data as Terminal[] : [OFFLINE_TERMINAL]
+    } catch {
+      return [OFFLINE_TERMINAL]
+    }
+  }, [])
+
+  const handleResumeSession = useCallback(async (session: CashSession) => {
+    onResumeSession(session)
+
+    const { usePosStore } = await import('@/stores/posStore')
+    await usePosStore.getState().loadDraftFromServer(session.id)
+
+    toast.success(`Sesión retomada — ${session.terminal_name ?? 'Caja'}`)
+  }, [onResumeSession])
+
+  const fetchExistingSession = useCallback(async (): Promise<{ session: CashSession | null; terminals: Terminal[] }> => {
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000)
@@ -57,59 +77,45 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
         signal: controller.signal
       })
       clearTimeout(timeoutId)
-      
-      const { session, tableExists } = await res.json()
 
-      if (!tableExists) {
-        await loadTerminals()
-        setStep('select-terminal')
-        return
-      }
+      const payload: { session?: CashSession; tableExists?: boolean } = await res.json()
 
-      if (session) {
-        setExistingSession(session)
-        // AUTO-RESUME: Si hay sesión, no preguntamos, la retomamos de inmediato
-        handleResumeSession(session)
-      } else {
-        await loadTerminals()
-        setStep('select-terminal')
-      }
+      if (payload.session) return { session: payload.session, terminals: [] }
+      return { session: null, terminals: await fetchTerminals() }
     } catch {
       // Network error, timeout, or abort — show terminal selection anyway
-      setTerminals([{ id: 'offline-1', name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }])
-      setStep('select-terminal')
+      return { session: null, terminals: [OFFLINE_TERMINAL] }
     }
+  }, [fetchTerminals])
+
+  useEffect(() => {
+    if (!isOpen || !cashierName) return
+    let cancelled = false
+
+    fetchExistingSession().then(({ session, terminals }) => {
+      if (cancelled) return
+      if (session) {
+        setExistingSession(session)
+        void handleResumeSession(session)
+      } else {
+        setTerminals(terminals)
+        setStep('select-terminal')
+      }
+    })
+
+    return () => { cancelled = true }
+  }, [isOpen, cashierName, fetchExistingSession, handleResumeSession])
+
+  if (isOpen && !prevIsOpen) {
+    setPrevIsOpen(true)
+    setStep('checking')
+  } else if (!isOpen && prevIsOpen) {
+    setPrevIsOpen(false)
   }
 
-  const loadTerminals = async () => {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3000)
-      
-      const res = await fetch('/api/terminals', { signal: controller.signal })
-      clearTimeout(timeoutId)
-      
-      const data = await res.json()
-      setTerminals(Array.isArray(data) ? data : [{ id: 'offline-1', name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }])
-    } catch {
-      setTerminals([{ id: 'offline-1', name: 'Caja 1', description: 'Terminal principal', is_active: true, status: 'closed' }])
-    }
-  }
-
-  const handleResumeSession = async (sessionToResume?: CashSession) => {
-    const session = sessionToResume || existingSession
-    if (session) {
-      // 1. Notificar al POS que la sesión se retomó
-      onResumeSession(session)
-      
-      // 2. Cargar borrador (carrito y ventas en espera) desde el servidor
-      const { usePosStore } = await import('@/stores/posStore')
-      await usePosStore.getState().loadDraftFromServer(session.id)
-      
-      // 3. (Removido: El API ahora maneja el estado del perfil)
-
-      toast.success(`Sesión retomada — ${session.terminal_name ?? 'Caja'}`)
-    }
+  const reloadTerminals = async () => {
+    setTerminals(await fetchTerminals())
+    setStep('select-terminal')
   }
 
   const handleSelectTerminal = (terminal: Terminal) => {
@@ -231,14 +237,14 @@ export function CashOpeningModal({ isOpen, cashierName, onSessionOpened, onResum
             </div>
             <div className="space-y-4">
               <Button
-                onClick={() => handleResumeSession()}
+                onClick={() => handleResumeSession(existingSession)}
                 className="w-full h-16 text-lg font-black bg-brand-primary hover:brightness-90 text-white rounded-2xl shadow-xl shadow-brand-primary/30 active:scale-95 transition-all"
               >
                 <RefreshCw className="w-5 h-5 mr-3" />
                 RETOMAR SESIÓN
               </Button>
               <button
-                onClick={async () => { await loadTerminals(); setStep('select-terminal') }}
+                onClick={reloadTerminals}
                 className="w-full text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-colors py-2"
               >
                 ← O ABRIR NUEVA EN OTRA CAJA

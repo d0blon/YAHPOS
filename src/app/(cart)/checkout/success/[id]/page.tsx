@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, Package, ArrowRight, ShoppingBag, MapPin, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,11 +9,16 @@ import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { useSaaS } from '@/providers/SaaSProvider'
 
+interface OrderDetails {
+  address?: string
+  payment_method?: string
+  total?: number
+}
+
 export default function OrderSuccessPage() {
   const params = useParams()
-  const router = useRouter()
   const { config } = useSaaS()
-  const [order, setOrder] = useState<any>(null)
+  const [order, setOrder] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -23,8 +28,8 @@ export default function OrderSuccessPage() {
         if (!res.ok) throw new Error('No pudimos cargar los detalles de tu orden')
         const data = await res.json()
         setOrder(data)
-      } catch (err: any) {
-        toast.error(err.message)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : String(err))
       } finally {
         setLoading(false)
       }

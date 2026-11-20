@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { X, Search, Printer, ShoppingBag, Clock, User, CreditCard, Banknote } from 'lucide-react'
+import { X, Printer, ShoppingBag, Clock, User, CreditCard, Banknote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatPrice } from '@/lib/utils'
 import { OrderRecord } from '@/stores/posStore'

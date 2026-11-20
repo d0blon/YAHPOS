@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<DD>
+  <RE>76123456-7</RE>
+  <TD>39</TD>
+  <F>1</F>
+  <FE>2026-11-14</FE>
+  <RR>66666666-6</RR>
+  <RSR>Consumidor Final</RSR>
+  <RS>Austral Market SpA</RS>
+  <IT1>Producto de prueba YAHPOS!</IT1>
+  <CAF version="1.0"><DA><RE>76123456-0</RE><RS>EMISOR DE PRUEBA</RS><TD>39</TD><RNG><D>1</D><H>100</H></RNG><FA>2026-09-01</FA><RSAPK><M>roA9eYauoBiOltJT20WX05YKUW5vOJteqy1rnRhix27mcd3ifUK8YSfYzwGbNizRYyMGiL7teR7bo4WUx0scIBNB7SvioO/+wBkXdBoIGVMtsL5LsSUfIZODR0vFAG3zslIVSK/qEtwtNUhvCVR0WNyYFY2VDjiIyH9lDSBsYtU=</M><E>AQAB</E></RSAPK><IDK>100</IDK></DA><FRMA algoritmo="SHA1withRSA">hniRjloKDiwGZOuhaG/NqMtCqQsKkVGXAHmintnmLJRJMnVpf7JbTsYF5I74D0UI53nBUQ1B5OUX0QjMEak9bzqJj99ddT4yb62jZPGrUrC/1rKABj8kldctL2xn8ArEivREt0KvbAJL0lQs/Rv1DkejtTPtKSKznjUXxJ9L3Ig=</FRMA></CAF>
+  <TSTED>2026-11-14T04:47:08</TSTED>
+</DD>

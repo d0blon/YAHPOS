@@ -798,9 +798,10 @@ export default async function Home() {
       const supabase = await createClient()
       const { data: dbProducts, error } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, description, price, category, image, stock, nutritional_seals, unit, sku, barcode, brand, is_active, created_at, updated_at, store_id')
         .eq('store_id', storeId)
         .eq('is_active', true)
+        .limit(500)
 
       if (!error && dbProducts && dbProducts.length > 0) {
         products = dbProducts.map(normalizeDbProduct)

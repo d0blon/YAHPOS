@@ -1,8 +1,36 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-utils'
+import { parseBody } from '@/lib/validations/http'
+import { productPatchSchema } from '@/lib/validations/api'
 
 type Params = Promise<{ id: string }>
+
+type ProductUpdate = {
+  name?: string
+  description?: string | null
+  price?: number
+  image?: string
+  category?: string
+  stock?: number
+  unit?: string
+  is_exempt?: boolean
+  sku?: string
+  barcode?: string
+  nutritional_seals?: number
+  is_realtime_tracked?: boolean
+  supplier_name?: string
+  supplier_metadata?: unknown
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (
+    typeof error === 'object' && error !== null && 'message' in error &&
+    typeof error.message === 'string' && error.message.length > 0
+  ) {
+    return error.message
+  }
+  return fallback
+}
 
 export async function GET(
   req: Request,
@@ -16,7 +44,7 @@ export async function GET(
 
     const { data, error } = await auth.supabase
       .from('products')
-      .select('*, inventory(*)')
+      .select('id, store_id, name, slug, description, price, image, category, stock, low_stock_threshold, sku, barcode, brand, volume, supplier_name, supplier_metadata, unit, is_exempt, nutritional_seals, is_realtime_tracked, created_at, updated_at, inventory(branch_id, stock)')
       .eq('id', id)
       .eq('store_id', auth.storeId)
       .single()
@@ -26,9 +54,9 @@ export async function GET(
     }
 
     return NextResponse.json(data)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GET /api/products/[id]] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error, 'Error interno del servidor') }, { status: 500 })
   }
 }
 
@@ -41,9 +69,11 @@ export async function PATCH(
     if (auth.error) return auth.error
 
     const { id } = await params
-    const body = await req.json()
+    const parsed = await parseBody(req, productPatchSchema)
+    if ('error' in parsed) return parsed.error
+    const body = parsed.data
 
-    const updateData: any = {
+    const updateData: ProductUpdate = {
       name: body.name,
       description: body.description,
       price: body.price,
@@ -60,14 +90,16 @@ export async function PATCH(
       supplier_metadata: body.supplierMetadata,
     }
 
-    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])
+    for (const key of Object.keys(updateData) as Array<keyof ProductUpdate>) {
+      if (updateData[key] === undefined) delete updateData[key]
+    }
 
     const { data: product, error: productError } = await auth.supabase
       .from('products')
       .update(updateData)
       .eq('id', id)
       .eq('store_id', auth.storeId)
-      .select()
+      .select('id, store_id, name, slug, description, price, image, category, stock, unit, is_exempt, sku, barcode, brand, volume, supplier_name, supplier_metadata, nutritional_seals, is_realtime_tracked, created_at, updated_at')
       .single()
 
     if (productError) {
@@ -82,7 +114,8 @@ export async function PATCH(
           .upsert({
             product_id: id,
             branch_id: bs.branchId,
-            stock: bs.stock
+            stock: bs.stock,
+            store_id: auth.storeId
           }, {
             onConflict: 'product_id, branch_id'
           })
@@ -94,9 +127,9 @@ export async function PATCH(
     }
 
     return NextResponse.json(product)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PATCH /api/products/[id]] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error, 'Error interno del servidor') }, { status: 500 })
   }
 }
 
@@ -121,8 +154,8 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: 'Producto eliminado correctamente' })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DELETE /api/products/[id]] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error, 'Error interno del servidor') }, { status: 500 })
   }
 }

@@ -1,6 +1,19 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 
+function errorMessage(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+    ? error.message
+    : undefined
+}
+
+interface ReportOrderItem {
+  product_id: number
+  quantity: number
+  price: number
+  products?: { name: string; category: string } | null
+}
+
 export async function GET() {
   const supabase = await createClient()
 
@@ -39,7 +52,7 @@ export async function GET() {
     const topProducts: Record<number, { name: string, quantity: number, total: number }> = {}
     
     let totalSales = 0
-    let totalOrders = orders?.length || 0
+    const totalOrders = orders?.length || 0
 
     orders?.forEach(order => {
       totalSales += order.total
@@ -47,7 +60,7 @@ export async function GET() {
       const day = new Date(order.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' })
       salesByDay[day] = (salesByDay[day] || 0) + order.total
 
-      order.order_items?.forEach((item: any) => {
+      (order.order_items as unknown as ReportOrderItem[] | null)?.forEach((item: ReportOrderItem) => {
         const category = item.products?.category || 'Sin Categoría'
         salesByCategory[category] = (salesByCategory[category] || 0) + (item.price * item.quantity)
 
@@ -77,8 +90,8 @@ export async function GET() {
       bestProducts
     })
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[API /reports] Error:', err)
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(err) || 'Internal Server Error' }, { status: 500 })
   }
 }

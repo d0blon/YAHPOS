@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 
+function errorMessage(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+    ? error.message
+    : undefined
+}
+
 type Params = Promise<{ id: string }>
 
 export async function GET(req: Request, { params }: { params: Params }) {
@@ -11,12 +17,23 @@ export async function GET(req: Request, { params }: { params: Params }) {
 
     const { id } = await params
 
-    // 1. Obtener la sesión
-    const { data: session, error: sessionError } = await supabase
-      .from('cash_sessions')
-      .select('*, terminals(name)')
-      .eq('id', id)
+    // Scoping multi-tenant: obtener store_id del perfil
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id')
+      .eq('id', user.id)
       .single()
+
+    // 1. Obtener la sesión (scoping por store_id)
+    let sessionQuery = supabase
+      .from('cash_sessions')
+      .select('id, store_id, opening_amount, cashier_name, opened_at, terminals(name)')
+      .eq('id', id)
+    
+    if (profile?.store_id) {
+      sessionQuery = sessionQuery.eq('store_id', profile.store_id)
+    }
+    const { data: session, error: sessionError } = await sessionQuery.single()
 
     if (sessionError || !session) {
       return NextResponse.json({ error: 'Sesión no encontrada' }, { status: 404 })
@@ -36,12 +53,13 @@ export async function GET(req: Request, { params }: { params: Params }) {
       return NextResponse.json({ error: 'No tiene permisos para ver estos datos' }, { status: 403 })
     }
 
-    // 3. Obtener totales de ventas desde orders
+    // 3. Obtener totales de ventas desde orders (scoping por store_id)
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select('total, payment_method')
       .eq('cash_session_id', id)
-      .eq('status', 'completed') // Asumiendo que solo ventas completadas cuentan
+      .eq('status', 'completed')
+      .eq('store_id', session.store_id)
 
     if (ordersError) {
       return NextResponse.json({ error: 'Error al obtener ventas' }, { status: 500 })
@@ -70,11 +88,12 @@ export async function GET(req: Request, { params }: { params: Params }) {
       }
     })
 
-    // 4. Obtener movimientos de caja
+    // 4. Obtener movimientos de caja (scoping por store_id)
     const { data: movements, error: movementsError } = await supabase
       .from('cash_movements')
       .select('amount, type')
       .eq('session_id', id)
+      .eq('store_id', session.store_id)
 
     if (movementsError) {
       return NextResponse.json({ error: 'Error al obtener movimientos' }, { status: 500 })
@@ -98,7 +117,7 @@ export async function GET(req: Request, { params }: { params: Params }) {
     return NextResponse.json({
       session: {
         id: session.id,
-        terminal_name: session.terminals?.name || 'Desconocido',
+        terminal_name: (session.terminals as unknown as { name?: string } | null)?.name || 'Desconocido',
         cashier_name: session.cashier_name,
         opened_at: session.opened_at,
         opening_amount: openingAmount
@@ -107,8 +126,8 @@ export async function GET(req: Request, { params }: { params: Params }) {
       movements: movementTotals,
       expected_cash: expectedCash
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GET /api/admin/cash-sessions/[id]/sales] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error) || 'Error interno del servidor' }, { status: 500 })
   }
 }

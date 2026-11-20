@@ -1,11 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, DollarSign, CreditCard, Send, FileText, AlertTriangle, User, Monitor, Loader2, ChevronRight, AlertCircle, Clock, TrendingUp, Receipt, Calculator, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { X, DollarSign, FileText, AlertTriangle, User, Monitor, Loader2, ChevronRight, AlertCircle, Clock, TrendingUp, Receipt, Calculator, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { cn, formatPrice } from '@/lib/utils'
+import { formatPrice } from '@/lib/utils'
 
 interface ForceClosureModalProps {
   session: {

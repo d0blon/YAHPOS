@@ -1,12 +1,20 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase'
+import { createAdminClient, createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
+import { verifyDeveloperRole } from './_shared'
 
 /**
  * Actualiza el plan y estado de facturación de un negocio específico.
  */
 export async function updateStoreBillingAction(storeId: string, data: { tier?: string, next_payment_date?: string | null, payment_status?: string }) {
+  const authClient = await createClient()
+  try {
+    await verifyDeveloperRole(authClient)
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Error de servidor' }
+  }
+
   const supabase = createAdminClient()
   
   const { error } = await supabase
@@ -26,9 +34,11 @@ export async function updateStoreBillingAction(storeId: string, data: { tier?: s
  * Obtiene estadísticas financieras detalladas del administrador.
  */
 export async function getFinancialStatsAction() {
-  const supabase = createAdminClient()
-  
   try {
+    const authClient = await createClient()
+    await verifyDeveloperRole(authClient)
+
+    const supabase = createAdminClient()
     const { data: transactions, error } = await supabase
       .from('admin_finances')
       .select('amount, type, created_at')
@@ -70,9 +80,11 @@ export async function getFinancialStatsAction() {
  * Registra un gasto administrativo (ej. infraestructura, APIs).
  */
 export async function recordAdminExpenseAction(data: { amount: number, description: string }) {
-  const supabase = createAdminClient()
-  
   try {
+    const authClient = await createClient()
+    await verifyDeveloperRole(authClient)
+
+    const supabase = createAdminClient()
     const { error } = await supabase.from('admin_finances').insert({
       amount: data.amount,
       type: 'expense',
@@ -83,7 +95,7 @@ export async function recordAdminExpenseAction(data: { amount: number, descripti
     
     revalidatePath('/developer')
     return { success: true }
-  } catch (err: any) {
-    return { success: false, error: err.message }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Error de servidor' }
   }
 }

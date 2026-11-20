@@ -10,6 +10,7 @@ import { useSaaS } from '@/providers/SaaSProvider';
 import { printerManager } from '@/lib/hardware/printer';
 import { useHardwareStore } from '@/lib/hardware/hardwareStore';
 import { toast } from 'sonner';
+import type { SiiDecision } from '@/lib/pos/sii-decision';
 
 interface PosReceiptModalProps {
   isOpen: boolean;
@@ -27,6 +28,12 @@ interface PosReceiptModalProps {
     paymentMethod: string;
     isOffline?: boolean;
     siiSkipped?: boolean;
+    /** Decisión calculada antes del cobro. Fuente de verdad para voucher vs DTE. */
+    siiDecision?: SiiDecision;
+    /** `sii_documents.id` del DTE emitido. Sin él no existe PDF con timbre. */
+    siiDocumentId?: string;
+    cashierName?: string;
+    terminalName?: string;
   } | null;
 }
 
@@ -37,11 +44,45 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
   
   if (!isOpen || !orderData) return null;
 
+  // La decisión SII manda; `siiSkipped` queda solo como compatibilidad con ventas
+  // viejas que no guardaron `siiDecision`.
+  const isVoucher = orderData.siiDecision
+    ? orderData.siiDecision.kind !== 'dte'
+    : Boolean(orderData.siiSkipped);
+  const titulo = isVoucher
+    ? 'VOUCHER / COMPROBANTE INTERNO'
+    : orderData.siiDocumentId
+      ? 'BOLETA ELECTRÓNICA'
+      : 'DTE EN GENERACIÓN — REIMPRIMIR PDF TIMBRADO';
+  const voucherDisclaimer = [
+    'NO ES BOLETA ELECTRÓNICA SII',
+    'NO VÁLIDO COMO DOCUMENTO TRIBUTARIO',
+  ];
+
   const handlePrint = async () => {
     if (!orderData?.id || isTrainingMode) return;
+
+    if (isVoucher) {
+      toast.info('Este voucher es interno: no existe PDF SII para imprimir.', { duration: 5000 });
+      window.print();
+      return;
+    }
+
+    // `orderData.id` es el id local de la venta (`POS-<timestamp>`), no una fila de
+    // `sii_documents`. Pedir el PDF con ese valor siempre daba 404. Si el DTE
+    // todavía no se emitió (sin red o en cola), se imprime el comprobante de la
+    // pantalla y se avisa, en vez de abrir una pestaña con un error.
+    if (!orderData.siiDocumentId) {
+      toast.info('La boleta electrónica todavía se está generando. Se imprime el comprobante interno.', {
+        duration: 5000,
+      });
+      window.print();
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/sii/documentos/${orderData.id}/pdf`);
-      if (!response.ok) throw new Error('Error al generar PDF');
+      const response = await fetch(`/api/sii/documentos/${orderData.siiDocumentId}/pdf`);
+      if (!response.ok) throw new Error(`El servidor respondió ${response.status}`);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const printWindow = window.open(url, '_blank');
@@ -50,9 +91,14 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
           printWindow.print();
           URL.revokeObjectURL(url);
         };
+      } else {
+        URL.revokeObjectURL(url);
+        toast.error('El navegador bloqueó la ventana de impresión.');
       }
     } catch (error) {
       console.error('Error al imprimir boleta:', error);
+      toast.error('No se pudo generar el PDF del DTE. Se imprime el comprobante interno.');
+      window.print();
     }
   };
 
@@ -69,12 +115,12 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
 
     const ok = await printerManager.sendReceipt({
       title: config.store_name || 'YAHPOS!',
-      subtitle: orderData.siiSkipped ? 'COMPROBANTE DE PAGO' : 'BOLETA ELECTRÓNICA',
+      subtitle: titulo,
       headerLines: [
-        `N°: ${orderData.id}`,
-        `Folio: ${orderData.id}`,
+        `N° de venta (interno): ${orderData.id}`,
         `Fecha: ${orderData.date ?? new Date().toLocaleString('es-CL')}`,
-        `Cajero: ${usePosStore.getState().currentUser?.firstName || ''}`,
+        orderData.cashierName ? `Cajero: ${orderData.cashierName}` : '',
+        orderData.terminalName ? `Caja: ${orderData.terminalName}` : '',
         orderData.customerRut ? `Cliente: ${orderData.customerName || orderData.customerRut}` : '',
       ].filter(Boolean),
       items,
@@ -84,6 +130,7 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
         'Gracias por su preferencia',
         'YAHPOS! © 2026',
       ],
+      disclaimerLines: isVoucher ? voucherDisclaimer : undefined,
     });
 
     if (ok) {
@@ -99,7 +146,7 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
         
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 print:hidden">
-          <h3 className="font-semibold text-gray-700">Comprobante de Venta</h3>
+          <h3 className="font-semibold text-gray-700">{isVoucher ? 'Voucher interno' : 'Comprobante de Venta'}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full">
             <X className="w-5 h-5"/>
           </button>
@@ -125,15 +172,22 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
               className="mx-auto mb-2 object-contain" 
             />
             <h2 className="font-bold text-xl uppercase mb-1">{config.store_name}</h2>
-            <p className="text-xs">RUT: 76.123.456-7</p>
-            <p className="text-xs">Giro: Supermercado Retail</p>
-            <p className="text-xs">Av. Los Carrera 123, Castro, Los Lagos</p>
+            {config.tax_id && <p className="text-xs">RUT: {config.tax_id}</p>}
             <div className="mt-4 border-t border-dashed border-gray-300 pt-4">
-              <p className="font-bold text-lg mb-1">
-                {orderData.siiSkipped ? 'COMPROBANTE DE PAGO' : (orderData.isOffline ? 'PRE-FOLIO INTERNO' : 'BOLETA ELECTRÓNICA')}
-              </p>
-              <p className="text-xs">N°: {orderData.id}</p>
+              <p className="font-bold text-lg mb-1">{titulo}</p>
+              {isVoucher && (
+                <div className="mt-2 mb-1 p-2 border-2 border-red-600 rounded bg-red-50 print:bg-transparent print:border-black">
+                  {voucherDisclaimer.map(linea => (
+                    <p key={linea} className="text-[11px] font-black text-red-700 print:text-black uppercase leading-tight">
+                      {linea}
+                    </p>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs">N° de venta (interno): {orderData.id}</p>
               <p className="text-xs">Fecha: {orderData.date ?? new Date().toLocaleString('es-CL')}</p>
+              {orderData.cashierName && <p className="text-xs">Cajero: {orderData.cashierName}</p>}
+              {orderData.terminalName && <p className="text-xs">Caja: {orderData.terminalName}</p>}
             </div>
             {orderData.customerRut && (
                <p className="text-xs mt-2 text-left bg-gray-100 print:bg-transparent p-1">Cliente RUT: {orderData.customerRut}</p>
@@ -213,19 +267,21 @@ export function PosReceiptModal({ isOpen, onClose, orderData }: PosReceiptModalP
             <Button variant="outline" className="flex-1 border-gray-300 text-slate-700 hover:bg-gray-100 font-bold" onClick={onClose}>
               Cerrar
             </Button>
-            <Button 
-              className={cn(
-                "flex-1 gap-2 font-black shadow-lg",
-                isTrainingMode 
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
-                  : "bg-brand-primary text-white"
-              )} 
-              onClick={isTrainingMode ? undefined : handlePrint}
-              disabled={isTrainingMode}
-            >
-              <Printer className="w-4 h-4"/> 
-              {isTrainingMode ? 'NO PRINT' : 'PDF'}
-            </Button>
+            {!isVoucher && (
+              <Button 
+                className={cn(
+                  "flex-1 gap-2 font-black shadow-lg",
+                  isTrainingMode 
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+                    : "bg-brand-primary text-white"
+                )} 
+                onClick={isTrainingMode ? undefined : handlePrint}
+                disabled={isTrainingMode}
+              >
+                <Printer className="w-4 h-4"/> 
+                {isTrainingMode ? 'NO PRINT' : 'PDF'}
+              </Button>
+            )}
             <Button 
               className={cn(
                 "flex-1 gap-2 font-black shadow-lg min-w-0",

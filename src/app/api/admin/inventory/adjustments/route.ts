@@ -23,9 +23,10 @@ export async function GET() {
     // Obtener los ingresos pendientes de la base de datos
     const { data: adjustments, error: adjError } = await supabase
       .from('pending_inventory_adjustments')
-      .select('*')
+      .select('id, store_id, invoice_number, supplier_name, supplier_metadata, invoice_url, items, status, created_at, updated_at')
       .eq('store_id', profile.store_id)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     if (adjError) {
       console.error('[GET pending adjustments error]:', adjError.message)

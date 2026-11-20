@@ -1,12 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @next/next/no-img-element */
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { 
   Package, Plus, Search, Edit2, Trash2, 
-  LayoutDashboard, ShoppingCart, Users, TrendingUp,
-  Loader2, AlertCircle, Eye, EyeOff, AlertTriangle, Settings
+  Loader2, AlertTriangle, Settings, TrendingUp
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,17 +13,46 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import ProductModal from '@/components/admin/ProductModal'
 import PendingAdjustmentsTab from '@/components/admin/PendingAdjustmentsTab'
+import type { MissingProductItem } from '@/components/admin/PendingAdjustmentsTab'
+
+interface AdminProduct {
+  id: string
+  name: string
+  sku?: string
+  barcode?: string
+  image?: string
+  category?: string | { name?: string } | null
+  price: number
+  discount?: number
+  stock: number
+  lowStockThreshold: number
+  unit?: string
+  isActive: boolean
+}
+
+interface ProductDraft {
+  name?: string
+  sku?: string
+  brand?: string
+  volume?: string
+  supplierName?: string
+  supplierMetadata?: Record<string, unknown>
+  stock?: number
+  price?: number
+  category?: string
+  image?: string
+}
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<AdminProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [selectedProduct, setSelectedProduct] = useState<ProductDraft | null>(null)
   const [activeTab, setActiveTab] = useState<'catalog' | 'ia_pending'>('catalog')
 
-  const handleAddMissingProduct = (item: any) => {
+  const handleAddMissingProduct = (item: MissingProductItem) => {
     setSelectedProduct({
       name: item.name,
       sku: item.barcode,
@@ -41,26 +68,34 @@ export default function AdminProducts() {
     setIsModalOpen(true)
   }
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true)
       const res = await fetch('/api/products')
       if (!res.ok) throw new Error('Error al cargar productos')
       const json = await res.json()
       setProducts(json)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar productos')
     } finally {
       setIsLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchProducts()
   }, [])
 
-  const handleEdit = (product: any) => {
-    setSelectedProduct(product)
+  const fetchProductsRef = useRef(fetchProducts)
+  const hasFetchedRef = useRef(false)
+
+  useEffect(() => {
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+    void fetchProductsRef.current()
+  }, [])
+
+  const handleEdit = (product: AdminProduct) => {
+    setSelectedProduct({
+      ...product,
+      category: typeof product.category === 'string' ? product.category : undefined
+    })
     setIsModalOpen(true)
   }
 
@@ -72,8 +107,8 @@ export default function AdminProducts() {
       if (!res.ok) throw new Error('Error al eliminar producto')
       toast.success('Producto eliminado')
       fetchProducts()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar producto')
     }
   }
 
@@ -137,6 +172,12 @@ export default function AdminProducts() {
 
         {activeTab === 'catalog' ? (
           <>
+            {error && (
+              <div role="alert" className="flex items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {error}
+              </div>
+            )}
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-center bg-white/50 dark:bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/10 shadow-xl">
               <div className="relative flex-1 w-full">
@@ -201,7 +242,7 @@ export default function AdminProducts() {
                               <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
                                   {p.image ? (
-                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                    <Image src={p.image} alt={p.name} width={48} height={48} unoptimized className="w-full h-full object-cover" />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center">
                                       <Package className="w-6 h-6 text-gray-300" />
@@ -222,7 +263,7 @@ export default function AdminProducts() {
                             <td className="py-4 px-6">
                               <div className="font-bold text-gray-900 dark:text-white">
                                 ${p.price.toLocaleString()}
-                                {p.discount > 0 && (
+                                {p.discount != null && p.discount > 0 && (
                                   <span className="ml-2 text-xs font-bold text-green-600">-{p.discount}%</span>
                                 )}
                               </div>
@@ -294,7 +335,7 @@ export default function AdminProducts() {
       <ProductModal 
         isOpen={isModalOpen} 
         onClose={handleModalClose} 
-        product={selectedProduct}
+        product={selectedProduct ?? undefined}
         onSaved={handleProductSaved}
       />
     </>

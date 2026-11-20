@@ -1,59 +1,83 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react'
+import React, { useState, useEffect, useSyncExternalStore } from 'react'
+import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
+import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
-import { useSaaS } from '@/providers/SaaSProvider'
-import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores'
 import { supabase } from '@/lib/supabase'
+import { getRootOrigin } from '@/lib/config/root-origin'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
+const ADMIN_ROLES = ['admin', 'developer', 'manager', 'owner', 'superadmin']
+
+export const loginNavigation = {
+  go: (href: string) => {
+    window.location.href = href
+  },
+}
+
+const subscribeToClient = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
+
+function normalizeNextPath(value: string | null): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return '/'
+  return value
+}
+
+function toInternalHref(path: string, origin: string): string {
+  const fallback = new URL('/', origin)
+  const candidate = new URL(path, origin)
+  return candidate.origin === origin ? candidate.toString() : fallback.toString()
+}
+
+function resolveTargetPath(requestedPath: string, role: string): string {
+  const safePath = normalizeNextPath(requestedPath)
+  if (safePath !== '/') return safePath
+  return ADMIN_ROLES.includes(role.toLowerCase()) ? '/admin' : safePath
+}
+
 export default function LoginPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const nextPath = searchParams.get('redirect') || searchParams.get('next') || '/'
-  
-  const { login, isLoading, setAuthSession, user } = useAuthStore()
+  const nextPath = normalizeNextPath(searchParams.get('redirect') || searchParams.get('next') || '/')
+
+  const { login, isLoading } = useAuthStore()
   const { theme } = useTheme()
-  const { config } = useSaaS()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const hasHydrated = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot)
 
   useEffect(() => {
-    setMounted(true)
-    
     // Auto-redirección si ya está logueado
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        // Smart Redirection también en auto-redirección
-        const { data: { user: supaUser } } = await supabase.auth.getUser()
-        let role = 'customer'
-        if (supaUser) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', supaUser.id)
-            .single()
-          role = profile?.role || 'customer'
-        }
-        
-        const isAdmin = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(role.toLowerCase())
-        const targetPath = nextPath === '/' && isAdmin ? '/admin' : nextPath
+      if (!session) return
 
-        console.log('[Auth] Usuario ya autenticado, redirigiendo a:', targetPath)
-        window.location.href = targetPath
+      // Smart Redirection también en auto-redirección
+      const { data: { user: supaUser } } = await supabase.auth.getUser()
+      let role = 'customer'
+      if (supaUser) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', supaUser.id)
+          .single()
+        role = profile?.role || 'customer'
       }
+
+      const targetPath = resolveTargetPath(nextPath, role)
+
+      console.log('[Auth] Usuario ya autenticado, redirigiendo a:', targetPath)
+      loginNavigation.go(toInternalHref(targetPath, window.location.origin))
     }
     checkSession()
-  }, [router, nextPath])
+  }, [nextPath])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,13 +90,12 @@ export default function LoginPage() {
       toast.success('¡Bienvenido de vuelta!')
       
       // Smart Redirection: admin va a /admin, customer se queda en /
-      const role = useAuthStore.getState().user?.role
-      const isAdmin = ['admin', 'developer', 'manager', 'owner', 'superadmin'].includes(role || '')
-      const targetPath = nextPath === '/' && isAdmin ? '/admin' : nextPath
-      
+      const role = useAuthStore.getState().user?.role ?? ''
+      const targetPath = resolveTargetPath(nextPath, role)
+
       // Navegación completa (no router.push) para forzar envío de cookies de auth al middleware
-      window.location.href = targetPath
-    } catch (error) {
+      loginNavigation.go(toInternalHref(targetPath, window.location.origin))
+    } catch {
       toast.error('Credenciales inválidas. Intenta nuevamente.')
     }
   }
@@ -81,21 +104,19 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true)
     try {
-      const hostname = window.location.hostname
-      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost')
-      const rootOrigin = isLocalhost ? 'http://localhost:3000' : 'https://yahpos.cl'
+      const rootOrigin = getRootOrigin()
 
       // En lugar de iniciar el login aquí (en el subdominio), redirigimos al dominio raíz
       // para que el flujo de PKCE ocurra íntegramente en el dominio del callback.
-      const ssoUrl = new URL(`${rootOrigin}/api/auth/sso`)
+      const ssoUrl = new URL('/api/auth/sso', rootOrigin)
       ssoUrl.searchParams.set('from_origin', window.location.origin)
       if (nextPath !== '/') {
         ssoUrl.searchParams.set('next', nextPath)
       }
 
       console.log(`[Auth] Redirigiendo a SSO Bridge: ${ssoUrl.toString()}`)
-      window.location.href = ssoUrl.toString()
-    } catch (error) {
+      loginNavigation.go(ssoUrl.toString())
+    } catch {
       toast.error('Error al conectar con Google. Intenta nuevamente.')
       setIsGoogleLoading(false)
     }
@@ -116,14 +137,16 @@ export default function LoginPage() {
                 {/* Header */}
                 <div className="text-center mb-8">
                   <div className="mb-6">
-                    {mounted ? (
-                      <img 
-                        src={theme === 'dark' ? '/logos/yahpos_logo_master_dark_512.png' : '/logos/yahpos_logo_master_512.png'} 
-                        alt="Logo" 
+                    {hasHydrated ? (
+                      <Image
+                        src={theme === 'dark' ? '/logos/yahpos_logo_master_dark_512.png' : '/logos/yahpos_logo_master_512.png'}
+                        alt="Logo"
+                        width={96}
+                        height={96}
                         className={cn(
-                          "h-24 mx-auto object-contain",
+                          "h-24 w-auto mx-auto object-contain",
                           theme === 'dark' ? "mix-blend-screen" : "mix-blend-multiply"
-                        )} 
+                        )}
                       />
                     ) : (
                       <div className="h-24 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />

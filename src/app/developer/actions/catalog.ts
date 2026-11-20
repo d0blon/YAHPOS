@@ -2,14 +2,7 @@
 
 import { createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function verifyDeveloperRole(supabase: any) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('No autenticado')
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'developer') throw new Error('No autorizado. Se requiere rol developer.')
-}
+import { verifyDeveloperRole } from './_shared'
 
 export async function getPendingMasterCatalogSubmissionsAction() {
   const supabase = await createClient()
@@ -146,7 +139,10 @@ export async function importEnrichedMasterCatalogSubmissionsAction(enrichedItems
 export async function getApprovedMasterCatalogProductsAction(search?: string, page: number = 0) {
   const supabase = await createClient()
   const PAGE_SIZE = 50
-  let query = supabase.from('master_catalog_products').select('*', { count: 'exact' }).order('name')
+  let query = supabase
+    .from('master_catalog_products')
+    .select('id, sku, name, brand, category, reference_price, status, created_at', { count: 'exact' })
+    .order('name')
   if (search) query = query.ilike('name', `%${search}%`)
   const { data, error, count } = await query.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
   if (error) return { success: false, error: error.message }

@@ -1,7 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, apiError } from '@/lib/api-utils'
 import { createAdminClient } from '@/lib/supabase'
+import { parseFormData } from '@/lib/validations/http'
+import { invoiceUploadSchema } from '@/lib/validations/api'
+
+type ExtractedInvoice = {
+  invoice_number?: string | null
+  supplier_name?: string | null
+  supplier_metadata?: Record<string, unknown> | null
+  items?: unknown[] | null
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (
+    typeof error === 'object' && error !== null && 'message' in error &&
+    typeof error.message === 'string' && error.message.length > 0
+  ) {
+    return error.message
+  }
+  return fallback
+}
 
 export async function POST(req: NextRequest) {
   const auth = await withAuth()
@@ -10,25 +28,9 @@ export async function POST(req: NextRequest) {
   const { storeId } = auth
 
   try {
-    const formData = await req.formData()
-    const file = formData.get('file') as File | null
-
-    if (!file) return apiError('No se recibió ningún archivo', 400)
-
-    const allowedTypes = [
-      'application/pdf',
-      'image/png',
-      'image/jpeg',
-      'image/webp'
-    ]
-    if (!allowedTypes.includes(file.type)) {
-      return apiError('Solo se permiten archivos PDF o imágenes (PNG, JPEG, WebP)', 400)
-    }
-
-    // Límite de 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      return apiError('El archivo no puede superar los 5MB', 400)
-    }
+    const parsedUpload = await parseFormData(req, invoiceUploadSchema)
+    if ('error' in parsedUpload) return parsedUpload.error
+    const file = parsedUpload.data.file
 
     const timestamp = Date.now()
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -141,9 +143,10 @@ Asegúrate de retornar únicamente el objeto JSON válido. No envuelvas la respu
       jsonText = jsonText.replace(/^```json\s*/, '').replace(/```$/, '').trim()
     }
 
-    let parsedData: any
+    let parsedData: ExtractedInvoice
     try {
-      parsedData = JSON.parse(jsonText)
+      const parsedJson: unknown = JSON.parse(jsonText)
+      parsedData = parsedJson as ExtractedInvoice
     } catch (parseError) {
       console.error('[Gemini Parser Error]: Failed to parse JSON:', jsonText, parseError)
       return apiError('La IA retornó un formato de datos no compatible', 500)
@@ -161,7 +164,7 @@ Asegúrate de retornar únicamente el objeto JSON válido. No envuelvas la respu
         items: parsedData.items || [],
         status: 'pending'
       }])
-      .select()
+      .select('id, store_id, invoice_number, supplier_name, supplier_metadata, invoice_url, items, status, created_at, updated_at')
       .single()
 
     if (insertError) {
@@ -174,8 +177,8 @@ Asegúrate de retornar únicamente el objeto JSON válido. No envuelvas la respu
       adjustment
     }, { status: 201 })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[invoice-upload] Unhandled error:', error)
-    return apiError(error.message || 'Error interno del servidor', 500)
+    return apiError(errorMessage(error, 'Error interno del servidor'), 500)
   }
 }

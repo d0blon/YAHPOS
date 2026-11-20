@@ -1,6 +1,6 @@
 import React from 'react';
 import CatalogViewer from './CatalogViewer';
-import { Database, LayoutGrid } from 'lucide-react';
+import { Database } from 'lucide-react';
 
 export const metadata = {
   title: 'Master Catalog | Developer Dashboard',
@@ -47,7 +47,7 @@ export default function CatalogPage() {
         {/* Footer info for meetings */}
         <div className="mt-12 p-6 bg-white/5 border border-white/5 rounded-3xl text-center space-y-2">
           <p className="text-sm text-white/40 italic">
-            "Este catálogo representa la base de datos estándar de YAHPOS! para el retail chileno."
+            &quot;Este catálogo representa la base de datos estándar de YAHPOS! para el retail chileno.&quot;
           </p>
           <p className="text-xs text-white/20">
             Los datos mostrados están enlazados dinámicamente y se actualizan mediante el pipeline de scraping automatizado.

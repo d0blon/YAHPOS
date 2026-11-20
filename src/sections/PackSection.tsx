@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { Box, ArrowRight, Zap, ShoppingBag, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { motion, Variants } from 'framer-motion';
 
@@ -145,10 +146,13 @@ export default function PackSection() {
               <div className="aspect-[4/5] relative overflow-hidden p-2">
                 <div className="absolute inset-0 m-4 rounded-[3rem] overflow-hidden bg-black/40">
                   {/* Premium Image Placement */}
-                  <img 
-                    src="/grocery_packs_premium_1777270721763.png" 
+                  <Image
+                    src="/grocery_packs_premium_1777270721763.png"
                     alt={pack.title}
+                    fill
+                    sizes="(min-width: 768px) 33vw, 100vw"
                     className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000"
+                    unoptimized
                   />
                   <div className={`absolute inset-0 bg-gradient-to-br ${pack.color} mix-blend-overlay opacity-40`} />
                   

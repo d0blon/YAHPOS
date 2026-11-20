@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase'
+import { parseBody } from '@/lib/validations/http'
+import { inventoryApproveSchema } from '@/lib/validations/api'
 
 export async function POST(
   req: Request,
@@ -30,7 +32,7 @@ export async function POST(
     // 2. Obtener el ajuste de la base de datos y verificar que pertenece a la tienda
     const { data: adjustment, error: findError } = await adminSupabase
       .from('pending_inventory_adjustments')
-      .select('*')
+      .select('id, store_id, invoice_number, supplier_name, items, status, created_at, updated_at')
       .eq('id', adjustmentId)
       .eq('store_id', profile.store_id)
       .single()
@@ -44,12 +46,9 @@ export async function POST(
     }
 
     // 3. Parsear el cuerpo con los datos finales confirmados por el usuario
-    const body = await req.json()
-    const finalItems: { barcode: string; quantity: number }[] = body.items
-
-    if (!finalItems || !Array.isArray(finalItems)) {
-      return NextResponse.json({ error: 'Formato inválido. Se esperaba { items: [{ barcode: string, quantity: number }] }' }, { status: 400 })
-    }
+    const parsed = await parseBody(req, inventoryApproveSchema)
+    if ('error' in parsed) return parsed.error
+    const finalItems = parsed.data.items
 
     let updatedCount = 0
 

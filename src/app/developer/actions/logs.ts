@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
+import { verifyDeveloperRole } from './_shared'
 
 /**
  * Obtiene logs reales de actividad del sistema para el Monitor Real.
@@ -9,6 +10,8 @@ export async function getRealLogsAction(storeId?: string) {
   const supabase = await createClient()
   
   try {
+    await verifyDeveloperRole(supabase)
+
     // 1. Logs de SII (Emisiones)
     let siiQuery = supabase
       .from('sii_logs')

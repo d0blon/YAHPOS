@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware'
 import { get, set, del } from 'idb-keyval'
 import { Cart, CartItem, Product } from '@/types'
+import { TENANT_MARKER_KEY, clearTenantState, createTenantStorage, getActiveStoreId, registerTenantResetHandler, registerTenantStoreSync } from '@/lib/tenant-state'
 
 interface CartState extends Cart {
   addItem: (product: Product, quantity?: number) => void
@@ -12,6 +13,7 @@ interface CartState extends Cart {
   clearCart: () => void
   applyDiscount: (code: string) => void
   removeDiscount: () => void
+  resetForStore: () => Promise<void>
 }
 
 const calculateCartTotals = (items: CartItem[]): Omit<Cart, 'items'> => {
@@ -43,15 +45,19 @@ const idbStorage: StateStorage = {
   },
 }
 
+const initialCartState = {
+  items: [] as CartItem[],
+  totalItems: 0,
+  subtotal: 0,
+  discount: 0,
+  shipping: 0,
+  total: 0,
+}
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
-      items: [],
-      totalItems: 0,
-      subtotal: 0,
-      discount: 0,
-      shipping: 0,
-      total: 0,
+      ...initialCartState,
 
       addItem: (product: Product, quantity = 1) => {
         const { items } = get()
@@ -123,11 +129,26 @@ export const useCartStore = create<CartState>()(
       removeDiscount: () => {
         set({ discount: 0 })
       },
+
+      resetForStore: async () => {
+        set({ ...initialCartState })
+        await clearTenantState()
+      },
     }),
     {
-
-      name: 'austral-market-cart', // IndexedDB Key
-      storage: createJSONStorage(() => idbStorage),
+      name: 'austral-market-cart',
+      storage: createJSONStorage(() => createTenantStorage(idbStorage)),
+      merge: (persisted, current) => {
+        const stored = persisted as (Partial<CartState> & { __storeId?: string | null }) | undefined
+        const active = getActiveStoreId()
+        if (!stored || !active || stored.__storeId !== active) return current
+        const safe: Record<string, unknown> = { ...stored }
+        delete safe[TENANT_MARKER_KEY]
+        return { ...current, ...(safe as Partial<CartState>) }
+      }
     }
   )
 )
+
+registerTenantResetHandler(() => { useCartStore.setState({ ...initialCartState }) })
+registerTenantStoreSync(() => { void useCartStore.persist.rehydrate() })

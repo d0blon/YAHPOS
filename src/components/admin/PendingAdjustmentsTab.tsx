@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { 
   FileText, CheckCircle, AlertTriangle, Plus, Trash2, 
   Loader2, ExternalLink, ArrowRight, RefreshCw, Camera
@@ -12,10 +12,51 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 
+interface AdjustmentItem {
+  barcode: string
+  name: string
+  quantity: number
+  brand: string
+  volume: string
+}
+
+export interface MissingProductItem extends AdjustmentItem {
+  price?: number
+  supplierName?: string
+  supplierMetadata?: Record<string, unknown>
+}
+
+interface ExtractedItem {
+  barcode?: string
+  sku?: string
+  name?: string
+  quantity?: number | string
+  brand?: string
+  volume?: string
+}
+
+interface AdjustmentRecord {
+  id: string
+  invoice_number?: string | null
+  supplier_name?: string | null
+  supplier_metadata?: Record<string, unknown> | null
+  invoice_url?: string | null
+  items?: ExtractedItem[] | null
+  status: string
+  created_at: string
+}
+
+interface CatalogProduct {
+  sku?: string
+  barcode?: string
+  stock: number
+  price: number
+}
+
 interface PendingAdjustmentsTabProps {
-  products: any[]
+  products: CatalogProduct[]
   onProductSaved: () => void
-  onAddMissingProduct: (item: any) => void
+  onAddMissingProduct: (item: MissingProductItem) => void
 }
 
 export default function PendingAdjustmentsTab({ 
@@ -23,13 +64,13 @@ export default function PendingAdjustmentsTab({
   onProductSaved,
   onAddMissingProduct 
 }: PendingAdjustmentsTabProps) {
-  const [adjustments, setAdjustments] = useState<any[]>([])
+  const [adjustments, setAdjustments] = useState<AdjustmentRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
   // Detalle del ajuste seleccionado para revisión
-  const [selectedAdjustment, setSelectedAdjustment] = useState<any | null>(null)
-  const [editedItems, setEditedItems] = useState<any[]>([])
+  const [selectedAdjustment, setSelectedAdjustment] = useState<AdjustmentRecord | null>(null)
+  const [editedItems, setEditedItems] = useState<AdjustmentItem[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -60,8 +101,8 @@ export default function PendingAdjustmentsTab({
       if (data.adjustment) {
         handleOpenReview(data.adjustment)
       }
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al procesar la factura')
     } finally {
       setIsUploading(false)
       // Limpiar input file
@@ -76,9 +117,10 @@ export default function PendingAdjustmentsTab({
       if (!res.ok) throw new Error('Error al cargar ingresos pendientes')
       const json = await res.json()
       setAdjustments(json)
-    } catch (err: any) {
-      setError(err.message)
-      toast.error(err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al cargar ingresos pendientes'
+      setError(message)
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -88,12 +130,12 @@ export default function PendingAdjustmentsTab({
     fetchAdjustments()
   }, [])
 
-  const handleOpenReview = (adj: any) => {
+  const handleOpenReview = (adj: AdjustmentRecord) => {
     setSelectedAdjustment(adj)
     // Clonar los ítems para poder editarlos localmente
     setEditedItems(
       Array.isArray(adj.items) 
-        ? adj.items.map((item: any) => ({
+        ? adj.items.map((item: ExtractedItem) => ({
             barcode: item.barcode || item.sku || '',
             name: item.name || '',
             quantity: Number(item.quantity) || 0,
@@ -109,7 +151,7 @@ export default function PendingAdjustmentsTab({
     setEditedItems([])
   }
 
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleItemChange = (index: number, field: keyof AdjustmentItem, value: AdjustmentItem[keyof AdjustmentItem]) => {
     const updated = [...editedItems]
     updated[index] = { ...updated[index], [field]: value }
     setEditedItems(updated)
@@ -169,8 +211,8 @@ export default function PendingAdjustmentsTab({
       handleCloseReview()
       fetchAdjustments()
       onProductSaved() // Actualizar el catálogo en el componente principal
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al aprobar el ajuste')
     } finally {
       setIsSubmitting(false)
     }
@@ -410,9 +452,12 @@ export default function PendingAdjustmentsTab({
                       title="PDF Factura"
                     />
                   ) : (
-                    <img 
-                      src={selectedAdjustment.invoice_url} 
-                      alt="Factura" 
+                    <Image
+                      src={selectedAdjustment.invoice_url}
+                      alt="Factura"
+                      width={1200}
+                      height={1600}
+                      unoptimized
                       className="max-w-full max-h-full object-contain p-2"
                     />
                   )
@@ -525,7 +570,7 @@ export default function PendingAdjustmentsTab({
                                   size="sm"
                                   onClick={() => onAddMissingProduct({ 
                                     ...item, 
-                                    supplierName: selectedAdjustment.supplier_name,
+                                    supplierName: selectedAdjustment.supplier_name ?? undefined,
                                     supplierMetadata: selectedAdjustment.supplier_metadata || {}
                                   })}
                                   className="h-8 bg-brand-primary hover:bg-brand-primary/90 text-white font-bold text-xs rounded-lg px-2 flex items-center gap-1"

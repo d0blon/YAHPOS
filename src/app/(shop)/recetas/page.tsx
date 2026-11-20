@@ -1,12 +1,26 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Clock, Users, ChefHat, ArrowRight, Search, Flame, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-const mockRecipes: any[] = [
+
+interface Recipe {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  difficulty: 'facil' | 'medio' | 'dificil';
+  prepTime: number;
+  cookTime: number;
+  servings: number;
+  tags: string[];
+}
+
+const mockRecipes: Recipe[] = [
   {
     id: 1,
     title: 'Cazuela de Vacuno',
@@ -36,7 +50,7 @@ export default function Recipes() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
 
-  const filteredRecipes = mockRecipes.filter((recipe: any) => {
+  const filteredRecipes = mockRecipes.filter((recipe) => {
     const matchesSearch = recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          recipe.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesDifficulty = !selectedDifficulty || recipe.difficulty === selectedDifficulty;
@@ -95,12 +109,15 @@ export default function Recipes() {
 
         {/* Recipes Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRecipes.map((recipe: any) => (
+          {filteredRecipes.map((recipe) => (
             <Card key={recipe.id} className="overflow-hidden group">
               <div className="relative aspect-video overflow-hidden">
-                <img
+                <Image
                   src={recipe.image}
                   alt={recipe.title}
+                  width={800}
+                  height={450}
+                  unoptimized
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute top-3 left-3">
@@ -162,9 +179,12 @@ export default function Recipes() {
           <Card className="overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2">
               <div className="aspect-video lg:aspect-auto">
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop"
                   alt="Parrillada Chilena"
+                  width={800}
+                  height={450}
+                  unoptimized
                   className="w-full h-full object-cover"
                 />
               </div>

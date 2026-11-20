@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { formatPrice } from '@/lib/utils'
 import { OrderRecord, usePosStore } from '@/stores/posStore'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/authStore'
 
 interface DailyClosureModalProps {
   isOpen: boolean
@@ -68,7 +67,7 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
 
       toast.success('Reporte Z Generado y enviado a contabilidad')
       setIsFinished(true)
-    } catch (error) {
+    } catch {
       toast.error('Error al guardar el cierre en la nube. Se guardará localmente.')
       setIsFinished(true)
     } finally {
@@ -149,6 +148,17 @@ export function DailyClosureModal({ isOpen, onClose, sales }: DailyClosureModalP
                                <span className="text-[10px] font-black uppercase tracking-widest">Documentos</span>
                             </div>
                             <p className="text-2xl font-black text-slate-900 dark:text-white">{sales.length}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-5 bg-slate-50 dark:bg-surface-200/50 rounded-[1.5rem] border border-slate-100 dark:border-gray-800 shadow-inner">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Neto (sin IVA)</span>
+                            <p className="text-xl font-black text-slate-900 dark:text-white">{formatPrice(neto)}</p>
+                        </div>
+                        <div className="p-5 bg-slate-50 dark:bg-surface-200/50 rounded-[1.5rem] border border-slate-100 dark:border-gray-800 shadow-inner">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">IVA (19%)</span>
+                            <p className="text-xl font-black text-slate-900 dark:text-white">{formatPrice(iva)}</p>
                         </div>
                     </div>
 

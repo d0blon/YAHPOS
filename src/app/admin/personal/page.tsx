@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { HardHat, Store, Package, ShoppingCart, Beef, Search, Clock, ShieldAlert, Plus, Trash2, X } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Store, Package, ShoppingCart, Beef, Search, Clock, ShieldAlert, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -78,7 +77,7 @@ export default function PersonalDashboard() {
       })
       if (!res.ok) throw new Error('Error de conexión')
       toast.success(`Área asignada correctamente.`)
-    } catch (err) {
+    } catch {
       toast.error('No se pudo guardar la asignación')
       setStaff(originalStaff) // Rollback
     }
@@ -97,7 +96,7 @@ export default function PersonalDashboard() {
       })
       if (!res.ok) throw new Error('Error de conexión')
       toast.success(`Rango actualizado correctamente.`)
-    } catch (err) {
+    } catch {
       toast.error('No se pudo actualizar el rango')
       setStaff(originalStaff) // Rollback
     }
@@ -127,8 +126,8 @@ export default function PersonalDashboard() {
       setIsAddModalOpen(false)
       setNewStaff({ rut: '', first_name: '', last_name: '', role: 'manager' })
       toast.success('Trabajador agregado correctamente')
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al agregar trabajador')
     } finally {
       setIsSubmitting(false)
     }
@@ -142,8 +141,8 @@ export default function PersonalDashboard() {
       if (!res.ok) throw new Error('Error al eliminar trabajador')
       setStaff(prev => prev.filter(s => s.id !== id))
       toast.success('Trabajador eliminado correctamente')
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar trabajador')
     }
   }
 

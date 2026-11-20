@@ -23,8 +23,9 @@ export interface SubscriptionTier {
 export async function getSubscriptionTiers(): Promise<SubscriptionTier[]> {
   const { data, error } = await supabase
     .from('subscription_tiers')
-    .select('*')
+    .select('id, name, slug, price, features, limit_products, limit_users')
     .order('price', { ascending: true })
+    .limit(50)
 
   if (error) {
     console.error('Error fetching tiers:', error)
@@ -51,7 +52,7 @@ export async function getStoreSubscription(storeId: string): Promise<Subscriptio
 
   const { data: tier, error: tierError } = await supabase
     .from('subscription_tiers')
-    .select('*')
+    .select('id, name, slug, price, features, limit_products, limit_users')
     .eq('id', store.tier_id)
     .single()
 

@@ -99,7 +99,14 @@ austral-market-next/
 ├── BITACORA.md             → Historial completo de cambios
 ├── YAHPOS Kanban.md        → Estado actual del proyecto
 ├── TASK_HANDOFF.md         → Tarea activa
-└── WALKTHROUGH.md          → Documentación de features implementadas
+└── docs/                   → Toda la documentación restante
+    ├── README.md           → Índice maestro de documentación
+    ├── guias/              → EMPIEZA_AQUI, MANUAL_PROYECTO, GUIA_CONEXIONES…
+    ├── arquitectura/       → ARCHITECTURE, PAYMENTS-ARCHITECTURE, sii/
+    ├── planes/             → PLAN_MOTOR_DTE_DICIEMBRE_2026, roadmap
+    ├── auditorias/         → AUDIT_REPORT, simulaciones
+    ├── operacion/          → WALKTHROUGH, manuales, protocolos
+    └── archivo/            → documentos superados
 ```
 
 ---

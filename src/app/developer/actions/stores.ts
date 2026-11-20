@@ -4,6 +4,8 @@ import { createClient, createAdminClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { Store } from '@/types'
 import { DEVELOPER_EMAILS } from '@/lib/constants'
+import { verifyDeveloperRole } from './_shared'
+import { getRootOrigin } from '@/lib/config/root-origin'
 
 /**
  * Crea una nueva tienda (tenant) y sus ajustes iniciales.
@@ -22,6 +24,8 @@ export async function createStoreAction(storeData: {
   const supabase = await createClient()
   
   try {
+    await verifyDeveloperRole(supabase)
+
     // 1. Obtener el merchant_id del usuario actual
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Usuario no autenticado')
@@ -53,7 +57,7 @@ export async function createStoreAction(storeData: {
         is_active: true
       })
 
-      .select()
+      .select('id, name, slug, tier, is_active, created_at, tier_id, config, next_payment_date, payment_status, merchant_id, owner_email, owner_name, contact_phone, address, city, payment_months, subdomain, custom_domain, commune, region, is_demo')
       .single()
 
     if (storeError) throw storeError
@@ -71,7 +75,7 @@ export async function createStoreAction(storeData: {
 
     // 3.2. A los correos de soporte se les asigna el rol 'developer'
     if (DEVELOPER_EMAILS.length > 0) {
-      await supabase
+      await adminSupabase
         .from('profiles')
         .update({ role: 'developer' })
         .in('email', DEVELOPER_EMAILS)
@@ -110,20 +114,21 @@ export async function createStoreAction(storeData: {
     const amount = priceWithIva * storeData.payment_months
     
     if (amount > 0) {
-      await supabase.from('admin_finances').insert({
+      const { error: financeError } = await adminSupabase.from('admin_finances').insert({
         store_id: newStore.id,
         amount: amount,
         type: 'income',
         description: `Pago inicial ${storeData.payment_months} meses - Plan ${storeData.tier.charAt(0).toUpperCase() + storeData.tier.slice(1)} (${tierPricesUF[storeData.tier]} UF + IVA)`
       })
+      if (financeError) throw financeError
     }
 
 
     revalidatePath('/developer')
     return { success: true, store: newStore }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating store:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Error de servidor' }
   }
 }
 
@@ -133,6 +138,13 @@ export async function createStoreAction(storeData: {
  */
 export async function getStoresWithStatusAction() {
   const supabase = await createClient()
+
+  try {
+    await verifyDeveloperRole(supabase)
+  } catch {
+    return [] as Store[]
+  }
+
   const { data, error } = await supabase
     .from('stores')
     .select('id, name, slug, tier, is_active, payment_status, next_payment_date, owner_email, contact_phone, city, address, created_at')
@@ -167,7 +179,13 @@ export async function getStoresWithStatusAction() {
  */
 export async function updateStoreDomainsAction(storeId: string, subdomain: string | null, customDomain: string | null) {
   const supabase = await createClient()
-  
+
+  try {
+    await verifyDeveloperRole(supabase)
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Error de servidor' }
+  }
+
   const { error } = await supabase
     .from('stores')
     .update({ 
@@ -189,24 +207,40 @@ export async function updateStoreDomainsAction(storeId: string, subdomain: strin
  * Verifica la configuración DNS de un dominio personalizado.
  */
 export async function verifyDnsAction(storeId: string, domain: string) {
+  let rootOrigin: string
   try {
-    // En una implementación real, aquí llamaríamos a un resolver DNS o a nuestra API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/verify-dns?domain=${domain}`)
-    const data = await response.json()
-    
-    if (data.valid) {
-      const supabase = await createClient()
+    rootOrigin = getRootOrigin()
+  } catch {
+    return { success: false, error: 'NEXT_PUBLIC_ROOT_ORIGIN no está configurado' }
+  }
+
+  try {
+    const supabase = await createClient()
+    await verifyDeveloperRole(supabase)
+
+    const verifyUrl = new URL('/api/verify-dns', rootOrigin)
+    verifyUrl.searchParams.set('domain', domain)
+
+    const response = await fetch(verifyUrl)
+    if (!response.ok) {
+      return { success: false, error: 'La verificación falló. Asegúrate de configurar el CNAME correctamente.' }
+    }
+
+    const data: unknown = await response.json()
+    const isValid = typeof data === 'object' && data !== null && 'valid' in data && data.valid === true
+
+    if (isValid) {
       await supabase
         .from('stores')
         .update({ domain_verified: true })
         .eq('id', storeId)
-      
+
       revalidatePath('/developer')
       return { success: true, message: 'DNS Verificado correctamente' }
     }
-    
+
     return { success: false, error: 'La verificación falló. Asegúrate de configurar el CNAME correctamente.' }
-  } catch (error: any) {
-    return { success: false, error: error.message }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Error de servidor' }
   }
 }

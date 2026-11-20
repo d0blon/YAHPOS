@@ -1,4 +1,6 @@
 import { DtePayload, SiiConfig } from '../types';
+import { xmlText } from '../xml-text';
+import { timestampChile } from '../fecha-chile';
 
 export function generateFacturaXml(payload: DtePayload, config: SiiConfig, tedXml?: string): string {
   const { Encabezado, Detalles } = payload;
@@ -6,10 +8,10 @@ export function generateFacturaXml(payload: DtePayload, config: SiiConfig, tedXm
   const detallesXml = Detalles.map((item, index) => `
     <Detalle>
         <NroLinDet>${index + 1}</NroLinDet>
-        <NmbItem>${item.NmbItem.substring(0, 80).replace(/[<>&"']/g, '')}</NmbItem>
-        <QtyItem>${item.QtyItem}</QtyItem>
-        <PrcItem>${Math.round(item.PrcItem)}</PrcItem>
         ${item.IndExe ? `<IndExe>${item.IndExe}</IndExe>` : ''}
+        <NmbItem>${xmlText(item.NmbItem, 80)}</NmbItem>
+        <QtyItem>${item.QtyItem}</QtyItem>
+        <PrcItem>${item.PrcItem}</PrcItem>
         <MontoItem>${Math.round(item.MontoItem)}</MontoItem>
     </Detalle>`).join('');
 
@@ -24,20 +26,21 @@ export function generateFacturaXml(payload: DtePayload, config: SiiConfig, tedXm
                 ${Encabezado.FchVenc ? `<FchVenc>${Encabezado.FchVenc}</FchVenc>` : ''}
             </IdDoc>
             <Emisor>
-                <RUTEmisor>${config.rutEmisor}</RUTEmisor>
-                <RznSoc>${config.razonSocial.substring(0, 100)}</RznSoc>
-                <GiroEmis>${config.giro.substring(0, 80)}</GiroEmis>
-                <DirOrigen>${config.direccion.substring(0, 70)}</DirOrigen>
-                <CmnaOrigen>${config.comuna.substring(0, 20)}</CmnaOrigen>
-                <CiudadOrigen>${config.ciudad.substring(0, 20)}</CiudadOrigen>
+                <RUTEmisor>${xmlText(config.rutEmisor)}</RUTEmisor>
+                <RznSoc>${xmlText(config.razonSocial, 100)}</RznSoc>
+                <GiroEmis>${xmlText(config.giro, 80)}</GiroEmis>
+                ${config.acteco ? `<Acteco>${config.acteco}</Acteco>` : ''}
+                <DirOrigen>${xmlText(config.direccion, 70)}</DirOrigen>
+                <CmnaOrigen>${xmlText(config.comuna, 20)}</CmnaOrigen>
+                <CiudadOrigen>${xmlText(config.ciudad, 20)}</CiudadOrigen>
             </Emisor>
             <Receptor>
-                <RUTRecep>${Encabezado.RUTRecep}</RUTRecep>
-                <RznSocRecep>${(Encabezado.RznSocRecep || 'CLIENTE FACTURA').substring(0, 40)}</RznSocRecep>
-                <GiroRecep>${(Encabezado.GiroRecep || 'GIRO CLIENTE').substring(0, 40)}</GiroRecep>
-                <DirRecep>${(Encabezado.DirRecep || 'DIRECCION CLIENTE').substring(0, 70)}</DirRecep>
-                <CmnaRecep>${(Encabezado.CmnaRecep || 'SANTIAGO').substring(0, 20)}</CmnaRecep>
-                <CiudadRecep>${(Encabezado.CiudadRecep || 'SANTIAGO').substring(0, 20)}</CiudadRecep>
+                <RUTRecep>${xmlText(Encabezado.RUTRecep)}</RUTRecep>
+                <RznSocRecep>${xmlText(Encabezado.RznSocRecep || 'CLIENTE FACTURA', 40)}</RznSocRecep>
+                <GiroRecep>${xmlText(Encabezado.GiroRecep || 'GIRO CLIENTE', 40)}</GiroRecep>
+                <DirRecep>${xmlText(Encabezado.DirRecep || 'DIRECCION CLIENTE', 70)}</DirRecep>
+                <CmnaRecep>${xmlText(Encabezado.CmnaRecep || 'SANTIAGO', 20)}</CmnaRecep>
+                <CiudadRecep>${xmlText(Encabezado.CiudadRecep || 'SANTIAGO', 20)}</CiudadRecep>
             </Receptor>
             <Totales>
                 <MntNeto>${Math.round(Encabezado.MntNeto || 0)}</MntNeto>
@@ -49,7 +52,7 @@ export function generateFacturaXml(payload: DtePayload, config: SiiConfig, tedXm
         </Encabezado>
         ${detallesXml}
         ${tedXml || ''}
-        <TmstFirma>${new Date().toISOString().replace(/\.\d{3}Z$/, '')}</TmstFirma>
+        <TmstFirma>${timestampChile()}</TmstFirma>
     </Documento>
 </DTE>`.trim();
 }

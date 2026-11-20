@@ -9,11 +9,17 @@ import { verifySync } from 'otplib'
 const ALGORITHM = 'aes-256-cbc'
 const IV_LENGTH = 16
 
+// Un único getter para encrypt/decrypt: antes encrypt usaba un salt hardcodeado
+// y decrypt leía env, por lo que con SECURITY_SALT seteado todo lo cifrado fallaba.
+function getSecuritySalt(): string {
+  return process.env.SECURITY_SALT || 'patagonia-salt'
+}
+
 /**
  * Encripta un texto usando una contraseña.
  */
 export function encrypt(text: string, password: string): string {
-  const salt = crypto.scryptSync(password, 'patagonia-salt', 32)
+  const salt = crypto.scryptSync(password, getSecuritySalt(), 32)
   const iv = crypto.randomBytes(IV_LENGTH)
   const cipher = crypto.createCipheriv(ALGORITHM, salt, iv)
   
@@ -36,14 +42,14 @@ export function decrypt(encryptedText: string, password: string): string {
     const iv = Buffer.from(ivRaw, 'hex')
     const encryptedData = textParts.join(':')
     
-    const salt = crypto.scryptSync(password, process.env.SECURITY_SALT || 'patagonia-salt', 32)
+    const salt = crypto.scryptSync(password, getSecuritySalt(), 32)
     const decipher = crypto.createDecipheriv(ALGORITHM, salt, iv)
     
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8')
     decrypted += decipher.final('utf8')
     
     return decrypted
-  } catch (error) {
+  } catch {
     throw new Error('Contraseña maestra incorrecta o datos corruptos.')
   }
 }
@@ -56,7 +62,7 @@ export async function verifyMasterTOTP(code: string, encryptedSecret: string, pa
     const secret = decrypt(encryptedSecret, password)
     const result = verifySync({ token: code, secret: secret })
     return result.valid
-  } catch (e) {
+  } catch {
     return false
   }
 }

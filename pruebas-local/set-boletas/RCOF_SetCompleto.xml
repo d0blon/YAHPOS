@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<ConsumoFolios xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte ConsumoFolio_v10.xsd" version="1.0">
+    <DocumentoConsumoFolios ID="RCOF_SET_PRUEBA_1">
+        <Caratula version="1.0">
+            <RutEmisor>21012281-8</RutEmisor>
+            <RutEnvia>21012281-8</RutEnvia>
+            <FchResol>2024-01-01</FchResol>
+            <NroResol>0</NroResol>
+            <FchInicio>2026-11-16</FchInicio>
+            <FchFinal>2026-11-16</FchFinal>
+            <SecEnvio>1</SecEnvio>
+            <TmstFirmaEnv>2026-11-16T08:28:51</TmstFirmaEnv>
+        </Caratula>
+        <Resumen>
+            <TipoDocumento>39</TipoDocumento>
+            <MntNeto>40893</MntNeto>
+            <MntIva>7767</MntIva>
+            <TasaIVA>19</TasaIVA>
+            <MntExento>5500</MntExento>
+            <MntTotal>54160</MntTotal>
+            <FoliosEmitidos>5</FoliosEmitidos>
+            <FoliosAnulados>0</FoliosAnulados>
+            <FoliosUtilizados>5</FoliosUtilizados>
+            <RangoUtilizados><Inicial>1</Inicial><Final>5</Final></RangoUtilizados>
+        </Resumen>
+    </DocumentoConsumoFolios><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#RCOF_SET_PRUEBA_1"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>t3cZR4Ol9jI1nEf8q1v7LjLiuOs=</DigestValue></Reference></SignedInfo><SignatureValue>e05ZrDmULYVYbVphd319S0Ezzj0FCa290n3jnTFxPUNmUh26tdackhD2hHn2WvghY7YG7VD/1wfiXM3y4X5ckK6FuL4sRtEl7jpHW3O3hrsEsByy8ICu6+mlxWJg91ErMIsC0SNxQ4IXnPSda/8JiQD6k0pGr1L9JneTNCNvubJwAFl7JD+GB3/GeH32MvxkwagM69KdkTdIpahYUgV4Z5HTvxZTFFdXgey8b2QRU41q8EA3AMy9RHh0nzB4XDGV2ZWQa7wkWNDokkFWI1Ik4//g+IohnwrWcdVLxaCEebFcZOy3xmeSQNblXwni5rHiF5Vs7ySzlssWUhoDbnmXJA==</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>pL/LMDiak+KSlinYGTgoRd1AChb9yQcPnWKdHpqNEb66I5JeTPA0XMwPyidUAHzlvxClKfw35WgpSyCIAvoBepOsb/UJJO1c9aNy1m9dmkfVX2NoIv1ERTZ8Kb1ZKghMLh13ZE+y7uCi8SLlkxriE/FoMvRM1DlLybdb6s4HrnAG2CgtsoSY9oVx+v1EaFy7SYs90MXMlPfe6EEqZipDs7TqoXOcLhIovTAVgkGMvJw2s5T0VLj7ANQyXYYuasMTh+WmWWBjnEbgwaIS89zCmIaurrZH2zeRjT9ygSEwarWfU0VabmmsG74GRZjNrD7j1bcDtJ5mfC2ckwGVzJLCoQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIFSzCCBDOgAwIBAgIICZcdrqJtVYswDQYJKoZIhvcNAQELBQAwgboxHjAcBgkqhkiG9w0BCQEWD3NvcG9ydGVAaWRvay5jbDEiMCAGA1UEAwwZSURPSyBGSVJNQSBFTEVDVFJPTklDQSBWNDEXMBUGA1UECwwOUlVULTc2NjEwNzE4LTQxIDAeBgNVBAsMF0F1dG9yaWRhZCBDZXJ0aWZpY2Fkb3JhMRkwFwYDVQQKDBBCUE8gQWR2aXNvcnMgU3BBMREwDwYDVQQHDAhTYW50aWFnbzELMAkGA1UEBhMCQ0wwHhcNMjYxMTE2MDQwNzQ0WhcNMjgwNTI2MTMwMTMxWjCBgjEnMCUGA1UEAwweUk9EUklHTyBBTEVKQU5EUk8gTlVORVogQ0hBVVJBMSgwJgYJKoZIhvcNAQkBFhlyb2RyaWdvYS5udW5lejFAZ21haWwuY29tMRMwEQYDVQQFEwoyMTAxMjI4MS04MQswCQYDVQQGEwJDTDELMAkGA1UEBwwCUk0wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCkv8swOJqT4pKWKdgZOChF3UAKFv3JBw+dYp0emo0Rvrojkl5M8DRczA/KJ1QAfOW/EKUp/DflaClLIIgC+gF6k6xv9Qkk7Vz1o3LWb12aR9VfY2gi/URFNnwpvVkqCEwuHXdkT7Lu4KLxIuWTGuIT8Wgy9EzUOUvJt1vqzgeucAbYKC2yhJj2hXH6/URoXLtJiz3QxcyU997oQSpmKkOztOqhc5wuEii9MBWCQYy8nDazlPRUuPsA1DJdhi5qwxOH5aZZYGOcRuDBohLz3MKYhq6utkfbN5GNP3KBITBqtZ9TRVpuaawbvgZFmM2sPuPVtwO0nmZ8LZyTAZXMksKhAgMBAAGjggGJMIIBhTAJBgNVHRMEAjAAMB8GA1UdIwQYMBaAFLvdStt/EDeIdGdFssq5EoTgxngWMIGYBgNVHSAEgZAwgY0wgYoGCisGAQQBg4weAQQwfDAsBggrBgEFBQcCARYgaHR0cHM6Ly9wc2MuaWRvay5jbC9vcGVuL2Nwcy5wZGYwTAYIKwYBBQUHAgIwQB4+AEMAZQByAHQAaQBmAGkAYwBhAGQAbwAgAHAAYQByAGEAIAB1AHMAbwAgAFQAcgBpAGIAdQB0AGEAcgBpAG8wRgYDVR0fBD8wPTA7oDmgN4Y1aHR0cHM6Ly9wc2MuaWRvay5jbC9vcGVuL0lET0tfRklSTUFfRUxFQ1RST05JQ0FfNC5jcmwwHQYDVR0OBBYEFJ/1JbNL/j+pLQ7/tzbhZLz+DkNXMAsGA1UdDwQEAwIEkDAjBgNVHRIEHDAaoBgGCCsGAQQBwQECoAwWCjc2NjEwNzE4LTQwIwYDVR0RBBwwGqAYBggrBgEEAcEBAaAMFgoyMTAxMjI4MS04MA0GCSqGSIb3DQEBCwUAA4IBAQB9ZjxswWvIlyWbc0ey1r1yLuxVk0qH9H0xzV08HEbpvECSQPr2Uh1wU1Ck/sn3Q7uqB4zTP3LZoGCsBtrinp/isr3BXG0r9Mm8DY6wWMJKLELpGeARrs+Krz47C1u32NKGKbKC50ht5KbtV3yKjLFIKaKM1r5NCYaIGm7KiF2qJUOOJ/FAJxJzx5rd/VcYKg/tQ/674OJhpEqtdBw+TnoLqzsB3WMiXYq6csXV60bOJJAWJyALzDPBLED3JqPT0i1bjtHfn0fsUkvIu6KIMuIsLIi1UwZP8CQgjtwWPTyDj9c13LJOZ8FfvHbvpzf32DKOaJ1dq2WKU+M78/irmDmB</X509Certificate></X509Data></KeyInfo></Signature>
+</ConsumoFolios>

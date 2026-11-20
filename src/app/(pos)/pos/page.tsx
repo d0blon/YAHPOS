@@ -1,13 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import { 
   Search, ShoppingCart, User, Plus, Minus, Trash2, MapPin,
-  Banknote, History, PauseCircle, PlusCircle, Calculator, Archive,
+  History, PauseCircle, PlusCircle, Calculator, Archive,
   Loader2, Sun, Moon,
   Award, PackageOpen, Monitor, DollarSign, ChevronRight, X,
-  Wifi, WifiOff, Store, RefreshCw, Fingerprint
+  Wifi, WifiOff, Store, RefreshCw, Fingerprint, LayoutDashboard
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +29,8 @@ import CustomerModal from '@/components/pos/CustomerModal'
 import { Product, Branch, User as AppUser } from '@/types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OrderRecord, CashMovement } from '@/stores/posStore'
+import { payloadDesdeVentaPos } from '@/lib/sii/payload-pos'
+import type { DtePayload } from '@/lib/sii/types'
 import { PosSidebar } from '@/components/pos/PosSidebar'
 import { OfflineSyncManager } from '@/components/pos/OfflineSyncManager'
 import { CashMovementModal } from '@/components/pos/CashMovementModal'
@@ -40,8 +42,15 @@ import { RealTimeStockBadge } from '@/components/pos/RealTimeStockBadge'
 import { QuickStockPanel } from '@/components/pos/QuickStockPanel'
 import { RemoteClosureListener } from '@/components/pos/RemoteClosureListener'
 import { useHardwareStore } from '@/lib/hardware/hardwareStore'
-import { TERMINALS_WITH_DTE, VOUCHER_METHODS, GATEWAY_METHODS } from '@/lib/hardware/types'
+import { VOUCHER_METHODS } from '@/lib/hardware/types'
+import { decideSiiEmission } from '@/lib/pos/sii-decision'
 import { useCustomerDisplayBroadcast } from '@/lib/hooks/useCustomerDisplaySync'
+
+export const getAdminUrl = () => new URL('/admin', window.location.origin).toString()
+
+const subscribeToClient = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 
 // --- FLYING ITEM PARTICLE ---
 const FlyingItem = ({ x, y, onComplete }: { x: number, y: number, onComplete: () => void }) => {
@@ -122,7 +131,6 @@ const OfflineIndicator = ({ isSyncing }: { isSyncing: boolean }) => {
 // --- MEMOIZED COMPONENTS (Senior Frontend Performance) ---
 const ProductCard = React.memo(({ p, onClick }: { p: Product, onClick: (p: Product, e: React.MouseEvent) => void }) => {
   const [imgError, setImgError] = useState(false);
-  const isLowStock = p.stock <= p.lowStockThreshold;
   const isWeighable = p.unit === 'kg';
 
   const categoryThumb = (() => {
@@ -215,7 +223,6 @@ ProductCard.displayName = 'ProductCard';
 
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 
 // --- QUICK ADD MODAL (NUMPAD) ---
 const QuickAddModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: (name: string, price: number) => void }) => {
@@ -324,14 +331,14 @@ const BranchSelectionModal = ({ isOpen, branches, onSelect }: { isOpen: boolean,
 export default function PosTerminal() {
   const categoriesRef = useRef<HTMLDivElement>(null)
   const { theme, setTheme } = useTheme()
-  const { config } = useSaaS()
+  const { config, storeId: saasStoreId } = useSaaS()
   const router = useRouter()
   const { user: authUser, isAuthenticated } = useAuthStore()
   
   const { 
     items, totalItems, total, subtotal, addItem, updateQuantity, removeItem, clearPos, 
-    customerRut, customerName, customerPoints, pointsToEarn, setCustomer, suspendCurrentOrder, resumeOrder, removeSuspendedOrder, suspendedOrders,
-    inventory, setInventory, processCheckoutStock, salesHistory, addSale, isTrainingMode, setTrainingMode,
+    customerRut, customerName, customerPoints, pointsToEarn, suspendCurrentOrder, resumeOrder, removeSuspendedOrder, suspendedOrders,
+    inventory, setInventory, processCheckoutStock, salesHistory, addSale, isTrainingMode,
     currentUser, setCurrentUser, settings, cashSession, setCashSession,
     addGenericItem, pointsRedeemed, setPointsRedeemed, isSyncing, isInitialLoading,
     selectedBranchId, setSelectedBranchId,
@@ -353,10 +360,12 @@ export default function PosTerminal() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSyncing, items.length]);
 
-  // Determinar marca a mostrar
-  const displayBrand = config.white_label_enabled && config.tier === 'patagonia' 
-    ? config.store_name 
-    : 'YAHPOS!'
+  const cashierName = authUser
+    ? `${authUser.firstName} ${authUser.lastName}`.trim()
+    : currentUser?.firstName || undefined
+  const redemptionRate = settings.loyalty?.redemptionRate || 1
+  const storeName = config.store_name || undefined
+  const storeLogo = config.store_logo || undefined
   const registerUrl = typeof window !== 'undefined'
     ? `${window.location.protocol}//${window.location.host}/registro`
     : '/registro'
@@ -368,6 +377,11 @@ export default function PosTerminal() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false)
   const [receiptData, setReceiptData] = useState<OrderRecord | null>(null)
   const [isRedeeming, setIsRedeeming] = useState(false)
+  const isRedeemingRef = useRef(false)
+  const releaseRedemption = useCallback(() => {
+    isRedeemingRef.current = false
+    setIsRedeeming(false)
+  }, [])
   
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | 'Todos'>('Todos')
@@ -381,7 +395,7 @@ export default function PosTerminal() {
   
   const [weightModalProduct, setWeightModalProduct] = useState<Product | null>(null)
   const [isStockPanelOpen, setIsStockPanelOpen] = useState(false)
-  const [isHydrated, setIsHydrated] = useState(false)
+  const isHydrated = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot)
   const [viewQuickAdd, setViewQuickAdd] = useState(false)
   const [flyingItems, setFlyingItems] = useState<{id: number, x: number, y: number}[]>([])
   const [isCartBouncing, setIsCartBouncing] = useState(false)
@@ -471,8 +485,8 @@ export default function PosTerminal() {
         })),
         subtotal,
         total,
-        discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
-        cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
+        discount: pointsRedeemed * redemptionRate,
+        cashierName,
         terminalName: cashSession?.terminal_name,
         terminalId: cashSession?.terminal_id,
         customerName: customerName || undefined,
@@ -483,8 +497,8 @@ export default function PosTerminal() {
         isFullAccount,
         identityVerified,
         registerUrl,
-        storeName: config.store_name || undefined,
-        storeLogo: config.store_logo || undefined,
+        storeName,
+        storeLogo,
         itemsCount: items.length,
       });
     } else {
@@ -495,76 +509,45 @@ export default function PosTerminal() {
         total: 0,
         discount: 0,
         itemsCount: 0,
-        cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
+        cashierName,
         terminalName: cashSession?.terminal_name,
         terminalId: cashSession?.terminal_id,
         isFullAccount,
         identityVerified,
         registerUrl,
-        storeName: config.store_name || undefined,
-        storeLogo: config.store_logo || undefined,
+        storeName,
+        storeLogo,
       });
     }
-  }, [items, subtotal, total, pointsRedeemed, customerName, customerRut, customerPoints, pointsToEarn, isFullAccount, identityVerified, registerUrl, cashSession, authUser, currentUser, broadcast, config.store_name, config.store_logo]);
-
-  // Broadcast metadata when auth state changes (only if cart has items)
-  useEffect(() => {
-    if (items.length === 0) return
-    broadcast({
-      type: 'cart-update',
-      items: items.map(i => ({
-        name: i.product.name,
-        quantity: i.quantity,
-        price: i.product.price,
-        total: i.product.price * i.quantity,
-        image: i.product.image,
-        originalPrice: i.product.originalPrice,
-        category: typeof i.product.category === 'string' ? i.product.category : i.product.category?.name,
-        unit: i.product.unit,
-      })),
-      subtotal,
-      total,
-      discount: pointsRedeemed * (settings.loyalty?.redemptionRate || 1),
-      cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
-      terminalName: cashSession?.terminal_name,
-      terminalId: cashSession?.terminal_id,
-      storeName: config.store_name || undefined,
-      storeLogo: config.store_logo || undefined,
-      itemsCount: items.length,
-      pointsToEarn,
-      pointsRedeemed,
-    });
-  }, [cashSession, broadcast, config.store_name, config.store_logo]);
+  }, [items, subtotal, total, pointsRedeemed, redemptionRate, cashierName, customerName, customerRut, customerPoints, pointsToEarn, isFullAccount, identityVerified, registerUrl, cashSession, broadcast, storeName, storeLogo]);
 
   // 1. Hidratación y Protección de Ruta (Optimizado)
   useEffect(() => {
-    if (!isHydrated) {
-      setIsHydrated(true)
-      return
-    }
-    
-    // 1. Hidratación y Configuración de Usuario
+    if (!isHydrated) return
+
     if (authUser) {
       if (!currentUser || currentUser.id !== authUser.id) {
         setCurrentUser(authUser)
       }
-    } else {
+    } else if (!currentUser || currentUser.id !== 'local-cashier') {
       // Usuario Local/Invitado para modo sin login
-      if (!currentUser || currentUser.id !== 'local-cashier') {
-        setCurrentUser({
-          id: 'local-cashier',
-          email: 'pos@local',
-          firstName: 'Cajero',
-          lastName: 'Local',
-          role: 'cashier',
-          storeId: 'default',
-          tier: 'patagonia',
-          loyaltyPoints: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        } as any)
-      }
+      setCurrentUser({
+        id: 'local-cashier',
+        email: 'pos@local',
+        firstName: 'Cajero',
+        lastName: 'Local',
+        role: 'cashier',
+        storeId: 'default',
+        tier: 'patagonia',
+        loyaltyPoints: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as AppUser)
     }
+  }, [isHydrated, authUser, currentUser, setCurrentUser])
+
+  useEffect(() => {
+    if (!isHydrated) return
 
     // Cargar sucursales si es Plan Élite
     if (config.tier === 'patagonia') {
@@ -583,8 +566,12 @@ export default function PosTerminal() {
     getProducts(selectedBranchId || undefined).then(res => {
       if (res && res.length > 0) setInventory(res)
     }).catch(() => console.warn('[POS] Error al sincronizar inventario'))
+  }, [isHydrated, config.tier, selectedBranchId, setInventory, setSelectedBranchId])
 
-    // 1.1 Cargar Configuraciones Globales (Lealtad, Terminales, etc.)
+  // 1.1 Cargar Configuraciones Globales (Lealtad, Terminales, etc.)
+  useEffect(() => {
+    if (!isHydrated) return
+
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
@@ -606,25 +593,24 @@ export default function PosTerminal() {
               transfer: pos?.paymentTransfer ?? true
             }
           });
-          console.log('[POS] Configuraciones sincronizadas ✅');
         }
       })
       .catch(err => console.warn('[POS] Error al cargar configuraciones', err));
-
-  }, [isHydrated, router, setCurrentUser, currentUser, setInventory, selectedBranchId, config.tier])
+  }, [isHydrated])
 
   // -- REALTIME INVENTORY SYNC --
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    const realtimeStoreId = saasStoreId || config.id || null;
+    if (!realtimeStoreId) return;
+
     const channel = supabase
-      .channel('pos-products-changes')
+      .channel(`pos-products-changes-${realtimeStoreId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
-        (payload) => {
-          console.log('[POS] Cambio detectado en productos:', payload);
-          // Recargar el inventario si hay cambios
+        { event: '*', schema: 'public', table: 'products', filter: `store_id=eq.${realtimeStoreId}` },
+        () => {
           getProducts().then(res => {
             if (res && res.length > 0) setInventory(res);
           }).catch(err => console.warn('[POS] Error actualizando inventario en tiempo real', err));
@@ -635,14 +621,15 @@ export default function PosTerminal() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAuthenticated, setInventory]);
+  }, [isAuthenticated, setInventory, saasStoreId, config.id]);
 
   // -- SERVER DRAFT RECOVERY (F5 / Login) --
+  const cashSessionId = cashSession?.id
   useEffect(() => {
-    if (cashSession && isAuthenticated && isHydrated) {
-      usePosStore.getState().loadDraftFromServer(cashSession.id);
+    if (cashSessionId && isAuthenticated && isHydrated) {
+      usePosStore.getState().loadDraftFromServer(cashSessionId);
     }
-  }, [cashSession?.id, isAuthenticated, isHydrated]);
+  }, [cashSessionId, isAuthenticated, isHydrated]);
   
   const getCategoryIcon = (catName: string) => {
     const map: Record<string, string> = {
@@ -677,7 +664,7 @@ export default function PosTerminal() {
 
   // -- BARCODE SCANNER (keyboard wedge + paste) --
   useEffect(() => {
-    const processBarcode = (barcode: string, source: 'scanner' | 'paste' = 'scanner') => {
+    const processBarcode = (barcode: string) => {
       if (barcode.startsWith('20') && barcode.length >= 12) {
         const plu = barcode.substring(2, 7);
         const weightString = barcode.substring(7, 12);
@@ -736,7 +723,7 @@ export default function PosTerminal() {
       if (currentTime - lastKeyTime > 50) barcodeBuffer = '';
       if (e.key === 'Enter' && barcodeBuffer.length >= 4) {
         e.preventDefault();
-        processBarcode(barcodeBuffer, 'scanner');
+        processBarcode(barcodeBuffer);
         barcodeBuffer = '';
         return;
       }
@@ -751,7 +738,7 @@ export default function PosTerminal() {
       if (cleaned.length >= 4) {
         e.preventDefault();
         e.stopPropagation();
-        processBarcode(cleaned, 'paste');
+        processBarcode(cleaned);
       }
     };
 
@@ -790,9 +777,38 @@ export default function PosTerminal() {
   }, [router])
 
   const handleCheckout = async (paymentMethod: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED' | 'WEBPAY_QR', receivedAmount?: number, terminalType?: string) => {
+    if (pointsRedeemed > 0) {
+      if (isRedeemingRef.current) {
+        toast.error('Canje en proceso. Esperá a que finalize el cobro.')
+        return
+      }
+      isRedeemingRef.current = true
+      setIsRedeeming(true)
+    }
+
+    const decision = decideSiiEmission({
+      paymentMethod,
+      terminalType: paymentMethod === 'TERMINAL' ? terminalType : undefined,
+      settings: {
+        siiEmission: settings.siiEmission ?? 'always',
+        terminalsDte: settings.terminalsDte,
+      },
+    })
+
+    if (decision.kind === 'blocked') {
+      toast.error(`Bloqueo SII: ${terminalType} emite su propia boleta y el toggle "Emite su boleta" está desactivado. No se cobró ni se grabó la venta.`, {
+        description: 'Activá la opción en Ajustes > Hardware antes de cobrar. Si no, YAHPOS! emitiría otra boleta y duplicarías el IVA.',
+        duration: 8000,
+      })
+      releaseRedemption()
+      setIsProcessing(false)
+      return
+    }
+
     // Validar sesión activa
     const isValid = await validateSession()
     if (!isValid) {
+      releaseRedemption()
       setIsProcessing(false)
       return
     }
@@ -802,13 +818,14 @@ export default function PosTerminal() {
     
     const temporalId = `POS-${Date.now()}`;
     const isOnline = navigator.onLine;
-    const { consumeFolio, activeCafs, addToQueue } = useSiiStore.getState();
+    const { consumeFolio, addToQueue } = useSiiStore.getState();
     const dteType = 39; // Boleta Electrónica por defecto
     
     try {
       // 0. Validación de Reglas de Negocio (JUNAEB / PLUXE / EDENRED)
-      const isVoucherPayment = paymentMethod === 'JUNAEB' || paymentMethod === 'PLUXE' || paymentMethod === 'EDENRED';
-      const isGatewayPayment = (GATEWAY_METHODS as readonly string[]).includes(paymentMethod);
+      const isVoucherPayment = (VOUCHER_METHODS as readonly string[]).includes(paymentMethod);
+      const isVoucher = decision.kind === 'voucher';
+      const canEmitSii = decision.kind === 'dte';
       
       if (isVoucherPayment) {
         const maxSeals = settings.maxSeals ?? 2;
@@ -830,21 +847,6 @@ export default function PosTerminal() {
         toast.info(msg);
         await new Promise(r => setTimeout(r, 1000));
       }
-      const terminalHandlesDte = terminalType 
-        ? (settings.terminalsDte?.[terminalType] ?? TERMINALS_WITH_DTE[terminalType] ?? false) 
-        : false;
-
-      if (terminalType && TERMINALS_WITH_DTE[terminalType] && !settings.terminalsDte?.[terminalType]) {
-        toast.error(`Seguridad SII: ${terminalType} emite su propia boleta. Activá "Emite su boleta" en Ajustes > Hardware.`, {
-          description: 'Si no activás esta opción, YAHPOS! emitirá otra boleta y duplicarás el IVA.',
-          duration: 8000,
-        });
-        setIsProcessing(false);
-        return;
-      }
-
-      const shouldSkipSii = (isVoucherPayment || terminalHandlesDte) && !isGatewayPayment;
-
       broadcast({
         type: 'payment-processing',
         items: items.map(i => ({ 
@@ -889,62 +891,60 @@ export default function PosTerminal() {
         paymentMethod: paymentMethod === 'TERMINAL' ? `TERMINAL (${terminalType})` : paymentMethod,
         isOffline: !isOnline,
         timestamp: Date.now(),
-        siiSkipped: shouldSkipSii
+        siiSkipped: isVoucher,
+        siiDecision: { kind: decision.kind, reason: decision.reason },
+        cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined,
+        terminalName: cashSession?.terminal_name,
       };
 
       // 2. Lógica SII (Offline-First)
       let folio = null;
-      let tedXml = '';
-      
-      if (!shouldSkipSii) {
+      let dtePayload: DtePayload | null = null;
+      // `store_id` de la tienda (no el id de sucursal): la cola y `/api/sii/sync`
+      // lo comparan contra el perfil del usuario. Antes se encolaba
+      // `selectedBranchId || 'default'`, que nunca coincide y devolvía 403.
+      const storeId = saasStoreId || config.id || null;
+
+      // Guard explícito: decision 'voucher' => sin folio, sin cola SII y sin /api/sii/sync.
+      if (isVoucher) {
+        console.assert(folio === null && dtePayload === null, '[POS] Invariante SII rota: voucher con folio/payload');
+        console.log(`[POS] Voucher sin SII (${decision.reason}): no se consume folio ni se encola DTE`);
+      } else if (canEmitSii) {
         // Intentar consumir folio localmente si tenemos CAFs y folios en el pool
         folio = consumeFolio(dteType);
-        
-        if (folio) {
-          console.log(`[POS] Folio ${folio} consumido localmente para DTE ${dteType}`);
-          // Generar TED (Timbre Electrónico) localmente para el ticket
-          try {
-            const { SiiTedGenerator } = await import('@/lib/sii/ted');
-            const cafXml = activeCafs[dteType.toString()];
-            
-            if (cafXml) {
-              tedXml = await SiiTedGenerator.generateTed({
-                Encabezado: {
-                  RUTEmisor: config.tax_id || '76000000-1',
-                  TipoDTE: dteType,
-                  Folio: folio,
-                  FchEmis: new Date().toISOString().split('T')[0],
-                  RUTRecep: customerRut || '66666666-6',
-                  MntTotal: total,
-                  Detalles: items.map(i => ({ NmbItem: i.product.name }))
-                }
-              }, cafXml);
-              console.log('[POS] TED generado localmente ✅');
-            }
-          } catch (tedErr) {
-            console.warn('[POS] No se pudo generar TED localmente:', tedErr);
-          }
+
+        try {
+          dtePayload = payloadDesdeVentaPos({
+            tipo: 39,
+            fecha: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Santiago' }),
+            folio,
+            items: items.map(i => ({
+              nombre: i.product.name,
+              cantidad: i.quantity,
+              precioBruto: i.product.price,
+              exento: i.product.isExempt,
+            })),
+            totalBruto: total,
+            rutReceptor: customerRut,
+            nombreReceptor: customerName,
+          });
+        } catch (payloadErr) {
+          // Sin payload válido no se encola: un DTE incompleto el SII lo rechaza y
+          // solo quema reintentos. La venta igual se registra.
+          console.error('[POS] No se pudo preparar el DTE:', payloadErr);
+          toast.error('No se pudo preparar la boleta electrónica. La venta se registró igual.');
         }
 
-        // Encolar para el SII Store (será subido por OfflineSyncManager)
-        addToQueue({
-          id: temporalId,
-          storeId: selectedBranchId || 'default',
-          payload: {
-            items: items.map(i => ({ 
-              name: i.product.name, 
-              quantity: i.quantity, 
-              price: i.product.price,
-              isExempt: i.product.isExempt
-            })),
-            totals: { total: total },
-            type: dteType,
-            folio: folio 
-          },
-          xml: tedXml ? `<DTE>${tedXml}</DTE>` : '' 
-        });
-      } else {
-        console.log(`[POS] Saltando cola SII: ${isVoucherPayment ? 'Pago Voucher' : 'Getnet Boleta Activo'}`);
+        if (dtePayload) {
+          // El TED definitivo lo genera el motor con el CAF de la base; esta copia
+          // del navegador no se usa al firmar y solo costaba tiempo en la caja.
+          addToQueue({
+            id: temporalId,
+            storeId: storeId ?? 'default',
+            payload: dtePayload,
+            xml: '',
+          });
+        }
       }
 
       // 3. Registrar Venta en Supabase o Cola Local
@@ -966,13 +966,14 @@ export default function PosTerminal() {
                 branchId: selectedBranchId,
                 items: items.map(i => ({ productId: i.product.id, quantity: i.quantity, unitPrice: i.product.price })),
                 offlineId: temporalId,
-                folio: folio // Enviamos el folio si lo generamos
+                documentKind: decision.kind === 'dte' ? 'dte' : 'voucher',
+                siiSkipReason: decision.reason === 'sii' ? undefined : decision.reason
               })
             });
             if (response.ok) {
               toast.success('Venta Registrada ✅');
             } else throw new Error('API Error');
-          } catch (err) {
+          } catch {
             usePosStore.getState().queueOrderForSync(orderData);
             toast.warning('Venta guardada localmente 📴');
           }
@@ -981,17 +982,43 @@ export default function PosTerminal() {
           toast.warning('Venta guardada localmente (Modo Offline) 📴');
         }
       }
-      
+
+      // 3.b Emisión inmediata cuando hay red. No reemplaza a la cola: si falla,
+      // el ítem queda encolado y `OfflineSyncManager` lo reintenta. Emitir acá
+      // permite que el recibo ofrezca el PDF real con timbre.
+      let siiDocumentId: string | undefined;
+      if (canEmitSii && isOnline && dtePayload && storeId) {
+        try {
+          const res = await fetch('/api/sii/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: temporalId, storeId, payload: dtePayload, folio }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.documentId) {
+              siiDocumentId = data.documentId;
+              useSiiStore.getState().removeFromQueue(temporalId);
+            }
+          } else if (res.status === 422) {
+            // Payload imposible de emitir: reintentarlo no lo va a arreglar.
+            useSiiStore.getState().removeFromQueue(temporalId);
+            console.error('[POS] El DTE no se pudo emitir (payload inválido):', await res.text());
+          }
+        } catch (siiErr) {
+          console.warn('[POS] Emisión inmediata falló, queda en cola:', siiErr);
+        }
+      }
+
       // 4. Finalizar y Mostrar Recibo
-      const finalOrderRecord = { ...orderData, folio }; 
+      const finalOrderRecord = { ...orderData, folio, siiDocumentId }; 
       setReceiptData(finalOrderRecord);
       addSale(finalOrderRecord);
       processCheckoutStock();
       clearPos();
       const newCustomerPoints = customerRut ? (customerPoints || 0) + pointsToEarn - pointsRedeemed : undefined;
-      broadcast({ type: 'payment-confirmed', items: [], subtotal: 0, total: 0, discount: 0, itemsCount: 0, pointsToEarn, pointsRedeemed: pointsRedeemed, customerName: customerName || undefined, customerRut: customerRut || undefined, customerPoints: newCustomerPoints, isFullAccount, identityVerified, registerUrl, cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined, terminalName: cashSession?.terminal_name, terminalId: cashSession?.terminal_id });
+      broadcast({ type: 'payment-confirmed', items: [], subtotal: 0, total: 0, discount: 0, itemsCount: 0, pointsToEarn, pointsRedeemed: pointsRedeemed, customerName: customerName || undefined, customerRut: customerRut || undefined, customerPoints: newCustomerPoints, isFullAccount, identityVerified, registerUrl, documentKind: decision.kind === 'dte' ? 'dte' : 'voucher', cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined, terminalName: cashSession?.terminal_name, terminalId: cashSession?.terminal_id });
       setPointsRedeemed(0);
-      setIsRedeeming(false);
       
       if (receivedAmount && receivedAmount > total) {
         toast.success(`Vuelto: ${formatPrice(receivedAmount - total)}`, {
@@ -1005,6 +1032,7 @@ export default function PosTerminal() {
       broadcast({ type: 'reset', items: [], subtotal: 0, total: 0, discount: 0, itemsCount: 0, cashierName: authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : currentUser?.firstName || undefined, terminalName: cashSession?.terminal_name, terminalId: cashSession?.terminal_id });
       toast.error('Error procesando el pago');
     } finally {
+      releaseRedemption()
       setIsProcessing(false);
     }
   }
@@ -1047,10 +1075,9 @@ export default function PosTerminal() {
     } else removeItem(productId);
   }
 
-  const handleDashboardNav = () => {
-    // Esta función se mantiene como respaldo
-    window.location.href = '/admin';
-  };
+  const handleDashboardNav = useCallback(() => {
+    window.location.href = getAdminUrl();
+  }, []);
 
   if (!isHydrated) return null;
 
@@ -1122,6 +1149,15 @@ export default function PosTerminal() {
                 </button>
               )}
               <OfflineIndicator isSyncing={isSyncing} />
+
+              <button
+                onClick={handleDashboardNav}
+                aria-label="Panel Admin"
+                title="Panel Admin"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-150 hover:bg-muted-foreground/10 transition-all border border-border"
+              >
+                <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
+              </button>
 
               <button
                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -1198,7 +1234,7 @@ export default function PosTerminal() {
               >
                  <ShoppingCart className="w-5 h-5 text-brand-400" />
               </motion.div>
-              <h2 className="text-xl font-black text-foreground dark:text-white tracking-tight">Ticket Venta</h2>
+              <h2 className="text-xl font-black text-foreground dark:text-white tracking-tight">Ticket Venta <span className="text-sm text-muted-foreground">({totalItems})</span></h2>
            </div>
            
            <div className="flex items-center gap-1">
@@ -1472,7 +1508,7 @@ export default function PosTerminal() {
 
                 <Button 
                   onClick={() => setIsPaymentModalOpen(true)}
-                  disabled={items.length === 0 || isProcessing}
+                  disabled={items.length === 0 || isProcessing || isRedeeming}
                   className="w-full h-16 text-xl bg-brand-primary hover:bg-brand-700 text-white rounded-2xl font-black shadow-xl shadow-brand-primary/20 flex items-center justify-center gap-3 group transition-all active:scale-[0.98] relative overflow-hidden"
                 >
                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />

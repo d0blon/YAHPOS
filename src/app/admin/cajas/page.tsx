@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale/es'
 import { supabase } from '@/lib/supabase'
+import { useSaaS } from '@/providers/SaaSProvider'
 
 interface CashSession {
   id: string;
@@ -34,6 +35,7 @@ interface CashSession {
 }
 
 export default function AdminCajasPage() {
+  const { storeId } = useSaaS()
   const [sessions, setSessions] = useState<CashSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -77,18 +79,21 @@ export default function AdminCajasPage() {
 
     fetchSessionsWithCheck()
 
-    // 1. Suscribirse a cambios en cash_sessions en tiempo real
+    if (!storeId) {
+      return () => { isMounted = false }
+    }
+
     const channel = supabase
-      .channel('admin_cash_sessions')
+      .channel(`admin_cash_sessions-${storeId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'cash_sessions'
+          table: 'cash_sessions',
+          filter: `store_id=eq.${storeId}`
         },
         () => {
-          // Refrescar lista cuando haya cambios (aberturas, cierres, actualizaciones)
           fetchSessionsWithCheck()
         }
       )
@@ -98,7 +103,7 @@ export default function AdminCajasPage() {
       isMounted = false
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [storeId])
 
   const filteredSessions = sessions.filter(s => 
     s.cashier_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||

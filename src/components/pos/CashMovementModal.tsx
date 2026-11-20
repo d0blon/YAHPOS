@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { 
   X, ArrowUpCircle, ArrowDownCircle, DollarSign, 
-  Truck, Wallet, Coffee, AlertCircle, CheckCircle2,
+  Truck, Wallet, Coffee, AlertCircle,
   ChevronRight, Hash
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,7 @@ interface CashMovementModalProps {
   onSuccess: (movement: CashMovement) => void
 }
 
-const CATEGORIES: { id: MovementCategory; label: string; icon: any; color: string; type: 'IN' | 'OUT' }[] = [
+const CATEGORIES: { id: MovementCategory; label: string; icon: LucideIcon; color: string; type: 'IN' | 'OUT' }[] = [
   { id: 'PROVEEDOR', label: 'Pago Proveedor', icon: Truck, color: 'bg-amber-500', type: 'OUT' },
   { id: 'RETIRO', label: 'Retiro de Efectivo', icon: Wallet, color: 'bg-rose-500', type: 'OUT' },
   { id: 'GASTO_MENOR', label: 'Gasto Menor', icon: Coffee, color: 'bg-slate-500', type: 'OUT' },
@@ -92,7 +93,7 @@ export function CashMovementModal({ isOpen, onClose, onSuccess }: CashMovementMo
       setAmount('')
       setReason('')
       setCategory(null)
-    } catch (error) {
+    } catch {
       toast.error('Error al registrar movimiento')
     } finally {
       setIsProcessing(false)
@@ -235,6 +236,6 @@ export function CashMovementModal({ isOpen, onClose, onSuccess }: CashMovementMo
   )
 }
 
-function Loader2(props: any) {
+function Loader2(props: React.SVGProps<SVGSVGElement>) {
   return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-loader-2 animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 }

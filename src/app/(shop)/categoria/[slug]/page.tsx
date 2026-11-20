@@ -3,12 +3,6 @@
 import React, { useState, useRef } from 'react'
 import { useParams } from 'next/navigation';
 import { 
-  ShoppingCart, 
-  Heart, 
-  Star, 
-  Filter, 
-  Grid3X3, 
-  LayoutList, 
   ChevronDown, 
   SlidersHorizontal,
   ChevronRight,
@@ -17,11 +11,9 @@ import {
   ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useCartStore } from '@/stores'
-import { formatPrice } from '@/lib/utils'
-import { toast } from 'sonner'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ShopBackdrop from '@/components/layout/ShopBackdrop'
@@ -30,7 +22,7 @@ import { getProducts } from '@/lib/api'
 import type { Product } from '@/types'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
-import { ensureGsapRegistered, toArray } from '@/lib/gsap'
+import { ensureGsapRegistered } from '@/lib/gsap'
 
 const sortOptions = [
   { value: 'relevance', label: 'RELEVANCIA' },
@@ -39,11 +31,12 @@ const sortOptions = [
   { value: 'newest', label: 'MÁS NUEVOS' },
 ]
 
+const KNOWN_BRANDS = ['Colún', 'Colun', 'Soprole', 'Nestlé', 'Coca-Cola', 'Escudo', 'Carozzi', 'Tucapel', 'Omo', 'Quix', 'Confort', 'Lucchetti', 'Maggi']
+
 export default function CategoryPage() {
   ensureGsapRegistered()
   const params = useParams()
   const slug = params?.slug as string
-  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState('relevance')
   const [showFilters, setShowFilters] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -54,8 +47,6 @@ export default function CategoryPage() {
   // Filter & Sort States
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [priceRanges, setPriceRanges] = useState<string[]>([])
-
-  const KNOWN_BRANDS = ['Colún', 'Colun', 'Soprole', 'Nestlé', 'Coca-Cola', 'Escudo', 'Carozzi', 'Tucapel', 'Omo', 'Quix', 'Confort', 'Lucchetti', 'Maggi']
 
   React.useEffect(() => {
     async function loadData() {
@@ -147,7 +138,7 @@ export default function CategoryPage() {
             {/* Background Category Object (Specific User Request) */}
             <div className="absolute top-1/2 right-[-10%] -translate-y-1/2 w-2/3 h-[120%] pointer-events-none select-none z-0 opacity-40">
               <div className="relative w-full h-full">
-                <img 
+                <Image 
                   src={
                     slug === 'alimentos' ? '/cat_alimentos_premium_1777248248786.png' :
                     slug === 'bebes' ? '/cat_bebes_premium_1777248344381.png' :
@@ -160,6 +151,8 @@ export default function CategoryPage() {
                     '/hero_ecommerce_premium_1777248177152.png'
                   } 
                   alt={categoryName}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="w-full h-full object-contain blur-xl scale-110"
                 />
               </div>

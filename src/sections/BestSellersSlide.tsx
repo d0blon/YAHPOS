@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { useEditor } from '@/providers/EditorProvider'
 import { EditableText } from '@/components/editor/EditableText'
 import { Button } from '@/components/ui/button'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 export default function BestSellersSlide() {
   const editor = useEditor()

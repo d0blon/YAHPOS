@@ -1,12 +1,22 @@
 'use client'
 
-import React from 'react'
+import { useSyncExternalStore } from 'react'
 import { Search, Wifi, WifiOff, BadgeCheck, Monitor, LogOut, FileWarning } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { usePosStore } from '@/stores/posStore'
 import { useSiiStore } from '@/stores/siiStore'
+import { getActiveStoreId } from '@/lib/tenant-state'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+
+function subscribeToNetwork(fn: () => void) {
+  window.addEventListener('online', fn)
+  window.addEventListener('offline', fn)
+  return () => {
+    window.removeEventListener('online', fn)
+    window.removeEventListener('offline', fn)
+  }
+}
 
 interface PosHeaderProps {
   search: string;
@@ -19,21 +29,21 @@ export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderPro
   const pendingSyncOrders = usePosStore(state => state.pendingSyncOrders)
   const offlineFolioPool = useSiiStore(state => state.offlineFolioPool)
   const foliosDisponibles = useSiiStore(state => state.foliosDisponibles)
-  const [isOnline, setIsOnline] = React.useState(true)
+  const isOnline = useSyncExternalStore(
+    subscribeToNetwork,
+    () => navigator.onLine,
+    () => true
+  )
 
-  React.useEffect(() => {
-    setIsOnline(navigator.onLine)
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-    
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-    
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
+  // offlineFolioPool usa keys `${storeId}:${tipo}`. Mostrar solo el sufijo y
+  // solo las keys de la tienda activa (fail-closed).
+  const activeStoreId = getActiveStoreId()
+  const storePrefix = activeStoreId ? `${activeStoreId}:` : null
+  const folioPools = storePrefix
+    ? Object.entries(offlineFolioPool)
+        .filter(([key]) => key.startsWith(storePrefix))
+        .map(([key, pool]) => ({ key, tipo: key.slice(key.indexOf(':') + 1), pool }))
+    : []
 
   return (
     <header className={cn(
@@ -129,8 +139,8 @@ export function PosHeader({ search, onSearchChange, onToggleRole }: PosHeaderPro
         )}
 
         <div className="flex items-center gap-2">
-          {Object.entries(offlineFolioPool).map(([tipo, pool]) => (
-            <div key={tipo} className={cn(
+          {folioPools.map(({ key, tipo, pool }) => (
+            <div key={key} className={cn(
               "flex flex-col items-center justify-center px-2 py-1 rounded-lg border text-[8px] font-black tracking-tighter transition-all",
               pool.length === 0 
                 ? "bg-red-500 text-white border-red-600 animate-bounce" 

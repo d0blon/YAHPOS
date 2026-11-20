@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
   CreditCard, 
-  Truck, 
   MapPin, 
   Check,
   ShieldCheck,
@@ -19,8 +18,6 @@ import {
   ArrowRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { useCartStore } from '@/stores'
 import { useAuthStore } from '@/stores'
 import { formatPrice } from '@/lib/utils'
@@ -29,6 +26,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ShopBackdrop from '@/components/layout/ShopBackdrop'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createOrder, createWebpayTransaction } from '@/lib/api'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
@@ -51,8 +49,8 @@ const shippingMethods = [
 export default function CheckoutPage() {
   ensureGsapRegistered()
   const navigate = useRouter()
-  const { items, subtotal, total, clearCart } = useCartStore()
-  const { user, isAuthenticated } = useAuthStore()
+  const { items, subtotal, clearCart } = useCartStore()
+  const { user } = useAuthStore()
   const [step, setStep] = useState(1)
   const [selectedShipping, setSelectedShipping] = useState('standard')
   const [selectedPayment, setSelectedPayment] = useState('webpay')
@@ -412,7 +410,7 @@ export default function CheckoutPage() {
                             <div key={item.product.id} className="flex items-center justify-between group">
                               <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 bg-white/5 rounded-2xl overflow-hidden border border-white/10 group-hover:scale-105 transition-transform">
-                                  <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                                  <Image src={item.product.image} alt={item.product.name} width={64} height={64} unoptimized className="w-full h-full object-cover" />
                                 </div>
                                 <div>
                                   <p className="font-black text-white text-sm uppercase tracking-tighter">{item.product.name}</p>

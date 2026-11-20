@@ -3,14 +3,22 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { 
-  MapPin, Phone, Mail, Clock, CreditCard, Truck, ShieldCheck, 
-  Headphones, Globe, Zap, Star, Crown, ArrowRight
+  MapPin, Mail, Clock, CreditCard, Truck, ShieldCheck, 
+  Headphones, Zap, Star, Crown, ArrowRight
 } from 'lucide-react'
 import { useSaaS } from '@/providers/SaaSProvider'
-import { useRef } from 'react'
+import { useRef, type RefObject } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { ensureGsapRegistered, toArray } from '@/lib/gsap'
+import { getRootOriginSafe } from '@/lib/config/root-origin'
+
+function getSupportEmail(): string | null {
+  const configured = process.env.NEXT_PUBLIC_SUPPORT_EMAIL
+  if (typeof configured !== 'string') return null
+  const email = configured.trim()
+  return email.length > 0 ? email : null
+}
 
 // ────────────────────────────────────────────────────
 // Footer Premium (Archipielago / Patagonia)
@@ -20,6 +28,7 @@ import { ensureGsapRegistered, toArray } from '@/lib/gsap'
 function FooterPremium({ storeName }: { storeName: string }) {
   ensureGsapRegistered()
   const root = useRef<HTMLElement>(null)
+  const supportEmail = getSupportEmail()
   const footerLinks = {
     shop: [
       { href: '/productos?categoria=alimentos', label: 'Alimentos' },
@@ -49,7 +58,7 @@ function FooterPremium({ storeName }: { storeName: string }) {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[120px]" />
       </div>
 
-      <FooterFX scope={root.current} />
+      <FooterFX scopeRef={root} />
 
       {/* Features Bar - Premium Glass Cards */}
       <div className="container mx-auto px-4 mb-20">
@@ -152,14 +161,16 @@ function FooterPremium({ storeName }: { storeName: string }) {
                     Avenida Costanera 1234, <br />Castro, Chiloé
                   </p>
                 </div>
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5 text-gray-400" />
+                {supportEmail !== null && (
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                      <Mail className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-400">
+                      {supportEmail}
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-400">
-                    hola@{storeName.toLowerCase().replace(/\s/g, '')}.cl
-                  </p>
-                </div>
+                )}
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
                     <Clock className="w-5 h-5 text-gray-400" />
@@ -210,6 +221,7 @@ function FooterPremium({ storeName }: { storeName: string }) {
 function FooterAustral() {
   ensureGsapRegistered()
   const root = useRef<HTMLElement>(null)
+  const rootOrigin = getRootOriginSafe()
   return (
     <footer ref={root} className="bg-background text-white relative overflow-hidden py-20 border-t border-white/5">
       <div className="absolute inset-0 pointer-events-none">
@@ -217,7 +229,7 @@ function FooterAustral() {
         <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-brand-600/5 rounded-full blur-[140px]" />
       </div>
 
-      <FooterFX scope={root.current} />
+      <FooterFX scopeRef={root} />
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto glass-card p-8 md:p-16 rounded-[40px] bg-gradient-to-br from-white/5 to-transparent border border-white/10 text-center">
@@ -248,12 +260,14 @@ function FooterAustral() {
             </div>
           </div>
 
-          <a 
-            href="https://yahpos.cl" 
-            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all duration-500 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
-          >
-            Ver Planes & Precios <ArrowRight className="w-5 h-5" />
-          </a>
+          {rootOrigin !== null && (
+            <a 
+              href={rootOrigin} 
+              className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all duration-500 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+            >
+              Ver Planes & Precios <ArrowRight className="w-5 h-5" />
+            </a>
+          )}
         </div>
 
         <div className="mt-20 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-white/5 pt-10">
@@ -285,9 +299,10 @@ function FooterAustral() {
 }
 
 
-function FooterFX({ scope }: { scope: HTMLElement | null }) {
+function FooterFX({ scopeRef }: { scopeRef: RefObject<HTMLElement | null> }) {
   ensureGsapRegistered()
   useGSAP(() => {
+    const scope = scopeRef.current
     if (!scope) return
     const features = toArray('.footer-feature', scope)
     const cols = toArray('.footer-col', scope)
@@ -323,7 +338,7 @@ function FooterFX({ scope }: { scope: HTMLElement | null }) {
         scrollTrigger: { trigger: scope, start: 'bottom 95%' },
       })
     }
-  }, { scope: scope ?? undefined })
+  }, { scope: scopeRef })
 
   return null
 }

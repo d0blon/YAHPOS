@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/lib/api-utils'
+import { parseBody } from '@/lib/validations/http'
+import { customerVerifySchema } from '@/lib/validations/api'
+
+function errorMessage(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+    ? error.message
+    : undefined
+}
 
 export async function POST(req: Request) {
   try {
     const auth = await withAuth()
     if (auth.error) return auth.error
 
-    const { userId, rut } = await req.json()
-
-    if (!userId && !rut) {
-      return NextResponse.json({ error: 'userId or rut is required' }, { status: 400 })
-    }
+    const parsed = await parseBody(req, customerVerifySchema)
+    if ('error' in parsed) return parsed.error
+    const { userId, rut } = parsed.data
 
     let query = auth.supabase
       .from('profiles')
@@ -29,7 +35,7 @@ export async function POST(req: Request) {
     if (error) throw error
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: errorMessage(err) }, { status: 500 })
   }
 }

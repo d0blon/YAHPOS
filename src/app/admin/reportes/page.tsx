@@ -2,34 +2,53 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  TrendingUp, Download, Calendar, Filter, 
-  BarChart3, PieChart as PieIcon, LineChart as LineIcon,
-  FileText, ArrowUpRight, DollarSign, Package, Users,
+  TrendingUp, Download, Calendar, 
+  PieChart as PieIcon, LineChart as LineIcon,
+  ArrowUpRight, DollarSign, Package,
   Loader2, ArrowDownRight, MoreHorizontal
 } from 'lucide-react'
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area 
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, AreaChart, Area 
 } from 'recharts'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SectionCard, SectionHeader } from '@/components/admin/SectionCard'
 import { formatPrice } from '@/lib/utils'
 import { toast } from 'sonner'
 
 const COLORS = ['#4b0082', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
+interface CategoryDatum {
+  name: string
+  value: number
+}
+
+interface BestProduct {
+  name: string
+  quantity: number
+  total: number
+}
+
+interface ReportsData {
+  summary: { totalSales: number, totalOrders: number, avgTicket: number }
+  chartData: { name: string, sales: number }[]
+  categoryData: CategoryDatum[]
+  bestProducts: BestProduct[]
+}
+
 export default function ReportsPage() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<ReportsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- patrón de hidratación/fetch sin cambio de comportamiento
     setIsMounted(true)
     fetchReports()
   }, [])
 
-  const fetchReports = async () => {
+  async function fetchReports() {
     try {
       setLoading(true)
       const res = await fetch('/api/admin/reports')
@@ -53,7 +72,7 @@ export default function ReportsPage() {
       ['Ticket Promedio', data.summary.avgTicket],
     ]
     
-    let csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
       + rows.map(e => e.join(",")).join("\n")
 
@@ -172,7 +191,7 @@ export default function ReportsPage() {
                       boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
                       fontWeight: 'bold'
                     }} 
-                    formatter={(value: any) => [formatPrice(Number(value ?? 0)), 'Ventas']}
+                    formatter={(value) => [formatPrice(Number(value ?? 0)), 'Ventas']}
                   />
                   <Area type="monotone" dataKey="sales" stroke="#4b0082" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
                 </AreaChart>
@@ -206,7 +225,7 @@ export default function ReportsPage() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {data?.categoryData.map((entry: any, index: number) => (
+                      {data?.categoryData.map((entry: CategoryDatum, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -216,7 +235,7 @@ export default function ReportsPage() {
               )}
             </div>
             <div className="w-1/2 space-y-3 px-4">
-              {data?.categoryData.map((cat: any, i: number) => (
+              {data?.categoryData.map((cat: CategoryDatum, i: number) => (
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
@@ -255,7 +274,7 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {data?.bestProducts.map((p: any, i: number) => (
+                {data?.bestProducts.map((p: BestProduct, i: number) => (
                   <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">

@@ -103,17 +103,28 @@
 
 | Documento | Descripción |
 |-----------|-------------|
+**Índice completo de documentación: [`docs/README.md`](./docs/README.md).**
+
+En la raíz quedan solo los archivos vivos del protocolo:
+
+| Documento | Descripción |
+|-----------|-------------|
 | [CLAUDE.md](./CLAUDE.md) | Contexto del proyecto para agentes IA — leer primero |
+| [AGENTS.md](./AGENTS.md) | Protocolo de trabajo entre agentes |
 | [YAHPOS Kanban.md](./YAHPOS%20Kanban.md) | Backlog y estado actual — fuente de verdad del progreso |
 | [TASK_HANDOFF.md](./TASK_HANDOFF.md) | Tarea activa (protocolo Arquitecto/Constructor) |
-| [AGENTS.md](./AGENTS.md) | Protocolo de trabajo entre agentes (Claude Code + Antigravity) |
 | [BITACORA.md](./BITACORA.md) | Historial completo de cambios |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Arquitectura del sistema multi-tenancy |
-| [WALKTHROUGH.md](./WALKTHROUGH.md) | Walkthrough técnico de infraestructura |
-| [COLLABORATION_PROTOCOL.md](./COLLABORATION_PROTOCOL.md) | Protocolo de colaboración OpenCode + Antigravity |
-| [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Plan de implementación detallado |
-| [manual_instalacion.md](./manual_instalacion.md) | Manual de onboarding para clientes |
-| [REVISION_DISENO.md](./REVISION_DISENO.md) | Auditoría de diseño UI/UX |
+
+Todo lo demás (guías, arquitectura, planes, auditorías, operación, archivo) vive en [`docs/`](./docs):
+
+| Carpeta | Qué hay |
+|---------|---------|
+| [`docs/guias/`](./docs/guias) | Los 5 documentos para leer el proyecto desde cero |
+| [`docs/arquitectura/`](./docs/arquitectura) | Cómo está construido y por qué está cableado así |
+| [`docs/planes/`](./docs/planes) | Hojas de ruta y planes de ejecución |
+| [`docs/auditorias/`](./docs/auditorias) | Auditorías técnicas, de diseño y simulaciones |
+| [`docs/operacion/`](./docs/operacion) | Manuales, walkthroughs, protocolos de colaboración |
+| [`docs/archivo/`](./docs/archivo) | Documentos obsoletos o superados, conservados por historial |
 
 ---
 

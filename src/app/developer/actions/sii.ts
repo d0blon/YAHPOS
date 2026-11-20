@@ -1,7 +1,19 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createAdminClient, createClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
+import { verifyDeveloperRole } from './_shared'
+import type { DtePayload } from '@/lib/sii/types'
+
+interface CertificationTest {
+  tipo: 33 | 39 | 41 | 52 | 56 | 61
+  desc: string
+  receptor?: { rut: string, razon: string, giro: string, dir: string }
+  ref?: { tipo: number, folio: number, fch: string, razon: string, cod?: number }
+  descGral?: number
+  multiItem?: boolean
+  specialChars?: boolean
+}
 
 /**
  * Ejecuta la suite de certificación SII para una tienda.
@@ -19,9 +31,12 @@ export async function runSiiCertificationAction(storeId: string, realMode: boole
   }[] = []
 
   try {
+    const authClient = await createClient()
+    await verifyDeveloperRole(authClient)
+
     await engine.initForStore(storeId)
 
-    const tests = [
+    const tests: CertificationTest[] = [
       { tipo: 39, desc: "Boleta Electrónica Afecta" },
       { tipo: 41, desc: "Boleta Electrónica Exenta" },
       { tipo: 33, desc: "Factura Electrónica Afecta" },
@@ -36,31 +51,31 @@ export async function runSiiCertificationAction(storeId: string, realMode: boole
     ]
 
     for (const test of tests) {
-      const payload: any = {
+      const payload: DtePayload = {
         Encabezado: {
-          TipoDTE: test.tipo as 33 | 34 | 39 | 41 | 46 | 52 | 56 | 61,
+          TipoDTE: test.tipo,
           Folio: 0,
           FchEmis: new Date().toISOString().split('T')[0],
           MntTotal: test.tipo === 41 ? 1000 : 1190,
           MntExe: test.tipo === 41 ? 1000 : 0,
-          RUTRecep: (test as any).receptor?.rut || '66666666-6',
-          RznSocRecep: (test as any).receptor?.razon,
-          GiroRecep: (test as any).receptor?.giro,
-          DirRecep: (test as any).receptor?.dir,
-          Referencias: (test as any).ref ? [
+          RUTRecep: test.receptor?.rut || '66666666-6',
+          RznSocRecep: test.receptor?.razon,
+          GiroRecep: test.receptor?.giro,
+          DirRecep: test.receptor?.dir,
+          Referencias: test.ref ? [
             {
-              TpoDocRef: (test as any).ref.tipo,
-              FolioRef: (test as any).ref.folio,
-              FchRef: (test as any).ref.fch,
-              RazonRef: (test as any).ref.razon,
-              CodRef: (test as any).ref.cod
+              TpoDocRef: test.ref.tipo,
+              FolioRef: test.ref.folio,
+              FchRef: test.ref.fch,
+              RazonRef: test.ref.razon,
+              CodRef: test.ref.cod
             }
           ] : undefined
         },
-        Detalles: (test as any).multiItem ? [
+        Detalles: test.multiItem ? [
           { NmbItem: 'Item 1', QtyItem: 1, PrcItem: 500, MontoItem: 500 },
           { NmbItem: 'Item 2', QtyItem: 1, PrcItem: 500, MontoItem: 500 }
-        ] : (test as any).specialChars ? [
+        ] : test.specialChars ? [
           {
             NmbItem: `Producto con Ñandú y Acción`,
             QtyItem: 1,
@@ -80,25 +95,27 @@ export async function runSiiCertificationAction(storeId: string, realMode: boole
 
       const emission = await engine.emitirDocumento(payload, storeId, { test: !realMode })
       
-      let trackId = null
+      let trackId: string | null = null
       if (emission.success) {
         const envio = await engine.enviarDocumentoAlSII(emission.documentId!, storeId)
-        if (envio.success) trackId = (envio as any).trackId
+        if (envio.success) trackId = envio.trackId ?? null
       }
 
       results.push({
         desc: test.desc,
         success: emission.success,
-        folio: emission.folio,
-        documentId: emission.documentId,
+        // `emission` es una unión discriminada: fuera de un `if (emission.success)` el
+        // compilador no ve `folio`/`documentId`, así que se elige por rama.
+        folio: emission.success ? emission.folio : 0,
+        documentId: emission.success ? emission.documentId : undefined,
         trackId,
-        error: emission.error
+        error: emission.success ? undefined : emission.error
       })
     }
 
     return { success: true, results }
-  } catch (error: any) {
-    return { success: false, error: error.message }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Error de servidor' }
   }
 }
 
@@ -107,31 +124,32 @@ export async function runSiiCertificationAction(storeId: string, realMode: boole
  */
 export async function toggleSiiEnvironmentAction(storeId: string, environment: 'certification' | 'production') {
   const supabase = await createClient()
-  
+
   try {
-    const { data: store } = await supabase
-      .from('stores')
-      .select('config')
-      .eq('id', storeId)
+    await verifyDeveloperRole(supabase)
+
+    const { data: config, error: readError } = await supabase
+      .from('sii_config')
+      .select('id')
+      .eq('store_id', storeId)
       .single()
 
-    if (!store) throw new Error('Tienda no encontrada')
+    if (readError || !config) throw new Error('Configuración SII no encontrada para la tienda')
 
-    const newConfig = {
-      ...(store.config || {}),
-      sii_environment: environment
-    }
-
-    const { error } = await supabase
-      .from('stores')
-      .update({ config: newConfig })
-      .eq('id', storeId)
+    // El motor lee `sii_config.environment` (src/lib/sii/engine.ts), no `stores.config`.
+    // Se usa admin client porque el desarrollador no tiene store_id y la policy
+    // store_isolation_policy no permite operar sobre la tienda de otro usuario.
+    const admin = createAdminClient()
+    const { error } = await admin
+      .from('sii_config')
+      .update({ environment })
+      .eq('id', config.id)
 
     if (error) throw error
 
     revalidatePath('/developer')
     return { success: true }
-  } catch (err: any) {
-    return { success: false, error: err.message }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Error de servidor' }
   }
 }

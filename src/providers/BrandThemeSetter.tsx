@@ -10,7 +10,7 @@ export function BrandThemeSetter() {
   React.useEffect(() => {
     const root = document.documentElement
     const primary = config.appearance_primary_color || '#4b0082'
-    const accent = config.accent_color || '#FFD100'
+    const accent = config.accent_color || '#ff00ff'
 
     root.style.setProperty('--brand-primary', primary)
     root.style.setProperty('--brand-accent', accent)

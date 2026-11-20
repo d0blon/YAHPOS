@@ -3,11 +3,10 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import { 
-  ShoppingCart, History, Store, Calculator, Settings, 
-  ChevronLeft, ChevronRight, User, Terminal, ShieldAlert,
-  HelpCircle, Package, LogOut, LayoutDashboard, ArrowUpDown
+  ShoppingCart, History, Calculator, Settings, 
+  ChevronLeft, ChevronRight, User, ShieldAlert,
+  Package, LogOut, LayoutDashboard, ArrowUpDown
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { usePosStore } from '@/stores/posStore'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'

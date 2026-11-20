@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import crypto from 'crypto';
+import { parseQuery } from '@/lib/validations/http'
+import { botProductsQuerySchema } from '@/lib/validations/api'
 
 export async function GET(req: Request) {
   try {
@@ -35,8 +37,9 @@ export async function GET(req: Request) {
     }
 
     // 3. Obtener el query de búsqueda del URL
-    const { searchParams } = new URL(req.url);
-    const searchQuery = searchParams.get('q') || '';
+    const parsedQuery = parseQuery(req, botProductsQuerySchema);
+    if ('error' in parsedQuery) return parsedQuery.error;
+    const searchQuery = parsedQuery.data.q || '';
 
     // 4. Buscar productos pertenecientes al store_id
     let query = supabase

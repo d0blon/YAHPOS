@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase';
 import crypto from 'crypto';
+import { parseBody } from '@/lib/validations/http'
+import { botInventoryUpdateSchema } from '@/lib/validations/api'
 
 export async function POST(req: Request) {
   try {
@@ -35,12 +37,9 @@ export async function POST(req: Request) {
     }
 
     // 3. Obtener el cuerpo de la petición
-    const body = await req.json();
-    const updates: { sku: string; quantity: number }[] = body.updates;
-
-    if (!updates || !Array.isArray(updates)) {
-      return NextResponse.json({ error: 'Invalid body format. Expected { updates: [{ sku: string, quantity: number }] }' }, { status: 400 });
-    }
+    const parsed = await parseBody(req, botInventoryUpdateSchema);
+    if ('error' in parsed) return parsed.error;
+    const updates = parsed.data.updates;
 
     let updatedCount = 0;
     const notFoundSkus: string[] = [];

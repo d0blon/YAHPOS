@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { Truck, MapPin, Clock } from 'lucide-react';
 
 export default function DeliveryPromotion() {
@@ -9,10 +10,13 @@ export default function DeliveryPromotion() {
         <div className="relative rounded-[4rem] overflow-hidden">
           {/* Main Visual */}
           <div className="absolute inset-0">
-            <img 
-              src="/delivery_premium_1777248177152.png" 
-              alt="Delivery Service" 
+            <Image
+              src="/delivery_premium_1777248177152.png"
+              alt="Delivery Service"
+              fill
+              sizes="100vw"
               className="w-full h-full object-cover opacity-50"
+              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
           </div>

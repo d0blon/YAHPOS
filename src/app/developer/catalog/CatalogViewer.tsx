@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { Search, Package, Tag, Info, ChevronLeft, ChevronRight, BarChart3, Database, AlertCircle } from 'lucide-react';
 
 interface Product {
@@ -73,11 +74,6 @@ export default function CatalogViewer() {
     };
   }, [products, categories, allFilteredProducts]);
 
-  // Pagination Logic
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, selectedCategory]);
-
   const totalPages = Math.max(1, Math.ceil(allFilteredProducts.length / itemsPerPage));
   
   const filteredProducts = useMemo(() => {
@@ -144,13 +140,13 @@ export default function CatalogViewer() {
               placeholder="Buscar por nombre o SKU..."
               className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-brand-primary transition-all"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
           <select 
             className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary min-w-[200px] cursor-pointer"
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
           >
             {categories.map(cat => <option key={cat} value={cat} className="bg-brand-900 text-white">{cat}</option>)}
           </select>
@@ -199,9 +195,15 @@ export default function CatalogViewer() {
                 onClick={() => setSelectedProduct(p)}
                 className="group bg-white/5 border border-white/5 hover:border-brand-primary/50 p-3 rounded-2xl cursor-pointer transition-all hover:bg-white/10 flex flex-col h-full"
               >
-                <div className="aspect-square rounded-xl bg-black/20 mb-3 overflow-hidden border border-white/5">
+                <div className="relative aspect-square rounded-xl bg-black/20 mb-3 overflow-hidden border border-white/5">
                   {p.images?.[0] ? (
-                    <img src={p.images[0]} alt={p.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                    <Image
+                      src={p.images[0]}
+                      alt={p.name}
+                      fill
+                      unoptimized
+                      className="object-contain group-hover:scale-110 transition-transform duration-500"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/10"><Package size={40} /></div>
                   )}
@@ -230,8 +232,18 @@ export default function CatalogViewer() {
           <div className="bg-brand-900 border border-white/10 w-full max-w-2xl rounded-3xl p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
             {/* Header Content */}
             <div className="flex gap-8 flex-col md:flex-row mb-8">
-              <div className="w-full md:w-1/2 aspect-square bg-black/40 rounded-3xl p-6 border border-white/5 shadow-inner">
-                <img src={selectedProduct.images?.[0]} className="w-full h-full object-contain" alt={selectedProduct.name} />
+              <div className="relative w-full md:w-1/2 aspect-square bg-black/40 rounded-3xl border border-white/5 shadow-inner">
+                {selectedProduct.images?.[0] ? (
+                  <Image
+                    src={selectedProduct.images[0]}
+                    alt={selectedProduct.name}
+                    fill
+                    unoptimized
+                    className="object-contain p-6"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/10"><Package size={40} /></div>
+                )}
               </div>
               <div className="flex-1 space-y-4">
                 <p className="text-brand-primary font-bold tracking-widest text-sm uppercase">{selectedProduct.brand}</p>

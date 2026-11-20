@@ -1,13 +1,17 @@
-import { createClient } from '@supabase/supabase-js'
+﻿import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://bddpzqayurvhgpllykku.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkZHB6cWF5dXJ2aGdwbGx5a2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NDg0MTQsImV4cCI6MjA5MDQyNDQxNH0.RegxACpC4UzUqK6eGqHvKDvcuA1MT7QIWpXP5hit4cY'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY. Ejecuta con: node --env-file=.env.local test-supabase.mjs')
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 console.log('Querying stores...')
 const start = Date.now()
-const { data, error } = await supabase.from('stores').select('*')
+const { data, error } = await supabase.from('stores').select('id, subdomain, name').limit(10)
 const duration = Date.now() - start
 
 if (error) {

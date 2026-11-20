@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { usePosStore } from '@/stores/posStore'
+import { getActiveStoreId, getServerActiveStoreId, subscribeActiveStore } from '@/lib/tenant-state'
 
 export interface CustomerDisplayItem {
   name: string
@@ -38,12 +39,37 @@ export interface CustomerDisplayData {
   storeName?: string
   storeLogo?: string
   isFullAccount?: boolean
+  documentKind?: 'dte' | 'voucher'
   identityVerified?: boolean
   registerUrl?: string
+  storeId?: string
 }
 
-const CHANNEL_NAME = 'yahpos-pos'
-const STORAGE_KEY = 'yahpos-customer-display-state'
+type CustomerDisplayMessage = (CustomerDisplayData & { storeId: string }) | { type: 'request-state'; storeId: string }
+
+interface DisplayMetadata {
+  cashierName?: string
+  terminalName?: string
+  terminalId?: number
+  storeName?: string
+  storeLogo?: string
+}
+
+function useActiveTenantStoreId(): string | null {
+  return useSyncExternalStore(subscribeActiveStore, getActiveStoreId, getServerActiveStoreId)
+}
+
+function getChannelName(storeId: string): string {
+  return `yahpos-pos:${storeId}`
+}
+
+function getStorageKey(storeId: string): string {
+  return `yahpos-tenant:customer-display:${storeId}`
+}
+
+function emptyMetadata(): DisplayMetadata {
+  return {}
+}
 
 function getCashierFromStore(): string | undefined {
   const user = useAuthStore.getState().user
@@ -54,26 +80,40 @@ function getCashierFromStore(): string | undefined {
 }
 
 export function useCustomerDisplayBroadcast() {
+  const tenantStoreId = useActiveTenantStoreId()
   const channelRef = useRef<BroadcastChannel | null>(null)
-  const metadataRef = useRef({ cashierName: undefined as string | undefined, terminalName: undefined as string | undefined, terminalId: undefined as number | undefined, storeName: undefined as string | undefined, storeLogo: undefined as string | undefined })
+  const lastBroadcastStoreRef = useRef<string | null>(null)
+  const metadataRef = useRef<DisplayMetadata>(emptyMetadata())
   const lastBroadcastRef = useRef<CustomerDisplayData | null>(null)
 
   useEffect(() => {
-    const channel = new BroadcastChannel(CHANNEL_NAME)
+    if (!tenantStoreId) return
+
+    if (lastBroadcastStoreRef.current && lastBroadcastStoreRef.current !== tenantStoreId) {
+      lastBroadcastRef.current = null
+      metadataRef.current = emptyMetadata()
+    }
+    lastBroadcastStoreRef.current = tenantStoreId
+
+    const channel = new BroadcastChannel(getChannelName(tenantStoreId))
     channelRef.current = channel
 
     channel.onmessage = (event: MessageEvent) => {
-      if ((event.data as any)?.type === 'request-state' && lastBroadcastRef.current) {
+      const incoming = event.data as CustomerDisplayMessage | null
+      if (incoming?.type === 'request-state' && incoming.storeId === tenantStoreId && lastBroadcastRef.current) {
         channel.postMessage(lastBroadcastRef.current)
       }
     }
 
     return () => {
       channel.close()
+      channelRef.current = null
     }
-  }, [])
+  }, [tenantStoreId])
 
   const broadcast = useCallback((data: CustomerDisplayData) => {
+    if (!tenantStoreId) return
+
     if (data.cashierName) metadataRef.current.cashierName = data.cashierName
     if (data.terminalName) metadataRef.current.terminalName = data.terminalName
     if (data.terminalId) metadataRef.current.terminalId = data.terminalId
@@ -82,6 +122,7 @@ export function useCustomerDisplayBroadcast() {
 
     const enriched: CustomerDisplayData = {
       ...data,
+      storeId: tenantStoreId,
       cashierName: data.cashierName ?? metadataRef.current.cashierName ?? getCashierFromStore(),
       terminalName: data.terminalName ?? metadataRef.current.terminalName,
       terminalId: data.terminalId ?? metadataRef.current.terminalId,
@@ -91,21 +132,31 @@ export function useCustomerDisplayBroadcast() {
 
     lastBroadcastRef.current = enriched
     channelRef.current?.postMessage(enriched)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(enriched)) } catch {}
-  }, [])
+    try { localStorage.setItem(getStorageKey(tenantStoreId), JSON.stringify(enriched)) } catch {}
+  }, [tenantStoreId])
 
   return { broadcast }
 }
 
 export function useCustomerDisplayReceiver() {
-  const [data, setData] = useState<CustomerDisplayData | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const metadataRef = useRef({ cashierName: undefined as string | undefined, terminalName: undefined as string | undefined, terminalId: undefined as number | undefined, storeName: undefined as string | undefined, storeLogo: undefined as string | undefined })
+  const tenantStoreId = useActiveTenantStoreId()
+  const [dataByStore, setDataByStore] = useState<{ storeId: string; data: CustomerDisplayData } | null>(null)
+  const metadataRef = useRef<DisplayMetadata>(emptyMetadata())
+  const data = dataByStore?.storeId === tenantStoreId ? dataByStore.data : null
+  const isConnected = Boolean(tenantStoreId)
 
   const updateData = useCallback((incoming: CustomerDisplayData): CustomerDisplayData => {
-    // Sanitize: if cashierName is the string "undefined" from broken JSON, ignore
+    if (!tenantStoreId) return incoming
     if (incoming.cashierName === 'undefined') {
       incoming.cashierName = undefined;
+    }
+    if (incoming.type === 'payment-confirmed' && !incoming.documentKind) {
+      const lastSale = usePosStore.getState().salesHistory[0]
+      if (lastSale?.siiDecision) {
+        incoming.documentKind = lastSale.siiDecision.kind === 'dte' ? 'dte' : 'voucher'
+      } else if (lastSale?.siiSkipped) {
+        incoming.documentKind = 'voucher'
+      }
     }
     if (incoming.cashierName) metadataRef.current.cashierName = incoming.cashierName
     if (incoming.terminalName) metadataRef.current.terminalName = incoming.terminalName
@@ -122,34 +173,37 @@ export function useCustomerDisplayReceiver() {
       storeLogo: incoming.storeLogo ?? metadataRef.current.storeLogo,
     }
 
-    setData(enriched)
+    setDataByStore({ storeId: tenantStoreId, data: enriched })
     return enriched
-  }, [])
+  }, [tenantStoreId])
 
   useEffect(() => {
+    metadataRef.current = emptyMetadata()
+    if (!tenantStoreId) return
+
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
+      const saved = localStorage.getItem(getStorageKey(tenantStoreId))
       if (saved) {
         const parsed = JSON.parse(saved) as CustomerDisplayData
-        updateData(parsed)
+        if (parsed?.storeId === tenantStoreId) updateData(parsed)
       }
     } catch {}
 
-    const channel = new BroadcastChannel(CHANNEL_NAME)
-    setIsConnected(true)
+    const channel = new BroadcastChannel(getChannelName(tenantStoreId))
 
-    channel.onmessage = (event: MessageEvent<CustomerDisplayData>) => {
-      const enriched = updateData(event.data)
-      try { if (enriched) localStorage.setItem(STORAGE_KEY, JSON.stringify(enriched)) } catch {}
+    channel.onmessage = (event: MessageEvent<CustomerDisplayMessage>) => {
+      const incoming = event.data
+      if (!incoming || incoming.storeId !== tenantStoreId || incoming.type === 'request-state') return
+      const enriched = updateData(incoming)
+      try { localStorage.setItem(getStorageKey(tenantStoreId), JSON.stringify(enriched)) } catch {}
     }
 
-    channel.postMessage({ type: 'request-state' } as any)
+    channel.postMessage({ type: 'request-state', storeId: tenantStoreId } satisfies CustomerDisplayMessage)
 
     return () => {
       channel.close()
-      setIsConnected(false)
     }
-  }, [updateData])
+  }, [tenantStoreId, updateData])
 
   return { data, isConnected }
 }

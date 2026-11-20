@@ -7,7 +7,23 @@ import Image from 'next/image'
 import { useEditor } from '@/providers/EditorProvider'
 import { EditableText } from '@/components/editor/EditableText'
 import { Button } from '@/components/ui/button'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useSyncExternalStore } from 'react'
+
+const subscribeClientOnly = () => () => {}
+
+interface Particle {
+  x: string
+  y: string
+  opacity: number
+  duration: number
+}
+
+const PARTICLES: Particle[] = [...Array(8)].map(() => ({
+  x: Math.random() * 100 + '%',
+  y: Math.random() * 100 + '%',
+  opacity: Math.random() * 0.5,
+  duration: 15 + Math.random() * 20
+}))
 
 export default function OffersSlide() {
   const editor = useEditor()
@@ -21,11 +37,7 @@ export default function OffersSlide() {
   const [isUploading, setIsUploading] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(subscribeClientOnly, () => true, () => false)
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -74,21 +86,21 @@ export default function OffersSlide() {
         {/* Floating Particles */}
         {mounted && (
           <div className="absolute inset-0 overflow-hidden">
-            {[...Array(8)].map((_, i) => (
+            {PARTICLES.map((p, i) => (
               <motion.div
                 key={i}
                 className="absolute w-1 h-1 bg-red-500/20 rounded-full"
-                initial={{ 
-                  x: Math.random() * 100 + '%', 
-                  y: Math.random() * 100 + '%',
-                  opacity: Math.random() * 0.5
+                initial={{
+                  x: p.x,
+                  y: p.y,
+                  opacity: p.opacity
                 }}
                 animate={{ 
                   y: [null, '-20%', '120%'],
                   opacity: [0, 0.4, 0]
                 }}
                 transition={{ 
-                  duration: 15 + Math.random() * 20, 
+                  duration: p.duration,
                   repeat: Infinity, 
                   ease: "linear"
                 }}

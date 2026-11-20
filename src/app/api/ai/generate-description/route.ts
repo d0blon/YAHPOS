@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { generateAIText } from '@/lib/ai/openai';
 import { aiDescriptionSchema } from '@/lib/validations/ai';
+import { parseBody } from '@/lib/validations/http';
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -38,18 +39,38 @@ export async function POST(req: Request) {
       }, { status: 403 });
     }
 
-    // 4. Procesar y Validar Body
-    const body = await req.json();
-    const validated = aiDescriptionSchema.safeParse(body);
-    
-    if (!validated.success) {
-      return NextResponse.json({ 
-        error: 'Datos de entrada inválidos', 
-        details: validated.error.issues 
-      }, { status: 400 });
+    // 3.5. Tope de gasto mensual — evita costo no acotado contra la cuenta de OpenAI de YAHPOS!
+    const MONTHLY_AI_SPEND_CAP_USD = 5;
+    const firstOfMonth = new Date();
+    firstOfMonth.setDate(1);
+    firstOfMonth.setHours(0, 0, 0, 0);
+
+    const { data: usageThisMonth, error: usageError } = await supabase
+      .from('ai_usage_logs')
+      .select('cost_usd')
+      .eq('store_id', profile.store_id)
+      .gte('created_at', firstOfMonth.toISOString());
+
+    if (usageError) {
+      console.error('[API AI] Error consultando gasto mensual:', usageError);
+      return NextResponse.json({ error: 'Error al verificar el límite de uso' }, { status: 500 });
     }
 
-    const { productName, productCategory, attributes, tone = 'profesional' } = validated.data;
+    const spentThisMonth = (usageThisMonth || []).reduce((sum, row) => sum + Number(row.cost_usd || 0), 0);
+
+    if (spentThisMonth >= MONTHLY_AI_SPEND_CAP_USD) {
+      return NextResponse.json({
+        error: 'Se alcanzó el límite mensual de uso de IA para esta tienda. Contactá a soporte si necesitás aumentarlo.',
+        spentThisMonth,
+        cap: MONTHLY_AI_SPEND_CAP_USD
+      }, { status: 429 });
+    }
+
+    // 4. Procesar y Validar Body
+    const parsed = await parseBody(req, aiDescriptionSchema);
+    if ('error' in parsed) return parsed.error;
+
+    const { productName, productCategory, attributes, tone = 'profesional' } = parsed.data;
 
     // 5. Construir Prompt
     const systemPrompt = `Eres un redactor experto en marketing de e-commerce de lujo. 
@@ -76,7 +97,7 @@ export async function POST(req: Request) {
     });
 
     if (!result.success) {
-      throw new Error(result.error as any);
+      throw new Error(String(result.error));
     }
 
     return NextResponse.json({ 
@@ -84,7 +105,7 @@ export async function POST(req: Request) {
       usage: { cost: result.cost }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API AI] Error:', error);
     return NextResponse.json({ error: 'Error interno al generar descripción' }, { status: 500 });
   }

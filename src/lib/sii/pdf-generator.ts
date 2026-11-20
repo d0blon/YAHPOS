@@ -1,11 +1,36 @@
 import { jsPDF } from 'jspdf';
-import QRCode from 'qrcode';
-import iconv from 'iconv-lite';
+import { generarTimbrePdf417 } from './pdf417';
+
+/** Desglose exigido en el impreso; `undefined` significa "el XML no lo trae". */
+export interface PdfTotales {
+  mntNeto?: number;
+  iva?: number;
+  tasaIVA?: number;
+  mntExe?: number;
+}
+
+/** Resolución real del emisor (viene de `sii_config`, guardada en metadata al emitir). */
+export interface PdfResolucion {
+  fchResol?: string;
+  nroResol?: number;
+}
+
+export interface PdfReferencia {
+  tipo?: string | number;
+  folio?: string | number;
+  fecha?: string;
+  codigo?: string | number;
+  razon?: string;
+}
 
 export interface BoletaPdfData {
+  tipoDte?: number;
   folio: number;
   fecha: string;
   total: number;
+  totales?: PdfTotales;
+  resolucion?: PdfResolucion;
+  referencias?: PdfReferencia[];
   items: Array<{
     nombre: string;
     cantidad: number;
@@ -69,10 +94,36 @@ async function loadImageBW(url: string): Promise<string> {
       };
       img.onerror = () => resolve(url);
       img.src = url;
-    } catch (err) {
+    } catch {
       resolve(url);
     }
   });
+}
+
+/**
+ * La impresión no puede decir "BOLETA" cuando el XML es una factura o una nota:
+ * el papel tiene que coincidir con el tipo de DTE que se está imprimiendo.
+ */
+function dinero(valor: number): string {
+  return `$${valor.toLocaleString('es-CL')}`;
+}
+
+function tituloDocumento(tipoDte?: number): string {
+  switch (tipoDte) {
+    case 39:
+    case 41:
+      return 'BOLETA ELECTRÓNICA';
+    case 33:
+      return 'FACTURA ELECTRÓNICA';
+    case 61:
+      return 'NOTA DE CRÉDITO ELECTRÓNICA';
+    case 56:
+      return 'NOTA DE DÉBITO ELECTRÓNICA';
+    case 52:
+      return 'GUÍA DE DESPACHO ELECTRÓNICA';
+    default:
+      return 'DOCUMENTO ELECTRÓNICO';
+  }
 }
 
 export async function generateBoletaPdf(data: BoletaPdfData): Promise<Uint8Array> {
@@ -133,7 +184,7 @@ export async function generateBoletaPdf(data: BoletaPdfData): Promise<Uint8Array
   doc.setTextColor(255, 0, 0);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('█ BOLETA ELECTRÓNICA █', centerX, y + 7, { align: 'center' });
+  doc.text(`█ ${tituloDocumento(data.tipoDte)} █`, centerX, y + 7, { align: 'center' });
   doc.setFontSize(8);
   doc.text(`N° ${data.folio}`, centerX, y + 13, { align: 'center' });
   doc.setTextColor(0, 0, 0);
@@ -144,6 +195,14 @@ export async function generateBoletaPdf(data: BoletaPdfData): Promise<Uint8Array
   doc.setFont('helvetica', 'normal');
   doc.text(`Fecha: ${data.fecha}`, margin + 2, y);
   y += 5;
+  if (data.resolucion && (data.resolucion.fchResol || data.resolucion.nroResol !== undefined)) {
+    const partes = [
+      data.resolucion.nroResol !== undefined ? `N° ${data.resolucion.nroResol}` : '',
+      data.resolucion.fchResol ? `del ${data.resolucion.fchResol}` : ''
+    ].filter(Boolean);
+    doc.text(`Resolución SII: ${partes.join(' ')}`, margin + 2, y);
+    y += 4;
+  }
   if (data.receptor?.rut && data.receptor.rut !== '66666666-6') {
     doc.text(`RUT Cliente: ${data.receptor.rut}`, margin + 2, y);
     if (data.receptor.nombre) {
@@ -151,6 +210,35 @@ export async function generateBoletaPdf(data: BoletaPdfData): Promise<Uint8Array
       doc.text(`Titular: ${data.receptor.nombre}`, margin + 2, y);
     }
     y += 5;
+  }
+  // --- REFERENCIAS (notas de crédito/débito, guías y set de certificación) ---
+  if (data.referencias && data.referencias.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('REFERENCIAS:', margin + 2, y);
+    y += 4;
+    doc.setFont('helvetica', 'normal');
+    for (const ref of data.referencias) {
+      const cabecera = [
+        ref.tipo !== undefined ? `Doc ${ref.tipo}` : '',
+        ref.folio !== undefined ? `Folio ${ref.folio}` : '',
+        ref.fecha ? `Fecha ${ref.fecha}` : ''
+      ].filter(Boolean).join(' · ');
+      if (cabecera) {
+        const lineas = doc.splitTextToSize(cabecera, fullWidth - 4);
+        doc.text(lineas, margin + 2, y);
+        y += lineas.length * 3.5;
+      }
+      if (ref.codigo !== undefined) {
+        doc.text(`CodRef ${ref.codigo}`, margin + 2, y);
+        y += 3.5;
+      }
+      if (ref.razon) {
+        const lineas = doc.splitTextToSize(`Razón: ${ref.razon}`, fullWidth - 4);
+        doc.text(lineas, margin + 2, y);
+        y += lineas.length * 3.5;
+      }
+    }
+    y += 2;
   }
   y += 3;
   // --- DETALLE DE ITEMS ---
@@ -174,6 +262,29 @@ export async function generateBoletaPdf(data: BoletaPdfData): Promise<Uint8Array
   y += 2;
   doc.line(margin, y, margin + fullWidth, y);
   y += 5;
+  // --- DESGLOSE NETO / IVA / TASA (sólo lo que el XML trae) ---
+  const t = data.totales;
+  if (t && (t.mntNeto !== undefined || t.iva !== undefined || t.tasaIVA !== undefined || t.mntExe !== undefined)) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    if (t.mntNeto !== undefined) {
+      doc.text(`Neto: ${dinero(t.mntNeto)}`, margin + 2, y);
+      y += 4;
+    }
+    if (t.mntExe !== undefined && t.mntExe !== 0) {
+      doc.text(`Exento: ${dinero(t.mntExe)}`, margin + 2, y);
+      y += 4;
+    }
+    if (t.iva !== undefined) {
+      doc.text(`IVA${t.tasaIVA !== undefined ? ` ${t.tasaIVA}%` : ''}: ${dinero(t.iva)}`, margin + 2, y);
+      y += 4;
+    }
+    if (t.tasaIVA !== undefined) {
+      doc.text(`Tasa IVA: ${t.tasaIVA}%`, margin + 2, y);
+      y += 4;
+    }
+    y += 1;
+  }
   // --- TOTALES ---
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
@@ -181,28 +292,25 @@ export async function generateBoletaPdf(data: BoletaPdfData): Promise<Uint8Array
   doc.text(`$${data.total.toLocaleString('es-CL')}`, margin + fullWidth - 2, y, { align: 'right' });
   
   y += 10;
-  // --- TIMBRE ELECTRÓNICO (TED) ---
+  // --- TIMBRE ELECTRÓNICO (PDF417) ---
   if (data.timbre) {
     try {
-      // Importante: El contenido del QR (TED) debe estar en ISO-8859-1
-      const encodedTimbre = iconv.encode(data.timbre, 'ISO-8859-1');
-      
-      const qrDataUrl = await QRCode.toDataURL([{ data: encodedTimbre, mode: 'byte' }], {
-        margin: 1,
-        width: 150,
-        errorCorrectionLevel: 'M'
-      });
-       
-      doc.addImage(qrDataUrl, 'PNG', centerX - 20, y, 40, 40);
-      y += 42;
-       
+      // El SII no valida el timbre leyendo el XML: lee el código de barras impreso y
+      // verifica la firma sobre esos bytes. Tiene que ser PDF417, no QR.
+      const codigo = await generarTimbrePdf417(data.timbre);
+      const dataUrl = `data:image/png;base64,${codigo.toString('base64')}`;
+      // Proporción del símbolo (16 columnas) ≈ 2.2:1, con 72 mm de ancho útil.
+      const altoTimbre = fullWidth / 2.2;
+      doc.addImage(dataUrl, 'PNG', margin, y, fullWidth, altoTimbre);
+      y += altoTimbre + 2;
+
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       doc.text('Timbre Electrónico SII', centerX, y, { align: 'center' });
       y += 3;
       doc.text('Res. 80 del 2014 - Verifique en www.sii.cl', centerX, y, { align: 'center' });
     } catch (err) {
-      console.error('Error generando QR:', err);
+      console.error('Error generando timbre PDF417:', err);
     }
   }
 

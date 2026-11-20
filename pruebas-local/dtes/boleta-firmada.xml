@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE xmlns="http://www.sii.cl/SiiDte" version="1.0">
+    <Documento ID="F1001T39">
+        <Encabezado>
+            <IdDoc>
+                <TipoDTE>39</TipoDTE>
+                <Folio>1001</Folio>
+                <FchEmis>2026-11-14</FchEmis>
+                <IndServicio>3</IndServicio>
+            </IdDoc>
+            <Emisor>
+                <RUTEmisor>76123456-7</RUTEmisor>
+                <RznSocEmisor>Austral Market SpA</RznSocEmisor>
+                <GiroEmisor>Venta de Alimentos</GiroEmisor>
+                <DirOrigen>Av. Siempre Viva 123</DirOrigen>
+                <CmnaOrigen>Santiago</CmnaOrigen>
+                <CiudadOrigen>Santiago</CiudadOrigen>
+            </Emisor>
+            <Receptor>
+                <RUTRecep>66666666-6</RUTRecep>
+                <RznSocRecep>Consumidor Final</RznSocRecep>
+            </Receptor>
+            <Totales>
+                <MntNeto>840</MntNeto>
+                
+                <IVA>160</IVA>
+                <MntTotal>1000</MntTotal>
+            </Totales>
+        </Encabezado>
+        
+    <Detalle>
+        <NroLinDet>1</NroLinDet>
+        
+        <NmbItem>Producto de prueba YAHPOS!</NmbItem>
+        <QtyItem>1</QtyItem>
+        <PrcItem>840</PrcItem>
+        <MontoItem>840</MontoItem>
+    </Detalle>
+        
+        <TmstFirma>2026-11-14T01:21:00</TmstFirma>
+    </Documento><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#F1001T39"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>73IDaOkbICOQThrml1S8/bgidMw=</DigestValue></Reference></SignedInfo><SignatureValue>t4OmPw1xALIZx1xu7HNRcJ8XTnb/LwuykYe4kBpmlxaEC6DXQQHtSTOdktB4w3N5VhUiZk4pSZ6xunm7eo+8lWvvVhSkpTJxniHemobC1/jk983hkqFRZ+jZ6vDpuvMFXLa5GfRaEOtktIDbsUI2XxZNwm10Wf1ZK+jMpFrmt+tKfyWCq21L8UCmTNkWPgiwRoo89A9yDBzQhtpze2M4I6Z0SRZ3sHwPr/4iKQIoWOlK7Dozqctp4HJtRF3r3lcfbz/9RzEgNBMsP5u0qxO+fd1llhlii1mjQHmDnn/oO43tGox4z4oB9aIcChkg+yQmdxEZnWdX/IA/zTZWohGtMw==</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>0oXCfMnH28Y/4X/fOAXM+pcUM1m3/RXCIwCmm8zqeBuEP7C+xjPcI6jGmgoIR7MtNsnEFGeE0kTmevhvpQwoY7JXdYNalJA3E2naXwY7Y5pkhO+G6zk0CeOKfljWYceT5KJ9aeQA+PUP2WDgMyBkjuUQ3jhCZ29ege0+4nwTg93XcFxlwvHyeuPb4k5v5pFR55yox91qp9Fi1lKnWu8hICMgPFYUmjDI2SMPAPlx6xocH5McsyVVnj58/vSI7crvygAbHQE/fKfXKVUJNdeovvXp6QBjAhHTXK8XYI1nVJq0sxGU2sEhnwGYltITK90cls9E68SCScubAFTB/HFQ3Q==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIDtTCCAp2gAwIBAgIUA31jCPOnSpbTw7bDIDNusc4Cwd8wDQYJKoZIhvcNAQELBQAwajELMAkGA1UEBhMCQ0wxHTAbBgNVBAgMFFJlZ2lvbiBNZXRyb3BvbGl0YW5hMREwDwYDVQQHDAhTYW50aWFnbzEUMBIGA1UECgwLWUFIUE9TIFRlc3QxEzARBgNVBAMMCjc2MTIzNDU2LTcwHhcNMjYxMTE0MDQyMTAwWhcNMjcxMTE0MDQyMTAwWjBqMQswCQYDVQQGEwJDTDEdMBsGA1UECAwUUmVnaW9uIE1ldHJvcG9saXRhbmExETAPBgNVBAcMCFNhbnRpYWdvMRQwEgYDVQQKDAtZQUhQT1MgVGVzdDETMBEGA1UEAwwKNzYxMjM0NTYtNzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANKFwnzJx9vGP+F/3zgFzPqXFDNZt/0VwiMAppvM6ngbhD+wvsYz3COoxpoKCEezLTbJxBRnhNJE5nr4b6UMKGOyV3WDWpSQNxNp2l8GO2OaZITvhus5NAnjin5Y1mHHk+SifWnkAPj1D9lg4DMgZI7lEN44QmdvXoHtPuJ8E4Pd13BcZcLx8nrj2+JOb+aRUeecqMfdaqfRYtZSp1rvISAjIDxWFJowyNkjDwD5cesaHB+THLMlVZ4+fP70iO3K78oAGx0BP3yn1ylVCTXXqL716ekAYwIR01yvF2CNZ1SatLMRlNrBIZ8BmJbSEyvdHJbPROvEgknLmwBUwfxxUN0CAwEAAaNTMFEwHQYDVR0OBBYEFBlCUHTep5dpaj5MWdYY3rOB4WPdMB8GA1UdIwQYMBaAFBlCUHTep5dpaj5MWdYY3rOB4WPdMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAIzR6un9sJejqULwdD9ff9lVflJIvJB6Ljwrwd3Y29ga5TjWWSUEHRAo8Y2aKOu/2RuCIkY7LS2TkHwE3MO7JERM8x0FG8g/6VLBsPCgGcqmwTtXYYbptGlCIOytycsFswpw6PS5QDG8Jfez+atRKlR1hdFUwatkGnQcZ5Zy5jDM1Vx0/KnMtGKhxhzW5O8OT0WLsuB5VvlmxlcqKSFtXCYaihXq9zbiqPRWpFIDs3ZfLhCjP7e6LEfSVLeWnoYmEIPkrrsXvP2VI4FkwCZO8KUP4zYwFfpdV82xS3jzkH2m92fvAL70xSORKvKamK7fCjCSMf0YU5jNFtmvFlCsLy0=</X509Certificate></X509Data></KeyInfo></Signature>
+</DTE>

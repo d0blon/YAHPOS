@@ -1,19 +1,33 @@
 import type { NextConfig } from "next";
-import withPWA from "@ducanh2912/next-pwa";
+import withPWA, { runtimeCaching as defaultRuntimeCaching } from "@ducanh2912/next-pwa";
 
-const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://*.supabase.co https://i.pravatar.cc https://images.unsplash.com https://cdn.jumbo.cl https://jumbo.vteximg.com.br https://*.cugat.cl https://cugat.cl https://placehold.co https://*.placehold.co;
-    font-src 'self' https://fonts.gstatic.com;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://maullin.sii.cl https://palena.sii.cl https://*.vercel-storage.com;
-    upgrade-insecure-requests;
-`.replace(/\s{2,}/g, ' ').trim();
+const isProd = process.env.NODE_ENV === 'production';
+
+// La CSP se emite por request en src/proxy.ts (nonce real). No publicar acá una
+// CSP estática: dos headers CSP se intersecan y el 'unsafe-inline' anularía el nonce.
+
+// next-pwa 10.2.9: workboxOptions.runtimeCaching reemplaza el array por defecto
+// cuando extendDefaultRuntimeCaching es false. Allowlist por cacheName para que
+// reglas nuevas del paquete (apis, pages-rsc, pages, ...) no se cuelen solas.
+// cacheStartUrl/dynamicStartUrl se desactivan: inyectan "start-url" y precachean
+// el HTML del tenant fuera de runtimeCaching.
+const STATIC_ASSET_CACHE_NAMES = new Set([
+  'google-fonts-webfonts',
+  'google-fonts-stylesheets',
+  'static-font-assets',
+  'static-image-assets',
+  'next-static-js-assets',
+  'next-image',
+  'static-audio-assets',
+  'static-video-assets',
+  'static-js-assets',
+  'static-style-assets',
+]);
+
+const staticAssetRuntimeCaching = defaultRuntimeCaching.filter((rule) => {
+  const cacheName = rule.options?.cacheName;
+  return typeof cacheName === 'string' && STATIC_ASSET_CACHE_NAMES.has(cacheName);
+});
 
 const nextConfig: NextConfig = {
   images: {
@@ -35,10 +49,6 @@ const nextConfig: NextConfig = {
         source: '/(.*)',
         headers: [
           {
-            key: 'Content-Security-Policy',
-            value: cspHeader,
-          },
-          {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
@@ -54,6 +64,12 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          ...(isProd
+            ? [{
+                key: 'Strict-Transport-Security',
+                value: 'max-age=63072000; includeSubDomains; preload',
+              }]
+            : []),
         ],
       },
     ];
@@ -61,11 +77,16 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: process.cwd(),
 };
 
-const isProd = process.env.NODE_ENV === "production";
-
 export default isProd
   ? withPWA({
       dest: "public",
       register: false,
+      cacheStartUrl: false,
+      dynamicStartUrl: false,
+      cacheOnFrontEndNav: false,
+      extendDefaultRuntimeCaching: false,
+      workboxOptions: {
+        runtimeCaching: staticAssetRuntimeCaching,
+      },
     })(nextConfig)
   : nextConfig;

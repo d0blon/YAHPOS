@@ -25,13 +25,8 @@ import {
 } from '@/components/ui/card'
 import { usePosStore, PosSettings } from '@/stores/posStore'
 import { useHardwareStore } from '@/lib/hardware/hardwareStore'
+import { TERMINALS_WITH_DTE } from '@/lib/hardware/types'
 import { toast } from 'sonner'
-
-declare module '@/stores/posStore' {
-  interface PosSettings {
-    terminalsDte?: Record<string, boolean>;
-  }
-}
 
 interface PosSettingsModalProps {
   isOpen: boolean
@@ -297,6 +292,16 @@ export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
                         : 'EMISIÓN SIEMPRE: Boleta SII para todos los métodos.'}
                     </p>
                   </div>
+                  <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-100 dark:border-gray-800">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-black text-slate-900 dark:text-gray-100">Sin emisión SII → sólo voucher interno</Label>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Todas las ventas se registran sin boleta ni consumo de folios</p>
+                    </div>
+                    <Switch
+                      checked={(settings.siiEmission ?? 'always') === 'voucher_only'}
+                      onCheckedChange={(checked) => updateSettings({ siiEmission: checked ? 'voucher_only' : 'always' })}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -426,23 +431,21 @@ export function PosSettingsModal({ isOpen, onClose }: PosSettingsModalProps) {
                 <div className="pt-3 border-t border-slate-100 dark:border-gray-800 space-y-3">
                   <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emisión SII por Terminal</Label>
                   
-                  {['TUU', 'Getnet', 'SumUp Solo', 'SumUp Air'].map(term => (
+                  {Object.keys(TERMINALS_WITH_DTE).map(term => (
                     <div key={term} className="flex items-center justify-between gap-4">
                       <div className="space-y-0.5">
                         <Label className="text-sm font-black text-slate-900 dark:text-gray-100">{term}</Label>
                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">
-                          {term === 'TUU' ? 'API tiene dteType' :
-                           term === 'Getnet' ? 'Smart POS emite boleta' :
-                           term === 'SumUp Solo' ? 'Conexión SII integrada' :
-                           'Solo lector BT, no emite DTE'}
+                          {TERMINALS_WITH_DTE[term] ? 'Emite su propia boleta' : 'No emite DTE'}
                         </p>
                       </div>
                       <Switch 
-                        checked={settings.terminalsDte?.[term] ?? (term === 'SumUp Air' ? false : true)}
-                        onCheckedChange={() => updateSettings({
+                        checked={settings.terminalsDte?.[term] ?? TERMINALS_WITH_DTE[term]}
+                        disabled={!TERMINALS_WITH_DTE[term]}
+                        onCheckedChange={(checked) => updateSettings({
                           terminalsDte: {
                             ...(settings.terminalsDte || {}),
-                            [term]: !(settings.terminalsDte?.[term] ?? (term === 'SumUp Air' ? false : true))
+                            [term]: checked
                           }
                         })}
                       />

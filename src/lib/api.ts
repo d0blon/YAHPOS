@@ -1,10 +1,41 @@
-import type { Product } from '@/types';
+import { getRootOrigin } from '@/lib/config/root-origin';
+import type { Branch, Product } from '@/types';
+
+interface CreateOrderInput {
+  userId?: string
+  items: { productId: string; quantity: number; price: number }[]
+  subtotal: number
+  shipping: number
+  serviceFee: number
+  total: number
+  paymentMethod: string
+  shippingType: string
+  shippingAddress: {
+    fullName: string
+    email: string
+    phone: string
+    street: string
+    number: string
+    apartment: string
+    commune: string
+    city: string
+  }
+}
+
+interface WebpayTransactionInput {
+  orderId: string
+  amount: number
+  returnUrl: string
+}
 
 // ─── API Base ─────────────────────────────────────────────────────────────────
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') return ''; // Browser utilizes relative URL
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return `http://localhost:${process.env.PORT ?? 3000}`; // Node.js SSR needs absolute URL
+  try {
+    return getRootOrigin();
+  } catch {
+    return '';
+  }
 };
 
 export const API_BASE_URL = `${getBaseUrl()}/api`;
@@ -28,7 +59,8 @@ export async function apiFetch(path: string, init?: RequestInit) {
     if (res.status === 204) return null;
     return await res.json();
   } catch (error) {
-    console.error(`[apiFetch] Error en ${url}:`, error);
+    const safePath = path.split('?')[0];
+    console.error(`[apiFetch] Error en ${safePath}:`, error);
     throw error;
   }
 }
@@ -58,7 +90,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   }
 }
 
-export async function getBranches(): Promise<any[]> {
+export async function getBranches(): Promise<Branch[]> {
   try {
     return await apiFetch('/branches');
   } catch (err) {
@@ -68,7 +100,7 @@ export async function getBranches(): Promise<any[]> {
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
-export async function createOrder(orderData: any) {
+export async function createOrder(orderData: CreateOrderInput) {
   return await apiFetch('/orders', {
     method: 'POST',
     body: JSON.stringify(orderData),
@@ -76,7 +108,7 @@ export async function createOrder(orderData: any) {
 }
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
-export async function createWebpayTransaction(data: any) {
+export async function createWebpayTransaction(data: WebpayTransactionInput) {
   return await apiFetch('/payments/webpay/create', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -84,7 +116,7 @@ export async function createWebpayTransaction(data: any) {
 }
 
 // ─── DTE / SII ────────────────────────────────────────────────────────────────
-export async function generateElectronicBoleta(data: any) {
+export async function generateElectronicBoleta(data: unknown) {
   return await apiFetch('/sii', {
     method: 'POST',
     body: JSON.stringify(data),

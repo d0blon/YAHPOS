@@ -21,13 +21,38 @@ export function isWebUSBAvailable(): boolean {
   return typeof navigator !== 'undefined' && 'usb' in navigator
 }
 
-function textEncoder(text: string): Uint8Array {
+function textEncoder(text: string): Uint8Array<ArrayBuffer> {
   const encoder = new TextEncoder()
   return encoder.encode(text)
 }
 
-function buildReceiptData(opts: PrintOptions): Uint8Array {
-  const parts: Uint8Array[] = []
+/** 80 mm con doble ancho caben ~24 columnas; partir evita cortar la leyenda. */
+const DOUBLE_WIDTH_COLUMNS = 24
+
+function wrapDoubleWidthLine(line: string): string[] {
+  const words = line.split(/\s+/).filter(Boolean)
+  if (words.length === 0) return []
+  const chunks: string[] = []
+  let current = ''
+  for (const word of words) {
+    if (current && `${current} ${word}`.length > DOUBLE_WIDTH_COLUMNS) {
+      chunks.push(current)
+      current = ''
+    }
+    if (word.length > DOUBLE_WIDTH_COLUMNS) {
+      for (let i = 0; i < word.length; i += DOUBLE_WIDTH_COLUMNS) {
+        chunks.push(word.slice(i, i + DOUBLE_WIDTH_COLUMNS))
+      }
+      continue
+    }
+    current = current ? `${current} ${word}` : word
+  }
+  if (current) chunks.push(current)
+  return chunks
+}
+
+function buildReceiptData(opts: PrintOptions): Uint8Array<ArrayBuffer> {
+  const parts: Uint8Array<ArrayBuffer>[] = []
 
   parts.push(new Uint8Array(ESCPOS.INIT))
   parts.push(new Uint8Array(ESCPOS.ALIGN_CENTER))
@@ -81,6 +106,20 @@ function buildReceiptData(opts: PrintOptions): Uint8Array {
     for (const line of opts.footer) {
       parts.push(textEncoder(line + '\n'))
     }
+  }
+
+  if (opts.disclaimerLines?.length) {
+    parts.push(new Uint8Array(ESCPOS.ALIGN_CENTER))
+    parts.push(new Uint8Array(ESCPOS.BOLD_ON))
+    parts.push(new Uint8Array(ESCPOS.FONT_DOUBLE_WIDTH))
+    for (const line of opts.disclaimerLines) {
+      for (const chunk of wrapDoubleWidthLine(line)) {
+        parts.push(textEncoder(chunk + '\n'))
+      }
+    }
+    parts.push(new Uint8Array(ESCPOS.FONT_NORMAL))
+    parts.push(new Uint8Array(ESCPOS.BOLD_OFF))
+    parts.push(new Uint8Array(ESCPOS.ALIGN_LEFT))
   }
 
   parts.push(new Uint8Array(ESCPOS.LF))
@@ -194,7 +233,7 @@ export class PrinterManager {
     return this.sendRaw(data)
   }
 
-  async sendRaw(data: Uint8Array): Promise<boolean> {
+  async sendRaw(data: Uint8Array<ArrayBuffer>): Promise<boolean> {
     if (!this.device) return false
 
     try {
@@ -214,8 +253,7 @@ export class PrinterManager {
         throw new Error('No se encontró endpoint de salida')
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await this.device.transferOut(endpoint.endpointNumber, data as any)
+      await this.device.transferOut(endpoint.endpointNumber, data)
       return true
     } catch (err) {
       console.error('[Printer] Error al enviar datos:', err)

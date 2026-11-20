@@ -5,11 +5,14 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { Session } from '@supabase/supabase-js'
+import { clearTenantState, getActiveStoreId, setActiveStoreId } from '@/lib/tenant-state'
+import { usePosStore } from '@/stores/posStore'
+import { useSiiStore } from '@/stores/siiStore'
+import { useCartStore } from '@/stores/cartStore'
 
 /**
- * Este componente asegura que la sesión de Supabase se sincronice
- * correctamente con las cookies del navegador para que el Proxy (Middleware)
- * pueda ver al usuario logueado, y también actualiza el estado global de Auth.
+ * Sincroniza la sesión con las cookies (para el Proxy) y fija el tenant activo
+ * del Host antes de exponer cualquier estado persistido a los stores.
  */
 export function SessionSync() {
   const router = useRouter()
@@ -25,37 +28,52 @@ export function SessionSync() {
       isRefreshingProfile = true
       try {
         if (session) {
-          await refreshProfile()
+          const hostStoreId = getActiveStoreId()
+          await refreshProfile(hostStoreId ?? undefined)
+
+          const profileStoreId = useAuthStore.getState().user?.storeId ?? null
+
+          if (hostStoreId && profileStoreId && hostStoreId !== profileStoreId) {
+            await clearTenantState()
+            return
+          }
+
+          const storeId = hostStoreId || profileStoreId
+          if (storeId) setActiveStoreId(storeId)
+
+          await Promise.all([
+            usePosStore.persist.rehydrate(),
+            useSiiStore.persist.rehydrate(),
+            useCartStore.persist.rehydrate()
+          ])
         }
       } finally {
         isRefreshingProfile = false
       }
     }
 
-    // 2. Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
-      console.log('Auth Event:', event, session?.user?.email)
-      
+      console.log('[SessionSync] Auth event:', event)
+
       if (event === 'INITIAL_SESSION') {
         initialSessionFired = true
       }
-      
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         await handleSync(session)
       }
-      
+
       if (event === 'SIGNED_OUT') {
+        await clearTenantState()
         useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false, memberships: [], currentStoreRole: null })
         if (typeof window !== 'undefined') {
           localStorage.removeItem('yahpos-auth')
         }
-        window.location.href = '/'
+        window.location.href = new URL('/', window.location.origin).toString()
       }
     })
 
-    // 1. Carga inicial controlada (con delay para evitar pisotón)
-    // Si INITIAL_SESSION ya disparó, no hacemos getSession() redundante
     const initTimer = setTimeout(async () => {
       if (!mounted || initialSessionFired) return
       const { data: { session } } = await supabase.auth.getSession()

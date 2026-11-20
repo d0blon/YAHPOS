@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { verifyMasterTOTP } from '@/lib/security'
+import { createDevToken, DEV_TOKEN_MAX_AGE } from '@/lib/dev-auth'
 
 const MASTER_ENCRYPTED = process.env.MASTER_KEY_ENCRYPTED || ''
 
@@ -17,12 +18,18 @@ export async function verifyDeveloperAccessAction(password: string, code: string
     const isValid = await verifyMasterTOTP(code, MASTER_ENCRYPTED, password)
 
     if (isValid) {
-      // Establecer una cookie de sesión para el modo developer (expira en 2 horas)
+      const token = createDevToken()
+      if (!token) {
+        return { success: false, error: 'Configuración de sesión developer no disponible' }
+      }
+
+      // Token firmado (HMAC) con expiración embebida; ya no es un valor estático.
       const cookieStore = await cookies()
-      cookieStore.set('dev_token', 'patagonia_dev_active', {
+      cookieStore.set('dev_token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 2,
+        sameSite: 'lax',
+        maxAge: DEV_TOKEN_MAX_AGE,
         path: '/'
       })
 
@@ -30,9 +37,9 @@ export async function verifyDeveloperAccessAction(password: string, code: string
     }
 
     return { success: false, error: 'Código o contraseña incorrectos' }
-  } catch (e: any) {
+  } catch (e) {
     console.error("Action error:", e)
-    return { success: false, error: e.message || 'Error de servidor' }
+    return { success: false, error: (e instanceof Error ? e.message : '') || 'Error de servidor' }
   }
 }
 

@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
-import { withAuth, apiError } from '@/lib/api-utils'
+import { withAuth } from '@/lib/api-utils'
 import { orderSchema } from '@/lib/validations/orders'
+import { parseBody } from '@/lib/validations/http'
+import { orderPatchSchema } from '@/lib/validations/api'
+
+const ORDER_SELECT = 'id, store_id, user_id, branch_id, total, subtotal, discount, shipping_cost, service_fee, status, payment_method, payment_status, shipping_type, shipping_address_json, address, fulfillment_status, metadata, sii_document_id, sii_status, folio, created_at, updated_at'
+
+/** Violación del índice parcial `orders_store_offline_id_unique` (migración 037). */
+function isDuplicateOfflineIdError(error: { code?: string; message?: string } | null): boolean {
+  return !!error && error.code === '23505' && /offline_id/i.test(error.message ?? '')
+}
 
 export async function GET() {
   const supabase = await createClient()
@@ -20,7 +29,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select(ORDER_SELECT)
       .eq('store_id', profile.store_id)
       .order('created_at', { ascending: false })
       .limit(100)
@@ -30,7 +39,7 @@ export async function GET() {
     }
 
     return NextResponse.json(data ?? [])
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
@@ -40,22 +49,12 @@ export async function POST(req: Request) {
     const auth = await withAuth()
     if (auth.error) return auth.error
 
-    const body = await req.json()
-    console.log('[API /orders] Recibido:', body)
+    const parsed = await parseBody(req, orderSchema)
+    if ('error' in parsed) return parsed.error
 
-    const validated = orderSchema.safeParse(body)
-    if (!validated.success) {
-      console.error('[API /orders] Validation Error:', validated.error.issues)
-      return NextResponse.json({ 
-        error: 'Datos de orden inválidos', 
-        details: validated.error.issues 
-      }, { status: 400 })
-    }
-
-    const { 
-      total, 
-      subtotal,
-      discount, 
+    const {
+      total,
+      discount,
       shipping, 
       serviceFee, 
       shippingType,
@@ -63,14 +62,15 @@ export async function POST(req: Request) {
       paymentMethod, 
       status,
       customerRut,
-      pointsToEarn = 0,
       pointsRedeemed = 0,
       items,
       branchId,
       source = 'pos',
       registerId,
-      offlineId
-    } = validated.data
+      offlineId,
+      documentKind,
+      siiSkipReason
+    } = parsed.data
 
     if (!total || !paymentMethod) {
       return NextResponse.json({ error: 'Faltan datos obligatorios (total, paymentMethod)' }, { status: 400 })
@@ -79,20 +79,38 @@ export async function POST(req: Request) {
     // Validar que todos los productos existan ANTES de crear orden/pago -- evita dejar
     // una orden pagada huérfana si algún productId es inválido (ej. IDs del catálogo demo
     // que se filtraron al carrito por error, no numéricos, no existen en esta tienda).
+    let realPriceById: Map<string, number> = new Map()
+
     if (items?.length) {
-      const productIds = items.map((i: any) => i.productId).filter(Boolean)
+      const productIds = items.map((i) => i.productId).filter(Boolean)
       if (productIds.length > 0) {
         const { data: existingProducts } = await auth.supabase
           .from('products')
-          .select('id')
+          .select('id, price')
           .eq('store_id', auth.storeId)
           .in('id', productIds)
 
-        const existingIds = new Set((existingProducts || []).map((p: any) => String(p.id)))
-        const missingIds = productIds.filter((id: any) => !existingIds.has(String(id)))
+        const existingIds = new Set((existingProducts || []).map((p) => String(p.id)))
+        const missingIds = productIds.filter((id) => !existingIds.has(String(id)))
 
         if (missingIds.length > 0) {
           return NextResponse.json({ error: `Producto(s) inválido(s): ${missingIds.join(', ')}` }, { status: 400 })
+        }
+
+        realPriceById = new Map((existingProducts || []).map((p) => [String(p.id), Number(p.price)]))
+      }
+
+      if (source === 'ecommerce') {
+        const realSubtotal = items.reduce((sum: number, i) => {
+          const price = realPriceById.get(String(i.productId)) ?? 0
+          return sum + price * i.quantity
+        }, 0)
+
+        // El total no puede ser menor al valor real del carro (sí puede ser mayor por
+        // envío/servicio, que hoy siguen calculándose aparte — fuera de alcance de este fix).
+        if (total < realSubtotal) {
+          console.error('[API /orders] Precio manipulado — total recibido menor al real', { total, realSubtotal })
+          return NextResponse.json({ error: 'El total no coincide con el precio real de los productos' }, { status: 400 })
         }
       }
     }
@@ -100,8 +118,9 @@ export async function POST(req: Request) {
     if (offlineId) {
       const { data: existingOrder } = await auth.supabase
         .from('orders')
-        .select('*')
+        .select(ORDER_SELECT)
         .eq('metadata->>offline_id', offlineId)
+        .eq('store_id', auth.storeId)
         .maybeSingle()
       
       if (existingOrder) {
@@ -121,8 +140,8 @@ export async function POST(req: Request) {
     const loyaltyEnabled = settings.loyalty_enabled === 'true';
     const accumulationRate = parseInt(settings.loyalty_accumulation_rate || '100');
     
-    let finalPointsToEarn = pointsToEarn || 0;
-    if (loyaltyEnabled && !pointsToEarn && total > 0) {
+    let finalPointsToEarn = 0;
+    if (loyaltyEnabled && total > 0) {
       finalPointsToEarn = Math.floor(total / accumulationRate);
     }
 
@@ -138,7 +157,7 @@ export async function POST(req: Request) {
         discount: discount ?? 0,
         status: status ?? (isEcommerce ? 'pending' : 'completed'),
         address: isEcommerce 
-          ? (typeof shippingAddress === 'object' ? (shippingAddress as any)?.street : shippingAddress) || 'Envío Online'
+          ? (typeof shippingAddress === 'object' ? shippingAddress?.street : shippingAddress) || 'Envío Online'
           : 'Venta Presencial POS',
         payment_method: paymentMethod,
         payment_status: isEcommerce ? 'pending' : 'paid',
@@ -148,8 +167,12 @@ export async function POST(req: Request) {
         shipping_address_json: shippingAddress || {},
         fulfillment_status: isEcommerce ? 'pending' : 'delivered',
         service_fee: serviceFee || 0,
+        // `no_aplica` (nunca null) distingue al voucher de un DTE pendiente.
+        ...(documentKind === 'voucher' ? { sii_status: 'no_aplica' } : {}),
         metadata: {
           offline_id: offlineId || null,
+          document_kind: documentKind ?? null,
+          sii_skip_reason: siiSkipReason ?? null,
           loyalty: {
             points_earned: finalPointsToEarn,
             points_redeemed: pointsRedeemed || 0,
@@ -157,12 +180,52 @@ export async function POST(req: Request) {
           }
         }
       }])
-      .select()
+      .select(ORDER_SELECT)
       .single()
 
     if (orderError) {
+      // Carrera entre dos requests con el mismo offline_id: la constraint parcial
+      // (migración 037) garantiza una sola fila. Devolvemos la existente, sin
+      // re-registrar pago, ítems, stock ni puntos.
+      if (offlineId && isDuplicateOfflineIdError(orderError)) {
+        const { data: existingOrder } = await auth.supabase
+          .from('orders')
+          .select(ORDER_SELECT)
+          .eq('metadata->>offline_id', offlineId)
+          .eq('store_id', auth.storeId)
+          .maybeSingle()
+
+        if (existingOrder) {
+          console.log('[API /orders] Inserto duplicado por carrera (offlineId=%s), retornando existente', offlineId)
+          return NextResponse.json(existingOrder, { status: 200 })
+        }
+      }
       console.error('[API /orders] Error al crear orden:', orderError)
       return NextResponse.json({ error: orderError.message }, { status: 500 })
+    }
+
+    // La venta pudo emitir su DTE antes de que existiera esta fila (POS offline que
+    // sincroniza después). Se enlaza por el `offline_id`; si la migración 028 todavía
+    // no está aplicada el update falla y se registra, sin romper la creación de la orden.
+    if (offlineId && documentKind !== 'voucher') {
+      const { data: dte } = await auth.supabase
+        .from('sii_documents')
+        .select('id, folio')
+        .eq('store_id', auth.storeId)
+        .contains('metadata', { offline_id: offlineId })
+        .maybeSingle()
+
+      if (dte) {
+        const { error: linkError } = await auth.supabase
+          .from('orders')
+          .update({ sii_document_id: dte.id, sii_status: 'firmado', folio: dte.folio })
+          .eq('id', order.id)
+          .eq('store_id', auth.storeId)
+
+        if (linkError) {
+          console.error('[API /orders] Orden creada pero sin enlace al DTE:', linkError.message)
+        }
+      }
     }
 
     const { error: paymentError } = await auth.supabase
@@ -181,11 +244,14 @@ export async function POST(req: Request) {
     }
 
     if (items?.length) {
-      const orderItems = items.map((item: any) => ({
+      const orderItems = items.map((item) => ({
         order_id: order.id,
         product_id: item.productId,
         quantity: item.quantity,
-        price: item.unitPrice ?? item.product?.price ?? 0,
+        store_id: auth.storeId,
+        price: source === 'ecommerce'
+          ? (realPriceById.get(String(item.productId)) ?? 0)
+          : (item.unitPrice ?? 0),
       }))
 
       const { error: itemsError } = await auth.supabase.from('order_items').insert(orderItems)
@@ -201,6 +267,7 @@ export async function POST(req: Request) {
               .select('stock')
               .eq('product_id', item.productId)
               .eq('branch_id', branchId)
+              .eq('store_id', auth.storeId)
               .single();
             
             if (inv) {
@@ -209,14 +276,15 @@ export async function POST(req: Request) {
                 .from('inventory')
                 .update({ stock: newBranchStock })
                 .eq('product_id', item.productId)
-                .eq('branch_id', branchId);
+                .eq('branch_id', branchId)
+                .eq('store_id', auth.storeId);
             }
           }
 
-          const { data: p } = await auth.supabase.from('products').select('stock').eq('id', item.productId).single();
+          const { data: p } = await auth.supabase.from('products').select('stock').eq('id', item.productId).eq('store_id', auth.storeId).single();
           if (p) {
             const newStock = Math.max(0, (p.stock || 0) - item.quantity);
-            await auth.supabase.from('products').update({ stock: newStock }).eq('id', item.productId);
+            await auth.supabase.from('products').update({ stock: newStock }).eq('id', item.productId).eq('store_id', auth.storeId);
           }
         }
       }
@@ -228,17 +296,19 @@ export async function POST(req: Request) {
           .from('profiles')
           .select('id, loyalty_points')
           .eq('rut', cleanedRut)
-          .single();
-          
+          .eq('store_id', auth.storeId)
+          .maybeSingle();
+
         if (customerProfile) {
           const currentPoints = customerProfile.loyalty_points || 0;
           const netPointsChange = (finalPointsToEarn || 0) - (pointsRedeemed || 0);
           const newPoints = Math.max(0, currentPoints + netPointsChange);
-          
+
           await auth.supabase
             .from('profiles')
             .update({ loyalty_points: newPoints })
-            .eq('id', customerProfile.id);
+            .eq('id', customerProfile.id)
+            .eq('store_id', auth.storeId);
         }
       }
     }
@@ -252,11 +322,6 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   const supabase = await createClient()
-  const body = await req.json()
-  const { id, status, payment_status, fulfillment_status } = body
-
-  if (!id) return NextResponse.json({ error: 'Falta ID de orden' }, { status: 400 })
-
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -269,6 +334,10 @@ export async function PATCH(req: Request) {
 
     if (!profile?.store_id) return NextResponse.json({ error: 'Sin tienda' }, { status: 403 })
 
+    const parsed = await parseBody(req, orderPatchSchema)
+    if ('error' in parsed) return parsed.error
+    const { id, status, payment_status, fulfillment_status } = parsed.data
+
     const { data, error } = await supabase
       .from('orders')
       .update({
@@ -279,13 +348,13 @@ export async function PATCH(req: Request) {
       })
       .eq('id', id)
       .eq('store_id', profile.store_id)
-      .select()
+      .select(ORDER_SELECT)
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json(data)
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

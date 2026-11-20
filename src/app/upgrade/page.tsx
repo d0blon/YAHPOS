@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Rocket, Store, ShieldCheck, Zap, ArrowRight, LayoutDashboard, CheckCircle2, Star, Trophy, Globe, ReceiptText, Boxes } from 'lucide-react'
+import { Rocket, Store, ShieldCheck, Zap, CheckCircle2, Trophy, Globe, ReceiptText, Boxes } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -23,7 +22,7 @@ export default function UpgradePage() {
     loadTiers()
   }, [])
 
-  const currentTierSlug = user?.role === 'customer' ? null : (user as any)?.tier || 'austral'
+  const currentTierSlug = user?.role === 'customer' ? null : user?.tier || 'austral'
 
   if (loading) {
     return (

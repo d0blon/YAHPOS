@@ -16,7 +16,7 @@ export const productSchema = z.object({
   brand: z.string().optional().default(''),
   volume: z.string().optional().default(''),
   supplierName: z.string().optional().default(''),
-  supplierMetadata: z.any().optional(),
+  supplierMetadata: z.unknown().optional(),
   isRealtimeTracked: z.boolean().optional().default(false),
   branchStocks: z.array(z.object({
     branchId: z.string().uuid(),

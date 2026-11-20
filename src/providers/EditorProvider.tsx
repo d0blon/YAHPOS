@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
+import { useSaaS } from '@/providers/SaaSProvider'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,126 +101,148 @@ export interface SiteContent {
   }
 }
 
-const DEFAULT_CONTENT: SiteContent = {
-  hero: {
-    slides: [
-      {
-        id: 'slide-1',
-        badge: 'Abierto • Despacho en 45 min',
-        titlePrimary: 'EL MARKET',
-        titleAccent: 'QUE TU HOGAR',
-        titleSecondary: 'MERECE.',
-        description: 'Calidad artesanal, frescura patagónica y una experiencia de compra diseñada para tu comodidad absoluta.',
-        ctaPrimary: 'Ver Productos',
-        ctaSecondary: 'Ofertas Hoy',
-        imageUrl: '',
-      }
-    ]
-  },
-  offers: {
-    title: 'Ofertas',
-    accentTitle: 'Imperdibles',
-    description: 'Aprovecha nuestros descuentos semanales. Stock limitado por promoción.',
-    items: [
-      { id: '1', productId: '26', name: 'Bebida Cola 2.5L', slug: 'bebida-cola-2-5l', discount: '30%', price: '$1.990', oldPrice: '$2.850', imageUrl: '/images/products/cocacola-600ml.png' },
-      { id: '2', productId: '27', name: 'Cerveza Lata', slug: 'cerveza-lata', discount: '2x1', price: '$1.500', oldPrice: '$3.000', imageUrl: '/images/products/placeholder.png' },
-      { id: '3', productId: '16', name: 'Arroz Premium', slug: 'arroz-premium', discount: '25%', price: '$3.490', oldPrice: '$4.650', imageUrl: '/images/products/arroz-1kg.png' },
-    ]
-  },
-  bestSellers: {
-    title: 'Top',
-    accentTitle: 'Ventas',
-    description: 'Los favoritos de nuestra comunidad patagónica. Calidad garantizada.',
-    items: [
-      { id: '1', productId: '18', name: 'Pan de Molde', slug: 'pan-de-molde', price: '$1.200', imageUrl: '/images/products/pan-molde.png' },
-      { id: '2', productId: '17', name: 'Leche Entera 1L', slug: 'leche-entera-1l', price: '$1.100', imageUrl: '/images/products/leche-1l.png' },
-      { id: '3', productId: '25', name: 'Queso Gouda', slug: 'queso-gouda', price: '$4.500', imageUrl: '/images/products/placeholder.png' },
-    ]
-  },
-  packs: {
-    title: 'Combos y',
-    accentTitle: 'Packs',
-    description: 'Ahorra comprando en conjunto. Diseñados para tu familia.',
-    items: [
-      { id: '1', name: 'Pack Desayuno', slug: 'pack-desayuno', price: '$8.990', oldPrice: '$12.000', imageUrl: '/images/products/leche-1l.png' },
-      { id: '2', name: 'Combo Parrilla', slug: 'combo-parrilla', price: '$24.990', oldPrice: '$30.000', imageUrl: '/images/products/lomo-vetado.png' },
-    ]
-  },
-  delivery: {
-    title: 'Despacho',
-    accentTitle: 'Gratis',
-    description: 'Por compras sobre $30.000, llevamos tu pedido a la puerta de tu casa sin costo adicional.',
-    ctaText: 'Comprar Ahora',
-    imageUrl: '/images/products/placeholder.png'
-  },
-  points: {
-    title: 'Club de',
-    accentTitle: 'Puntos',
-    description: 'Únete gratis y empieza a ganar. Cada peso cuenta para conseguir tus productos favoritos totalmente gratis o con descuentos increíbles.',
-    benefits: [
-      { icon: 'Gift', title: 'Recompensas Exclusivas', desc: 'Canjea puntos por productos gratis y descuentos especiales.' },
-      { icon: 'Star', title: 'Acumulación Automática', desc: 'Suma puntos con cada compra dictando tu RUT en caja.' },
-      { icon: 'ShieldCheck', title: 'Niveles Premium', desc: 'Asciende a Archipiélago o YAHPOS! Platinum para obtener beneficios únicos.' },
-    ]
-  },
-  footer: {
-    description: 'Redefiniendo el e-commerce local con tecnología de vanguardia y atención personalizada.',
-    contact: {
-      address: 'Avenida Costanera 1234, Castro, Chiloé',
-      email: 'hola@australmarket.cl',
-      phone: '+56 9 1234 5678',
-      hours: 'Lun - Sab: 09:00 - 20:00'
+interface DbProduct {
+  id: string | number
+  name: string
+  slug: string
+  price: number
+  image: string
+  originalPrice?: number
+}
+
+type RawSiteContent = Partial<SiteContent> & {
+  hero?: Partial<SiteContent['hero']> & Partial<HeroSlideConfig>
+}
+
+function getSupportEmail(): string | null {
+  const configured = process.env.NEXT_PUBLIC_SUPPORT_EMAIL
+  if (typeof configured !== 'string') return null
+  const email = configured.trim()
+  return email.length > 0 ? email : null
+}
+
+function buildDefaultContent(): SiteContent {
+  return {
+    hero: {
+      slides: [
+        {
+          id: 'slide-1',
+          badge: 'Abierto • Despacho en 45 min',
+          titlePrimary: 'EL MARKET',
+          titleAccent: 'QUE TU HOGAR',
+          titleSecondary: 'MERECE.',
+          description: 'Calidad artesanal, frescura patagónica y una experiencia de compra diseñada para tu comodidad absoluta.',
+          ctaPrimary: 'Ver Productos',
+          ctaSecondary: 'Ofertas Hoy',
+          imageUrl: '',
+        }
+      ]
     },
-    socials: {
-      fb: '#',
-      ig: '#',
-      tw: '#',
-      wa: '#'
+    offers: {
+      title: 'Ofertas',
+      accentTitle: 'Imperdibles',
+      description: 'Aprovecha nuestros descuentos semanales. Stock limitado por promoción.',
+      items: [
+        { id: '1', productId: '26', name: 'Bebida Cola 2.5L', slug: 'bebida-cola-2-5l', discount: '30%', price: '$1.990', oldPrice: '$2.850', imageUrl: '/images/products/cocacola-600ml.png' },
+        { id: '2', productId: '27', name: 'Cerveza Lata', slug: 'cerveza-lata', discount: '2x1', price: '$1.500', oldPrice: '$3.000', imageUrl: '/images/products/placeholder.png' },
+        { id: '3', productId: '16', name: 'Arroz Premium', slug: 'arroz-premium', discount: '25%', price: '$3.490', oldPrice: '$4.650', imageUrl: '/images/products/arroz-1kg.png' },
+      ]
     },
-    links: {
-      shop: [
-        { label: 'Alimentos', href: '/categoria/alimentos' },
-        { label: 'Bebidas', href: '/categoria/bebidas' },
-        { label: 'Frescos', href: '/categoria/frescos' },
-        { label: 'Limpieza', href: '/categoria/limpieza' },
-        { label: 'Hogar', href: '/categoria/hogar' },
-      ],
-      company: [
-        { label: 'Sobre Nosotros', href: '/nosotros' },
-        { label: 'Contacto', href: '/contacto' },
-        { label: 'Trabaja con Nosotros', href: '/trabaja-con-nosotros' },
-      ],
-      support: [
-        { label: 'Centro de Ayuda', href: '/ayuda' },
-        { label: 'Envíos y Entregas', href: '/envios' },
-        { label: 'Devoluciones', href: '/devoluciones' },
-        { label: 'Términos', href: '/terminos' },
-      ],
+    bestSellers: {
+      title: 'Top',
+      accentTitle: 'Ventas',
+      description: 'Los favoritos de nuestra comunidad patagónica. Calidad garantizada.',
+      items: [
+        { id: '1', productId: '18', name: 'Pan de Molde', slug: 'pan-de-molde', price: '$1.200', imageUrl: '/images/products/pan-molde.png' },
+        { id: '2', productId: '17', name: 'Leche Entera 1L', slug: 'leche-entera-1l', price: '$1.100', imageUrl: '/images/products/leche-1l.png' },
+        { id: '3', productId: '25', name: 'Queso Gouda', slug: 'queso-gouda', price: '$4.500', imageUrl: '/images/products/placeholder.png' },
+      ]
     },
-    features: [
-      { icon: 'Truck', title: 'ENVÍO YAHPOS!', sub: 'Mismo día garantizado', color: 'text-blue-400' },
-      { icon: 'CreditCard', title: 'PAGO BLINDADO', sub: 'Seguridad nivel bancario', color: 'text-brand-400' },
-      { icon: 'ShieldCheck', title: 'GARANTÍA TOTAL', sub: 'Satisfacción certificada', color: 'text-emerald-400' },
-      { icon: 'Headphones', title: 'SOPORTE 24/7', sub: 'Línea prioritaria miembros', color: 'text-amber-400' },
-    ]
-  },
-  whatsapp: {
-    phone: '56912345678',
-    message: '¡Hola! Vengo desde el E-commerce y necesito ayuda.'
-  },
-  store: {
-    name: 'YAHPOS! Market',
-    slogan: 'Smart Commerce',
-    badgeOpen: 'ABIERTO',
-    badgeDelivery: 'DESPACHO EN 45 MIN',
-  },
+    packs: {
+      title: 'Combos y',
+      accentTitle: 'Packs',
+      description: 'Ahorra comprando en conjunto. Diseñados para tu familia.',
+      items: [
+        { id: '1', name: 'Pack Desayuno', slug: 'pack-desayuno', price: '$8.990', oldPrice: '$12.000', imageUrl: '/images/products/leche-1l.png' },
+        { id: '2', name: 'Combo Parrilla', slug: 'combo-parrilla', price: '$24.990', oldPrice: '$30.000', imageUrl: '/images/products/lomo-vetado.png' },
+      ]
+    },
+    delivery: {
+      title: 'Despacho',
+      accentTitle: 'Gratis',
+      description: 'Por compras sobre $30.000, llevamos tu pedido a la puerta de tu casa sin costo adicional.',
+      ctaText: 'Comprar Ahora',
+      imageUrl: '/images/products/placeholder.png'
+    },
+    points: {
+      title: 'Club de',
+      accentTitle: 'Puntos',
+      description: 'Únete gratis y empieza a ganar. Cada peso cuenta para conseguir tus productos favoritos totalmente gratis o con descuentos increíbles.',
+      benefits: [
+        { icon: 'Gift', title: 'Recompensas Exclusivas', desc: 'Canjea puntos por productos gratis y descuentos especiales.' },
+        { icon: 'Star', title: 'Acumulación Automática', desc: 'Suma puntos con cada compra dictando tu RUT en caja.' },
+        { icon: 'ShieldCheck', title: 'Niveles Premium', desc: 'Asciende a Archipiélago o YAHPOS! Platinum para obtener beneficios únicos.' },
+      ]
+    },
+    footer: {
+      description: 'Redefiniendo el e-commerce local con tecnología de vanguardia y atención personalizada.',
+      contact: {
+        address: 'Avenida Costanera 1234, Castro, Chiloé',
+        email: getSupportEmail() ?? '',
+        phone: '+56 9 1234 5678',
+        hours: 'Lun - Sab: 09:00 - 20:00'
+      },
+      socials: {
+        fb: '#',
+        ig: '#',
+        tw: '#',
+        wa: '#'
+      },
+      links: {
+        shop: [
+          { label: 'Alimentos', href: '/categoria/alimentos' },
+          { label: 'Bebidas', href: '/categoria/bebidas' },
+          { label: 'Frescos', href: '/categoria/frescos' },
+          { label: 'Limpieza', href: '/categoria/limpieza' },
+          { label: 'Hogar', href: '/categoria/hogar' },
+        ],
+        company: [
+          { label: 'Sobre Nosotros', href: '/nosotros' },
+          { label: 'Contacto', href: '/contacto' },
+          { label: 'Trabaja con Nosotros', href: '/trabaja-con-nosotros' },
+        ],
+        support: [
+          { label: 'Centro de Ayuda', href: '/ayuda' },
+          { label: 'Envíos y Entregas', href: '/envios' },
+          { label: 'Devoluciones', href: '/devoluciones' },
+          { label: 'Términos', href: '/terminos' },
+        ],
+      },
+      features: [
+        { icon: 'Truck', title: 'ENVÍO YAHPOS!', sub: 'Mismo día garantizado', color: 'text-blue-400' },
+        { icon: 'CreditCard', title: 'PAGO BLINDADO', sub: 'Seguridad nivel bancario', color: 'text-brand-400' },
+        { icon: 'ShieldCheck', title: 'GARANTÍA TOTAL', sub: 'Satisfacción certificada', color: 'text-emerald-400' },
+        { icon: 'Headphones', title: 'SOPORTE 24/7', sub: 'Línea prioritaria miembros', color: 'text-amber-400' },
+      ]
+    },
+    whatsapp: {
+      phone: '56912345678',
+      message: '¡Hola! Vengo desde el E-commerce y necesito ayuda.'
+    },
+    store: {
+      name: 'YAHPOS! Market',
+      slogan: 'Smart Commerce',
+      badgeOpen: 'ABIERTO',
+      badgeDelivery: 'DESPACHO EN 45 MIN',
+    },
+  }
 }
 
 interface EditorContextType {
   isEditorMode: boolean
   toggleEditorMode: () => void
   content: SiteContent
-  updateField: (path: string, value: any) => void
+  updateField: (path: string, value: unknown) => void
   addHeroSlide: () => void
   removeHeroSlide: (index: number) => void
   saveChanges: () => Promise<void>
@@ -240,35 +263,45 @@ export function useEditor() {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
+  const { storeId } = useSaaS()
   const [isEditorMode, setIsEditorMode] = useState(false)
-  const [content, setContent] = useState<SiteContent>(DEFAULT_CONTENT)
-  const [savedContent, setSavedContent] = useState<SiteContent>(DEFAULT_CONTENT)
+  const [content, setContent] = useState<SiteContent>(() => buildDefaultContent())
+  const [savedContent, setSavedContent] = useState<SiteContent>(() => buildDefaultContent())
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [dbProducts, setDbProducts] = useState<any[]>([])
+  const [dbProducts, setDbProducts] = useState<DbProduct[]>([])
 
-  // Load content and products from Supabase on mount
+  // Load content and products from Supabase on mount (scoped to current tenant)
   useEffect(() => {
+    if (!storeId) return // fail-closed: wait for tenant resolution
     async function fetchData() {
       try {
-        // 1. Fetch site_content from stores.config
-        const { data: storeData } = await supabase
+        const defaults = buildDefaultContent()
+        // 1. Fetch site_content from stores.config (scoped by current tenant)
+        const { data: storeData, error: storeError } = await supabase
           .from('stores')
           .select('id, config')
-          .limit(1)
+          .eq('id', storeId)
           .single()
 
-        const settingsData = { site_content: storeData?.config?.site_content }
+        if (storeError) {
+          console.warn('[EditorProvider] Could not load store config for', storeId, storeError)
+          return
+        }
+
+        const settingsData: { site_content?: RawSiteContent } = { site_content: storeData?.config?.site_content }
 
         // 2. Fetch all active products for dynamic mapping
         const { data: productsData } = await supabase
           .from('products')
-          .select('*')
+          .select('id, name, slug, price, image')
+          .eq('store_id', storeId)
+          .limit(500)
 
         if (productsData) setDbProducts(productsData)
 
         if (settingsData?.site_content && Object.keys(settingsData.site_content).length > 0) {
-          const rawContent = settingsData.site_content as any;
+          const rawContent = settingsData.site_content;
           
           // Migration: if the old hero format is an object instead of having a `slides` array
           if (rawContent.hero && !Array.isArray(rawContent.hero.slides)) {
@@ -276,20 +309,20 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
               slides: [
                 {
                   id: 'slide-1',
-                  badge: rawContent.hero.badge || DEFAULT_CONTENT.hero.slides[0].badge,
-                  titlePrimary: rawContent.hero.titlePrimary || DEFAULT_CONTENT.hero.slides[0].titlePrimary,
-                  titleAccent: rawContent.hero.titleAccent || DEFAULT_CONTENT.hero.slides[0].titleAccent,
-                  titleSecondary: rawContent.hero.titleSecondary || DEFAULT_CONTENT.hero.slides[0].titleSecondary,
-                  description: rawContent.hero.description || DEFAULT_CONTENT.hero.slides[0].description,
-                  ctaPrimary: rawContent.hero.ctaPrimary || DEFAULT_CONTENT.hero.slides[0].ctaPrimary,
-                  ctaSecondary: rawContent.hero.ctaSecondary || DEFAULT_CONTENT.hero.slides[0].ctaSecondary,
-                  imageUrl: rawContent.hero.imageUrl || DEFAULT_CONTENT.hero.slides[0].imageUrl,
+                  badge: rawContent.hero.badge || defaults.hero.slides[0].badge,
+                  titlePrimary: rawContent.hero.titlePrimary || defaults.hero.slides[0].titlePrimary,
+                  titleAccent: rawContent.hero.titleAccent || defaults.hero.slides[0].titleAccent,
+                  titleSecondary: rawContent.hero.titleSecondary || defaults.hero.slides[0].titleSecondary,
+                  description: rawContent.hero.description || defaults.hero.slides[0].description,
+                  ctaPrimary: rawContent.hero.ctaPrimary || defaults.hero.slides[0].ctaPrimary,
+                  ctaSecondary: rawContent.hero.ctaSecondary || defaults.hero.slides[0].ctaSecondary,
+                  imageUrl: rawContent.hero.imageUrl || defaults.hero.slides[0].imageUrl,
                 }
               ]
             }
           }
 
-          const merged = deepMerge(DEFAULT_CONTENT, rawContent) as SiteContent
+          const merged = deepMerge(defaults, rawContent) as SiteContent
           setContent(merged)
           setSavedContent(merged)
         }
@@ -298,10 +331,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       }
     }
     fetchData()
-  }, [])
+  }, [storeId])
 
   // Deep set a nested value by dot-path (e.g. "hero.slides.0.badge")
-  const updateField = useCallback((path: string, value: any) => {
+  const updateField = useCallback((path: string, value: unknown) => {
     setContent(prev => {
       const next = deepClone(prev)
       setNestedValue(next, path, value)
@@ -375,24 +408,31 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const saveChanges = useCallback(async () => {
+    if (!storeId) {
+      console.error('[EditorProvider] saveChanges aborted: no storeId resolved (fail-closed)')
+      return
+    }
     setIsSaving(true)
     try {
-      // 1. Obtener config actual para no sobrescribir otros campos
-      const { data: currentStore } = await supabase
+      // 1. Obtener config actual para no sobrescribir otros campos (scoped by tenant)
+      const { data: currentStore, error: loadError } = await supabase
         .from('stores')
         .select('id, config')
-        .limit(1)
+        .eq('id', storeId)
         .single()
 
+      if (loadError) throw loadError
+      if (!currentStore) throw new Error('Store not found for current tenant')
+
       const newConfig = {
-        ...(currentStore?.config || {}),
+        ...(currentStore.config || {}),
         site_content: content
       }
 
       const { error } = await supabase
         .from('stores')
         .update({ config: newConfig })
-        .eq('id', currentStore?.id)
+        .eq('id', storeId)
 
       if (error) throw error
 
@@ -403,7 +443,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsSaving(false)
     }
-  }, [content])
+  }, [content, storeId])
 
   const discardChanges = useCallback(() => {
     setContent(savedContent)
@@ -463,23 +503,26 @@ function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
-function deepMerge(base: any, override: any): any {
-  const result = { ...base }
-  for (const key of Object.keys(override)) {
-    if (override[key] !== null && typeof override[key] === 'object' && !Array.isArray(override[key])) {
-      result[key] = deepMerge(base[key] ?? {}, override[key])
+function deepMerge<T extends object>(base: T, override: object): T {
+  const result = { ...base } as unknown as Record<string, unknown>
+  const baseRecord = { ...base } as unknown as Record<string, unknown>
+  const overrideRecord: Record<string, unknown> = { ...override }
+  for (const key of Object.keys(overrideRecord)) {
+    const overrideValue = overrideRecord[key]
+    if (overrideValue !== null && typeof overrideValue === 'object' && !Array.isArray(overrideValue)) {
+      result[key] = deepMerge((baseRecord[key] ?? {}) as object, overrideValue)
     } else {
-      result[key] = override[key]
+      result[key] = overrideValue
     }
   }
-  return result
+  return result as T
 }
 
-function setNestedValue(obj: any, path: string, value: any) {
+function setNestedValue(obj: object, path: string, value: unknown) {
   const keys = path.split('.')
-  let current = obj
+  let current = obj as Record<string, unknown>
   for (let i = 0; i < keys.length - 1; i++) {
-    current = current[keys[i]]
+    current = current[keys[i]] as Record<string, unknown>
   }
   current[keys[keys.length - 1]] = value
 }

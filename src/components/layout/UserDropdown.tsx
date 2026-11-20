@@ -41,7 +41,6 @@ export function UserDropdown() {
   const isDeveloper = role === 'developer'
   const isManager = role === 'manager'
   const isStaff = role === 'cashier'
-  const isPrivileged = isAdmin || isDeveloper || isManager
 
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()
 

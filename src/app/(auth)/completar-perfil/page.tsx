@@ -55,7 +55,7 @@ function CompletarPerfilForm() {
 
       toast.success('¡Perfil completado! Bienvenido a AustralMarket.')
       router.push('/')
-    } catch (err) {
+    } catch {
       toast.error('Error al guardar el perfil. Intenta nuevamente.')
     } finally {
       setIsLoading(false)

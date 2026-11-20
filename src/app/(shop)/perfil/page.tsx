@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
-  User, 
   Package, 
   Heart, 
-  MapPin, 
   Gift,
   LogOut,
   Edit2,
@@ -22,11 +21,11 @@ import { formatRut, cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/stores';
 import { getProducts } from '@/lib/api';
+import type { Order, Product } from '@/types';
 
 function ProfileContent() {
   const navigate = useRouter();
@@ -35,13 +34,14 @@ function ProfileContent() {
   
   const [activeTab, setActiveTab] = useState(defaultTab);
   const { user: currentUser, logout, updateUser: updateProfile, refreshProfile } = useAuthStore();
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Sync activeTab with URL search params
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab && tab !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación/fetch sin cambio de comportamiento
       setActiveTab(tab);
     }
   }, [searchParams, activeTab]);
@@ -54,8 +54,8 @@ function ProfileContent() {
     };
     syncProfile();
     
-    getProducts().then((res: any) => setProducts(Array.isArray(res) ? res : res.products || []));
-  }, []);
+    getProducts().then((res: Product[] | { products?: Product[] }) => setProducts(Array.isArray(res) ? res : res.products || []));
+  }, [refreshProfile]);
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -69,6 +69,7 @@ function ProfileContent() {
 
   useEffect(() => {
     if (currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación/fetch sin cambio de comportamiento
       setFormData({
         name: currentUser.firstName || '',
         lastName: currentUser.lastName || '',
@@ -95,7 +96,7 @@ function ProfileContent() {
     setIsEditing(false);
   };
 
-  const wishlistProducts = products.filter((p: any) => currentUser.wishlist && currentUser.wishlist.includes(p.id));
+  const wishlistProducts = products.filter((p: Product) => currentUser.wishlist && currentUser.wishlist.includes(p.id));
 
   const menuItems = [
     { id: 'profile', label: 'Mi Perfil', icon: UserCircle },
@@ -346,7 +347,7 @@ function ProfileContent() {
                     <CardContent className="p-8 pt-4">
                       {(currentUser.purchaseHistory || []).length > 0 ? (
                         <div className="space-y-4">
-                          {(currentUser.purchaseHistory || []).map((order: any) => (
+                          {((currentUser.purchaseHistory || []) as Array<Order & { date: string }>).map((order) => (
                             <div key={order.id} className="group p-5 border border-gray-100 dark:border-gray-800 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
@@ -394,10 +395,10 @@ function ProfileContent() {
                     <CardContent className="p-8 pt-4">
                       {wishlistProducts.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {wishlistProducts.map((product: any) => (
+                          {wishlistProducts.map((product) => (
                             <div key={product.id} className="group flex gap-4 p-4 border border-gray-100 dark:border-gray-800 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
                               <div className="w-24 h-24 bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
-                                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                <Image src={product.image} alt={product.name} width={96} height={96} unoptimized className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-brand-primary transition-colors">{product.name}</p>

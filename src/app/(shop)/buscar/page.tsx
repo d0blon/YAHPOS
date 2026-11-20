@@ -71,7 +71,7 @@ function BuscarContent() {
     }, '-=0.4')
   }, { scope: containerRef, dependencies: [loading, q] })
 
-  let displayProducts = [...products]
+  const displayProducts = [...products]
   if (sortBy === 'price-asc') {
     displayProducts.sort((a, b) => a.price - b.price)
   } else if (sortBy === 'price-desc') {
@@ -139,7 +139,7 @@ function BuscarContent() {
             <div className="flex flex-col items-center justify-center py-32 glass-card rounded-[40px] border-white/5 bg-white/5">
               <Search className="w-12 h-12 text-gray-700 mb-6" />
               <p className="text-xl font-black text-gray-500 uppercase tracking-tighter">Sin resultados</p>
-              <p className="text-xs font-bold text-gray-600 mt-2">NO ENCONTRAMOS PRODUCTOS PARA "{q.toUpperCase()}"</p>
+              <p className="text-xs font-bold text-gray-600 mt-2">NO ENCONTRAMOS PRODUCTOS PARA &quot;{q.toUpperCase()}&quot;</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 lg:gap-8">

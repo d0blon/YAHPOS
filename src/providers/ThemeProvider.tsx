@@ -49,6 +49,7 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(defaultTheme)
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Sincronización post-hidratación: localStorage/system solo existen en cliente; SSR renderiza defaultTheme y el efecto alinea estado + clase del DOM. */
   React.useEffect(() => {
     try {
       const stored = window.localStorage.getItem(storageKey)
@@ -69,6 +70,7 @@ export function ThemeProvider({
 
     applyThemeClass(defaultTheme)
   }, [defaultTheme, enableSystem, storageKey])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const setTheme = React.useCallback(
     (next: Theme) => {

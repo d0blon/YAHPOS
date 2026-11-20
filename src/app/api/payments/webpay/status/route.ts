@@ -1,22 +1,30 @@
 import { NextResponse } from 'next/server'
-import { tx } from '@/lib/payments/transbank'
-import { createClient } from '@/lib/supabase'
+import { getTransbankClient } from '@/lib/payments/transbank'
+import { withAuth } from '@/lib/api-utils'
+import { parseQuery } from '@/lib/validations/http'
+import { paymentStatusQuerySchema } from '@/lib/validations/api'
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const token = searchParams.get('token')
-
-  if (!token) {
-    return NextResponse.json({ error: 'Token requerido' }, { status: 400 })
-  }
-
   try {
+    // Fail closed: sin sesión o sin tienda no se consulta ni se escribe nada.
+    const auth = await withAuth()
+    if (auth.error) return auth.error
+
+    const parsed = parseQuery(req, paymentStatusQuerySchema)
+    if ('error' in parsed) return parsed.error
+    const token = parsed.data.token
+
+    if (!token) {
+      return NextResponse.json({ error: 'Token requerido' }, { status: 400 })
+    }
+
+    const tx = await getTransbankClient(auth.storeId)
     const response = await tx.commit(token)
 
     if (response.vci === 'TSY' && response.status === 'AUTHORIZED') {
       const orderId = response.buy_order.replace(/^ORD-/, '').replace(/-.*$/, '')
 
-      await (await createClient())
+      const { error: updateError } = await auth.supabase
         .from('orders')
         .update({
           status: 'PAID',
@@ -24,6 +32,11 @@ export async function GET(req: Request) {
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
+        .eq('store_id', auth.storeId)
+
+      if (updateError) {
+        console.error('[Webpay Status] Error actualizando orden')
+      }
 
       return NextResponse.json({
         status: 'AUTHORIZED' as const,
@@ -40,8 +53,9 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ status: 'PENDING' as const })
 
-  } catch (error: any) {
-    if (error.message?.includes('Token already used') || error.message?.includes('not found')) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message.includes('Token already used') || message.includes('not found')) {
       return NextResponse.json({
         status: 'UNKNOWN' as const,
         error: 'Token ya procesado o no encontrado'
@@ -50,7 +64,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       status: 'ERROR' as const,
-      error: error.message
+      error: message || 'Error interno'
     }, { status: 500 })
   }
 }

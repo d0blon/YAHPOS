@@ -1,19 +1,29 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { 
-  Users, Search, UserPlus, Mail, Phone, MapPin, 
-  TrendingUp, Award, MoreHorizontal, Edit2, Trash2,
-  Loader2, AlertCircle, ChevronRight, Filter, X
+  Users, Search, UserPlus,
+  Award, Edit2, Trash2,
+  Loader2, ChevronRight, Filter, X, AlertCircle
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 
+interface Customer {
+  id: string
+  name: string
+  rut?: string
+  email?: string
+  role?: string
+  loyalty_points?: number
+  createdAt?: string
+}
+
 export default function AdminClientes() {
-  const [customers, setCustomers] = useState<any[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -22,34 +32,43 @@ export default function AdminClientes() {
   const [newCustomer, setNewCustomer] = useState({ name: '', rut: '', email: '' })
   const [isSaving, setIsSaving] = useState(false)
 
-  useEffect(() => {
-    fetchCustomers()
-  }, [])
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
-      setIsLoading(true)
       const res = await fetch('/api/customers/list')
       if (!res.ok) throw new Error('Error al cargar clientes')
       const data = await res.json()
       setCustomers(data)
-    } catch (err: any) {
-      setError(err.message)
-      if (customers.length === 0) {
-        setCustomers([
-          { id: '1', name: 'Juan Pérez', rut: '12.345.678-9', email: 'juan@email.com', loyalty_points: 1250, createdAt: '2026-01-15' },
-          { id: '2', name: 'María González', rut: '15.987.654-3', email: 'maria@email.com', loyalty_points: 450, createdAt: '2026-03-20' },
-          { id: '3', name: 'Carlos Soto', rut: '18.111.222-0', email: 'csoto@email.com', loyalty_points: 0, createdAt: '2026-04-01' },
-        ])
-      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al cargar clientes'
+      setError(message)
+      setCustomers(prev => prev.length === 0 ? [
+        { id: '1', name: 'Juan Pérez', rut: '12.345.678-9', email: 'juan@email.com', loyalty_points: 1250, createdAt: '2026-01-15' },
+        { id: '2', name: 'María González', rut: '15.987.654-3', email: 'maria@email.com', loyalty_points: 450, createdAt: '2026-03-20' },
+        { id: '3', name: 'Carlos Soto', rut: '18.111.222-0', email: 'csoto@email.com', loyalty_points: 0, createdAt: '2026-04-01' },
+      ] : prev)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  const refreshCustomers = useCallback(() => {
+    setIsLoading(true)
+    setError(null)
+    void fetchCustomers()
+  }, [fetchCustomers])
+
+  const fetchCustomersRef = useRef(fetchCustomers)
+  const hasFetchedRef = useRef(false)
+
+  useEffect(() => {
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+    void fetchCustomersRef.current()
+  }, [])
 
   const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.rut.includes(searchTerm)
+    (c.rut ?? '').includes(searchTerm)
   )
 
   return (
@@ -103,6 +122,19 @@ export default function AdminClientes() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div role="alert" className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="text-sm font-bold">No se pudieron cargar los clientes del servidor.</p>
+            <p className="text-xs">{error}. Se muestran datos de ejemplo.</p>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={refreshCustomers}>
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       {/* Add Customer Modal */}
       {isAddModalOpen && (
@@ -179,8 +211,8 @@ export default function AdminClientes() {
                       toast.success(newCustomer.rut ? 'Cliente actualizado' : 'Cliente registrado')
                       setIsAddModalOpen(false)
                       setNewCustomer({ name: '', rut: '', email: '' })
-                      fetchCustomers()
-                    } catch (err) {
+                      refreshCustomers()
+                    } catch {
                       toast.error('Hubo un error al procesar el cliente')
                     } finally {
                       setIsSaving(false)
@@ -309,8 +341,8 @@ export default function AdminClientes() {
                                 const res = await fetch(`/api/customers?id=${customer.id}`, { method: 'DELETE' })
                                 if (!res.ok) throw new Error('Error al eliminar')
                                 toast.success('Cliente eliminado')
-                                fetchCustomers()
-                              } catch (err) {
+                                refreshCustomers()
+                              } catch {
                                 toast.error('No se pudo eliminar el cliente')
                               }
                             }

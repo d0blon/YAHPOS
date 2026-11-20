@@ -1,6 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
+import { encrypt } from '@/lib/crypto';
+import { parseBody } from '@/lib/validations/http'
+import { settingsSchema } from '@/lib/validations/api'
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (
+    typeof error === 'object' && error !== null && 'message' in error &&
+    typeof error.message === 'string' && error.message.length > 0
+  ) {
+    return error.message
+  }
+  return fallback
+}
 
 export async function GET() {
   try {
@@ -31,7 +43,7 @@ export async function GET() {
       .eq('store_id', profile.store_id);
 
     // Convertir array de {key, value} a un objeto plano
-    const flatSettings: Record<string, any> = {};
+    const flatSettings: Record<string, string> = {};
     settingsData?.forEach(s => {
       flatSettings[s.key] = s.value;
     });
@@ -66,11 +78,15 @@ export async function GET() {
       },
       payments: {
         flowEnabled: flatSettings.payment_flow_enabled === 'true',
-        flowApiKey: flatSettings.payment_flow_api_key || '',
-        flowApiSecret: flatSettings.payment_flow_api_secret || '',
+        flowApiKeyConfigured: !!flatSettings.payment_flow_api_key,
+        flowApiSecretConfigured: !!flatSettings.payment_flow_api_secret,
         webpayEnabled: flatSettings.payment_webpay_enabled === 'true',
-        webpayCommerceCode: flatSettings.payment_webpay_commerce_code || '',
+        webpayCommerceCodeConfigured: !!flatSettings.payment_webpay_commerce_code,
         freeShippingMin: Number(flatSettings.payment_free_shipping_min || 0),
+        tuuApiKeyConfigured: !!flatSettings.payment_tuu_api_key,
+        tuuTerminalSerial: flatSettings.payment_tuu_terminal_serial || '',
+        mercadopagoAccessTokenConfigured: !!flatSettings.payment_mercadopago_access_token,
+        mercadopagoTerminalId: flatSettings.payment_mercadopago_terminal_id || '',
       },
       loyalty: {
         enabled: flatSettings.loyalty_enabled === 'true',
@@ -106,9 +122,9 @@ export async function GET() {
       settings: structured,
       usingDefaults: !settingsData || settingsData.length === 0
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GET /api/settings] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error, 'Error interno del servidor') }, { status: 500 })
   }
 }
 
@@ -127,8 +143,32 @@ export async function PATCH(req: Request) {
 
     if (!profile?.store_id) return NextResponse.json({ error: 'No store' }, { status: 403 });
 
-    const body = await req.json();
-    
+    const parsed = await parseBody(req, settingsSchema);
+    if ('error' in parsed) return parsed.error;
+    const body: Record<string, string | number | boolean> = parsed.data;
+
+    // Secretos por tienda: si llegan vacíos no se tocan (el admin no los está
+    // cambiando); si traen contenido se cifran antes de guardar. Nunca se guardan
+    // en claro ni se devuelven en GET.
+    const encryptedSecretKeys = [
+      'payment_tuu_api_key',
+      'payment_mercadopago_access_token',
+      'payment_flow_api_key',
+      'payment_flow_api_secret',
+      'payment_webpay_commerce_code',
+      'payment_webpay_api_key',
+      'payment_blumi_api_key',
+    ] as const;
+
+    for (const key of encryptedSecretKeys) {
+      if (!(key in body)) continue;
+      if (!body[key]) {
+        delete body[key];
+      } else {
+        body[key] = encrypt(String(body[key]));
+      }
+    }
+
     // El body viene como un objeto plano de settings (ej: { loyalty_enabled: 'true', ... })
     // Lo convertimos a un formato que podamos upsertar en la tabla settings
     const upsertData = Object.entries(body).map(([key, value]) => ({
@@ -145,10 +185,10 @@ export async function PATCH(req: Request) {
 
     // Sincronizar commune, region, city y address con la tabla stores
     const storesUpdate: Record<string, string> = {};
-    if ('store_commune' in body) storesUpdate.commune = body.store_commune;
-    if ('store_region' in body) storesUpdate.region = body.store_region;
-    if ('store_city' in body) storesUpdate.city = body.store_city;
-    if ('store_address' in body) storesUpdate.address = body.store_address;
+    if ('store_commune' in body) storesUpdate.commune = String(body.store_commune);
+    if ('store_region' in body) storesUpdate.region = String(body.store_region);
+    if ('store_city' in body) storesUpdate.city = String(body.store_city);
+    if ('store_address' in body) storesUpdate.address = String(body.store_address);
 
     if (Object.keys(storesUpdate).length > 0) {
       const { error: storeError } = await supabase
@@ -163,8 +203,8 @@ export async function PATCH(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PATCH /api/settings] Error:', error)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error, 'Error interno del servidor') }, { status: 500 })
   }
 }

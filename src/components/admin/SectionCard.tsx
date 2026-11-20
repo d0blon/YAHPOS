@@ -11,7 +11,7 @@ interface SectionCardProps {
 export function SectionCard({ children, className }: SectionCardProps) {
   return (
     <div className={cn(
-      "glass-card border-none overflow-hidden group animate-fade-in",
+      "flat-card overflow-hidden group",
       className
     )}>
       {children}
@@ -31,7 +31,7 @@ export function SectionHeader({ title, subtitle, description, icon: Icon, action
   return (
     <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
       <div>
-        <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic flex items-center gap-3">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
           {Icon && <Icon className="w-8 h-8 text-brand-primary" />}
           {title}
         </h1>

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Terminal, Shield, AlertTriangle, CheckCircle2, Search, RefreshCw } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Terminal, Search, RefreshCw } from 'lucide-react'
 import { getRealLogsAction } from './actions/logs'
 import { cn } from '@/lib/utils'
 
@@ -10,26 +10,32 @@ import { SystemLog } from '@/types'
 export default function SystemLogs({ storeId }: { storeId?: string }) {
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [filter, setFilter] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [loadedStoreId, setLoadedStoreId] = useState<{ storeId?: string } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const lastFetchedStoreIdRef = useRef<string | undefined>(undefined)
+  const hasFetchedRef = useRef(false)
+  const isLoading = loadedStoreId === null || loadedStoreId.storeId !== storeId
 
-  const fetchLogs = async () => {
-    setIsLoading(true)
+  const fetchLogs = useCallback(async () => {
     try {
       const realLogs = await getRealLogsAction(storeId)
       setLogs(realLogs as SystemLog[])
     } catch (err) {
       console.error("Error fetching real logs UI:", err)
     } finally {
-      setIsLoading(false)
+      setLoadedStoreId({ storeId })
     }
-  }
+  }, [storeId])
 
   useEffect(() => {
-    fetchLogs()
-    const interval = setInterval(fetchLogs, 15000) // Polling real cada 15s
+    if (!hasFetchedRef.current || lastFetchedStoreIdRef.current !== storeId) {
+      hasFetchedRef.current = true
+      lastFetchedStoreIdRef.current = storeId
+      void fetchLogs()
+    }
+    const interval = setInterval(() => { void fetchLogs() }, 15000) // Polling real cada 15s
     return () => clearInterval(interval)
-  }, [storeId])
+  }, [fetchLogs, storeId])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -57,7 +63,10 @@ export default function SystemLogs({ storeId }: { storeId?: string }) {
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={fetchLogs}
+            onClick={() => {
+              setLoadedStoreId(null)
+              void fetchLogs()
+            }}
             disabled={isLoading}
             className="p-1.5 rounded-none hover:bg-amber-500/10 text-amber-500/60 transition-colors disabled:opacity-50 border border-amber-500/20"
           >

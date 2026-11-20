@@ -30,8 +30,7 @@ export class CashDrawerManager {
           await device.claimInterface(iface.interfaceNumber)
           const endpoint = iface.alternate.endpoints.find(e => e.direction === 'out')
           if (endpoint) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await device.transferOut(endpoint.endpointNumber, new Uint8Array(ESCPOS.CASH_DRAWER_PIN2) as any)
+            await device.transferOut(endpoint.endpointNumber, new Uint8Array(ESCPOS.CASH_DRAWER_PIN2))
           }
           await device.close()
           this._connected = true

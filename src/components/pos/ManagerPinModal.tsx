@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, ShieldCheck, Delete, ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { X, ShieldCheck, ArrowRight } from 'lucide-react'
 import { usePosStore } from '@/stores/posStore'
 import { toast } from 'sonner'
 

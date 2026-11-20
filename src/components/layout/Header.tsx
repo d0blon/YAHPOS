@@ -38,9 +38,9 @@ function SearchSuggestions({ suggestions, query, onSelect }: { suggestions: Prod
           onClick={onSelect}
           className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
         >
-          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-900 overflow-hidden shrink-0">
+          <div className="relative w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-900 overflow-hidden shrink-0">
             {product.image && (
-              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+              <Image src={product.image} alt={product.name} fill className="object-cover" />
             )}
           </div>
           <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{product.name}</span>
@@ -66,12 +66,20 @@ export default function Header() {
   const [suggestions, setSuggestions] = useState<Product[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    if (value.trim().length < 2) setSuggestions([])
+  }
+
+  const clearSearch = () => {
+    setShowSuggestions(false)
+    setSearchTerm('')
+    setSuggestions([])
+  }
+
   useEffect(() => {
     const term = searchTerm.trim()
-    if (term.length < 2) {
-      setSuggestions([])
-      return
-    }
+    if (term.length < 2) return
     const timer = setTimeout(async () => {
       try {
         const results = await getProducts(undefined, undefined, term)
@@ -194,7 +202,7 @@ export default function Header() {
              <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 placeholder="¿Qué necesitas hoy?"
@@ -207,7 +215,7 @@ export default function Header() {
                <SearchSuggestions
                  suggestions={suggestions}
                  query={searchTerm.trim()}
-                 onSelect={() => { setShowSuggestions(false); setSearchTerm('') }}
+                 onSelect={clearSearch}
                />
              )}
           </form>
@@ -262,7 +270,7 @@ export default function Header() {
            <input
               type="text"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="¿Qué necesitas hoy?"
@@ -275,7 +283,7 @@ export default function Header() {
              <SearchSuggestions
                suggestions={suggestions}
                query={searchTerm.trim()}
-               onSelect={() => { setShowSuggestions(false); setSearchTerm('') }}
+               onSelect={clearSearch}
              />
            )}
         </form>

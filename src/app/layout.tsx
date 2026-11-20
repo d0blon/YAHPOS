@@ -60,7 +60,7 @@ export default async function RootLayout({
 }>) {
   const headersList = await headers();
   const storeId = headersList.get("x-store-id");
-  const storeTier = headersList.get("x-store-tier") as any;
+  const storeTier = headersList.get("x-store-tier") as 'austral' | 'archipielago' | 'patagonia' | null;
   const storeName = headersList.get("x-store-name");
   const storePrimaryColor = headersList.get("x-store-primary-color");
   const storeAccentColor = headersList.get("x-store-accent-color");
@@ -71,7 +71,7 @@ export default async function RootLayout({
     tier: storeTier || 'austral',
     store_name: storeName || 'YAHPOS!',
     appearance_primary_color: storePrimaryColor || '#4b0082',
-    accent_color: storeAccentColor || '#FFD100',
+    accent_color: storeAccentColor || '#ff00ff',
     surface_color: storeSurfaceColor || null,
   } : null;
 

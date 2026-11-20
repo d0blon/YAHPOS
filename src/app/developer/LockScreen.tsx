@@ -29,7 +29,7 @@ export default function LockScreen() {
       } else {
         toast.error(result.error || 'Credenciales inválidas')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error de sistema crítico')
     } finally {
       setLoading(false)

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import Link from 'next/link'
 import { 
   Plus, Trash2, FileText, Send, 
-  User, MapPin, Tag, Calculator, 
-  Truck, AlertCircle, CheckCircle2, Loader2 
+  User, Tag, 
+  Truck, AlertCircle, Loader2 
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,9 @@ import { cn } from '@/lib/utils'
 import { emitManualDte } from '@/app/admin/facturacion/actions'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { Lock } from 'lucide-react'
+import type { DtePayload } from '@/lib/sii/types'
+
+type DteTipo = DtePayload['Encabezado']['TipoDTE']
 
 interface ItemRow {
   id: string
@@ -26,9 +30,38 @@ interface ItemRow {
 }
 
 export function DocumentTabs() {
-  const { isDocumentTypeEnabled, tier } = useSaaS()
+  const { isDocumentTypeEnabled } = useSaaS()
   const [dteType, setDteType] = useState<33 | 39 | 41 | 52 | 56 | 61>(39) // Default to Boleta
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [cafTipos, setCafTipos] = useState<number[] | null>(null)
+  const [cafLoading, setCafLoading] = useState(true)
+  const [cafError, setCafError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelado = false
+    const cargarCaf = async () => {
+      setCafLoading(true)
+      setCafError(null)
+      try {
+        const res = await fetch('/api/sii/caf', { credentials: 'same-origin' })
+        if (!res.ok) throw new Error(res.status === 403 ? 'sin permisos' : `HTTP ${res.status}`)
+        const data = await res.json()
+        const tipos: number[] = Array.isArray(data?.tipos_disponibles)
+          ? data.tipos_disponibles.map((n: unknown) => Number(n)).filter((n: number) => Number.isInteger(n))
+          : []
+        if (!cancelado) setCafTipos(tipos)
+      } catch (err) {
+        if (!cancelado) {
+          setCafTipos([]) // fail-closed: sin CAF verificable no se habilita ningún tipo
+          setCafError(err instanceof Error ? err.message : 'No se pudo consultar el CAF')
+        }
+      } finally {
+        if (!cancelado) setCafLoading(false)
+      }
+    }
+    cargarCaf()
+    return () => { cancelado = true }
+  }, [])
   
   // Receptor State
   const [receptor, setReceptor] = useState({
@@ -55,7 +88,7 @@ export function DocumentTabs() {
   })
 
   // Items State
-  const [items, setItems] = useState<ItemRow[]>([
+  const [items, setItems] = useState<ItemRow[]>(() => [
     { id: Math.random().toString(36).substr(2, 9), name: '', qty: 1, price: 0, isExempt: false }
   ])
 
@@ -79,6 +112,15 @@ export function DocumentTabs() {
     return { net, iva, exempt, total }
   }, [items])
 
+  // CAF es el gate primario; el plan SaaS filtra en segundo lugar.
+  const tiposConCaf = cafTipos ?? []
+  const tiposHabilitados = tiposConCaf.filter((id) => isDocumentTypeEnabled(id))
+  const emisionHabilitada = cafTipos !== null && tiposHabilitados.length > 0
+  // Si el tipo elegido perdió CAF (o plan), caer al primero habilitado sin mutar estado.
+  const selectedType = cafTipos !== null && tiposHabilitados.includes(dteType)
+    ? dteType
+    : (tiposHabilitados[0] ?? dteType)
+
   const addItem = () => {
     setItems([
       ...items, 
@@ -92,7 +134,7 @@ export function DocumentTabs() {
     }
   }
 
-  const updateItem = (id: string, field: keyof ItemRow, value: any) => {
+  function updateItem<K extends keyof ItemRow>(id: string, field: K, value: ItemRow[K]) {
     setItems(items.map(i => i.id === id ? { ...i, [field]: value } : i))
   }
 
@@ -107,11 +149,16 @@ export function DocumentTabs() {
       return
     }
 
+    if (!emisionHabilitada) {
+      toast.error('CAF no disponible — pendiente de verificación SII')
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const payload = {
         Encabezado: {
-          TipoDTE: dteType,
+          TipoDTE: selectedType as DteTipo,
           Folio: 0, 
           FchEmis: new Date().toISOString().split('T')[0],
           RUTRecep: receptor.rut,
@@ -125,11 +172,11 @@ export function DocumentTabs() {
           MntExe: totals.exempt > 0 ? totals.exempt : undefined,
           MntTotal: totals.total,
           TasaIVA: 19,
-            ...(dteType === 52 ? {
+            ...(selectedType === 52 ? {
               TipoDespacho: guiaConfig.tipoDespacho,
               IndTraslado: guiaConfig.indTraslado
             } : {}),
-            ...([56, 61].includes(dteType) ? {
+            ...([56, 61].includes(selectedType) ? {
               Referencias: [{
                 TpoDocRef: reference.tpoDocRef,
                 FolioRef: Number(reference.folioRef),
@@ -144,11 +191,12 @@ export function DocumentTabs() {
           QtyItem: i.qty,
           PrcItem: i.price,
           MontoItem: i.qty * i.price,
-          IndExe: i.isExempt ? 1 : undefined
+          IndExe: i.isExempt ? (1 as const) : undefined
         }))
       }
 
-      const result = await emitManualDte('main_store', dteType, payload as any)
+      // store_id se deriva en el action desde la sesión; '' es la señal explícita.
+      const result = await emitManualDte('', selectedType, payload)
 
       if (result.success) {
         toast.success(`Documento emitido correctamente. Folio: ${result.folio}`)
@@ -157,8 +205,8 @@ export function DocumentTabs() {
       } else {
         toast.error(`Error: ${result.error}`)
       }
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al emitir el documento')
     } finally {
       setIsSubmitting(false)
     }
@@ -176,8 +224,28 @@ export function DocumentTabs() {
               <CardTitle className="text-xl font-black uppercase tracking-tight">Emisión Directa</CardTitle>
             </div>
             <CardDescription className="text-xs font-medium italic">Emite documentos tributarios electrónicos de forma manual.</CardDescription>
+            <Link href="/admin/facturacion/pruebas" className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-600 hover:underline">
+              Set de pruebas SII <span aria-hidden="true">→</span>
+            </Link>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
+            {(cafLoading || cafError || (cafTipos !== null && tiposHabilitados.length === 0)) && (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 mt-0.5 text-amber-600 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">
+                    {cafLoading ? 'Verificando CAF' : 'Sin CAF vigente'}
+                  </p>
+                  <p className="text-[10px] font-medium leading-relaxed text-gray-500 dark:text-gray-300">
+                    {cafError
+                      ? `No se pudo consultar el CAF (${cafError}). La emisión está bloqueada.`
+                      : cafLoading
+                        ? 'Consultando los tipos de documento autorizados…'
+                        : 'No hay CAF vigente para ningún tipo. La emisión está bloqueada hasta la verificación SII.'}
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Tipo de Documento</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -189,17 +257,23 @@ export function DocumentTabs() {
                   { id: 56, label: 'N. Débito', icon: FileText, tier: 'ARCHIPIELAGO' },
                   { id: 52, label: 'Guía', icon: Truck, tier: 'PATAGONIA' }
                 ].map((type) => {
-                  const enabled = isDocumentTypeEnabled(type.id)
+                  const cafDisponible = tiposConCaf.includes(type.id)
+                  const planHabilitado = isDocumentTypeEnabled(type.id)
+                  const enabled = cafDisponible && planHabilitado
+                  const motivo = !cafDisponible
+                    ? 'CAF no disponible — pendiente de verificación SII'
+                    : `Requiere ${type.tier}`
                   const Icon = type.icon
                   return (
                     <div key={type.id} className="relative group">
                       <Button 
-                        variant={dteType === type.id ? 'default' : 'outline'}
-                        onClick={() => enabled && setDteType(type.id as any)}
+                        variant={selectedType === type.id ? 'default' : 'outline'}
+                        onClick={() => enabled && setDteType(type.id as DteTipo)}
                         disabled={!enabled}
+                        title={motivo}
                         className={cn(
                           "w-full h-12 rounded-xl font-black uppercase tracking-tighter text-[10px] transition-all",
-                          dteType === type.id ? "bg-amber-600 text-white shadow-lg" : "border-gray-100 text-gray-400",
+                          selectedType === type.id ? "bg-amber-600 text-white shadow-lg" : "border-gray-100 text-gray-400",
                           !enabled && "opacity-50 grayscale"
                         )}
                       >
@@ -209,7 +283,7 @@ export function DocumentTabs() {
                       {!enabled && (
                         <div className="absolute -top-10 left-0 w-full hidden group-hover:block z-20">
                           <div className="bg-gray-900 text-white text-[8px] p-1.5 rounded shadow-xl font-bold text-center">
-                            Requiere {type.tier}
+                            {motivo}
                           </div>
                         </div>
                       )}
@@ -219,7 +293,7 @@ export function DocumentTabs() {
               </div>
             </div>
 
-            {dteType === 52 && (
+            {selectedType === 52 && (
               <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-3xl space-y-6">
                 <div className="flex items-center gap-2 text-amber-600">
                   <Truck className="w-4 h-4" />
@@ -232,7 +306,7 @@ export function DocumentTabs() {
                     <select 
                       className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 outline-none"
                       value={guiaConfig.tipoDespacho}
-                      onChange={(e) => setGuiaConfig({...guiaConfig, tipoDespacho: Number(e.target.value) as any})}
+                      onChange={(e) => setGuiaConfig({...guiaConfig, tipoDespacho: Number(e.target.value) as 1 | 2 | 3})}
                     >
                       <option value={1}>1 - Emisor a otros (Venta)</option>
                       <option value={2}>2 - Emisor a bodegas (Traslado)</option>
@@ -245,7 +319,7 @@ export function DocumentTabs() {
                     <select 
                       className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl text-[10px] font-bold px-3 outline-none"
                       value={guiaConfig.indTraslado}
-                      onChange={(e) => setGuiaConfig({...guiaConfig, indTraslado: Number(e.target.value) as any})}
+                      onChange={(e) => setGuiaConfig({...guiaConfig, indTraslado: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9})}
                     >
                       <option value={1}>1 - Operación constituye venta</option>
                       <option value={2}>2 - Ventas por efectuar</option>
@@ -262,7 +336,7 @@ export function DocumentTabs() {
               </div>
             )}
 
-            {[56, 61].includes(dteType) && (
+            {[56, 61].includes(selectedType) && (
               <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-3xl space-y-4">
                 <div className="flex items-center gap-2 text-orange-600">
                   <FileText className="w-4 h-4" />
@@ -493,7 +567,8 @@ export function DocumentTabs() {
                 
                 <Button 
                   onClick={handleEmit}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !emisionHabilitada}
+                  title={!emisionHabilitada ? 'CAF no disponible — pendiente de verificación SII' : undefined}
                   className="w-full h-16 rounded-[2rem] bg-orange-600 hover:bg-orange-700 text-white font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all active:scale-95 disabled:opacity-50"
                 >
                   {isSubmitting ? (

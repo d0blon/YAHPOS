@@ -3,6 +3,7 @@ import DeveloperPanel from './DeveloperPanel'
 import LockScreen from './LockScreen'
 import { getStoresWithStatusAction } from './actions/stores'
 import { Store } from '@/types'
+import { verifyDevToken } from '@/lib/dev-auth'
 
 export const metadata = {
   title: 'Developer Console | YAHPOS!',
@@ -11,7 +12,7 @@ export const metadata = {
 
 export default async function DeveloperPage() {
   const cookieStore = await cookies()
-  const isUnlocked = cookieStore.get('dev_token')?.value === 'patagonia_dev_active'
+  const isUnlocked = verifyDevToken(cookieStore.get('dev_token')?.value)
 
   if (!isUnlocked) {
     return <LockScreen />

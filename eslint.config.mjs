@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     "public/workbox-*.js",
     "*.js",
     "scripts/**",
+    "scratch/**",
     "tests/**",
     ".gemini/**"
   ]),

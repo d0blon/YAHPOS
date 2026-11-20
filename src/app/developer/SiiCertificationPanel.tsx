@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck, Play, CheckCircle2, XCircle, FileText, ExternalLink, RefreshCw } from 'lucide-react'
+import { ShieldCheck, Play, CheckCircle2, XCircle, FileText, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { runSiiCertificationAction, toggleSiiEnvironmentAction } from './actions/sii'
 import { toast } from 'sonner'
@@ -9,9 +9,18 @@ import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 
+interface CertificationResult {
+  desc: string
+  success: boolean
+  folio?: number
+  documentId?: string
+  trackId?: string | null
+  error?: string
+}
+
 export default function SiiCertificationPanel({ storeId, currentEnv }: { storeId: string, currentEnv: 'certification' | 'production' }) {
   const [isRunning, setIsRunning] = useState(false)
-  const [results, setResults] = useState<any[] | null>(null)
+  const [results, setResults] = useState<CertificationResult[] | null>(null)
   const [realMode, setRealMode] = useState(false)
 
   const runSuite = async () => {
@@ -30,7 +39,7 @@ export default function SiiCertificationPanel({ storeId, currentEnv }: { storeId
       } else {
         toast.error('Error al ejecutar suite: ' + (res.error || 'Sin resultados'))
       }
-    } catch (e) {
+    } catch {
       toast.error('Error de red')
     } finally {
       setIsRunning(false)
@@ -158,7 +167,7 @@ export default function SiiCertificationPanel({ storeId, currentEnv }: { storeId
                     variant="ghost" 
                     size="sm"
                     className="text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-none font-bold uppercase tracking-widest text-[9px] border border-white/5"
-                    onClick={() => window.open(`/api/sii/document/${test.documentId}/xml`, '_blank')}
+                    onClick={() => window.open(`/api/sii/documentos/${test.documentId}/xml`, '_blank')}
                   >
                     <FileText className="h-3.5 w-3.5 mr-2" />
                     View XML

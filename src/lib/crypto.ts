@@ -1,7 +1,12 @@
 import crypto from 'crypto';
 
-const ALGORITHM = 'aes-256-cbc';
-const IV_LENGTH = 16; // Para AES, siempre es 16
+const CBC_ALGORITHM = 'aes-256-cbc';
+const GCM_ALGORITHM = 'aes-256-gcm';
+const GCM_IV_LENGTH = 12;
+const GCM_TAG_LENGTH = 16;
+// Prefijo hexadecimal para que el detector legacy `^[0-9a-f]+:` siga reconociendo
+// los valores cifrados sin tocar el motor DTE.
+const GCM_PREFIX = '02:';
 
 /**
  * Returns the validated encryption key.
@@ -22,20 +27,37 @@ function getKey(): Buffer {
 
 export function encrypt(text: string): string {
   const key = getKey();
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  let encrypted = cipher.update(text);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString('hex') + ':' + encrypted.toString('hex');
+  const iv = crypto.randomBytes(GCM_IV_LENGTH);
+  const cipher = crypto.createCipheriv(GCM_ALGORITHM, key, iv, { authTagLength: GCM_TAG_LENGTH });
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${GCM_PREFIX}${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
 }
 
 export function decrypt(text: string): string {
   const key = getKey();
+
+  if (text.startsWith(GCM_PREFIX)) {
+    const parts = text.slice(GCM_PREFIX.length).split(':');
+    if (parts.length !== 3) throw new Error('Cifrado GCM inválido');
+    const [ivHex, tagHex, dataHex] = parts;
+    const iv = Buffer.from(ivHex, 'hex');
+    const tag = Buffer.from(tagHex, 'hex');
+    const encryptedText = Buffer.from(dataHex, 'hex');
+    if (iv.length !== GCM_IV_LENGTH || tag.length !== GCM_TAG_LENGTH) {
+      throw new Error('Cifrado GCM inválido');
+    }
+
+    const decipher = crypto.createDecipheriv(GCM_ALGORITHM, key, iv, { authTagLength: GCM_TAG_LENGTH });
+    decipher.setAuthTag(tag);
+    const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+    return decrypted.toString('utf8');
+  }
+
   const textParts = text.split(':');
   const iv = Buffer.from(textParts.shift()!, 'hex');
   const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  let decrypted = decipher.update(encryptedText);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  const decipher = crypto.createDecipheriv(CBC_ALGORITHM, key, iv);
+  const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
   return decrypted.toString();
 }

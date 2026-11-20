@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { usePosStore } from '@/stores/posStore'
 import { useSiiStore } from '@/stores/siiStore'
+import { getActiveStoreId } from '@/lib/tenant-state'
 import { toast } from 'sonner'
 
 export function OfflineSyncManager() {
@@ -14,12 +15,17 @@ export function OfflineSyncManager() {
     const { pendingSyncOrders, currentUser, cashSession, removeOrderFromQueue } = usePosStore.getState()
     const { pendingQueue, removeFromQueue, updateAttempts, offlineFolioPool, refreshFolios } = useSiiStore.getState()
     
-    // 0. Si el pool de folios está bajo (< 10), intentar refrescar antes de seguir
+    // 0. Si el pool de folios está bajo (< 10), intentar refrescar antes de seguir.
+    // El pool está indexado por `${storeId}:${tipo}`; sin tienda activa no se lee
+    // ni se refresca nada (fail-closed, nunca folios de otra tienda).
+    const storeId = getActiveStoreId()
     const dteTypes = [33, 39, 41]; // Factura, Boleta, Boleta Exenta
-    for (const tipo of dteTypes) {
-      const pool = offlineFolioPool[tipo.toString()] || [];
-      if (pool.length < 10) {
-        await refreshFolios(tipo);
+    if (storeId) {
+      for (const tipo of dteTypes) {
+        const pool = offlineFolioPool[`${storeId}:${tipo}`] || [];
+        if (pool.length < 10) {
+          await refreshFolios(tipo);
+        }
       }
     }
 
@@ -30,6 +36,14 @@ export function OfflineSyncManager() {
     const toastId = toast.loading(`Sincronizando ${totalToSync} documentos con la nube...`, { position: 'bottom-right' })
 
     let successCount = 0;
+
+    const allKnownOrders = [...pendingSyncOrders, ...usePosStore.getState().salesHistory]
+    const isVoucherOrder = (saleId: string) => {
+      const order = allKnownOrders.find(o => o.id === saleId)
+      return order?.siiDecision
+        ? order.siiDecision.kind !== 'dte'
+        : Boolean(order?.siiSkipped)
+    }
     
     // 1. Procesar Órdenes Pendientes (Ventas que fallaron al subir)
     for (const order of pendingSyncOrders) {
@@ -46,7 +60,9 @@ export function OfflineSyncManager() {
             quantity: item.quantity,
             unitPrice: item.product.price
           })),
-          offlineId: order.id // Enviar ID local para evitar duplicados en DB
+          offlineId: order.id, // Enviar ID local para evitar duplicados en DB
+          documentKind: isVoucherOrder(order.id) ? 'voucher' : 'dte',
+          siiSkipReason: order.siiDecision?.kind === 'voucher' ? order.siiDecision.reason : undefined
         };
 
         const supRes = await fetch('/api/orders', {
@@ -69,6 +85,12 @@ export function OfflineSyncManager() {
     const BASE_DELAY = 60000; // 1 minuto base
     
     for (const item of pendingQueue) {
+      if (isVoucherOrder(item.id)) {
+        console.error(`[OfflineSync] Descartando DTE ${item.id}: la venta es voucher interno (sin SII)`);
+        removeFromQueue(item.id);
+        continue;
+      }
+
       if (item.attempts >= 5) continue; 
 
       // Lógica de Backoff Exponencial
@@ -88,8 +110,23 @@ export function OfflineSyncManager() {
         });
         
         if (res.ok) {
+          const data = await res.json().catch(() => null);
           removeFromQueue(item.id);
+          if (data?.documentId) {
+            // La venta ya está en el historial local: sin esto el botón "PDF" del
+            // recibo reimpreso no sabe qué documento pedir.
+            usePosStore.getState().setSaleSiiDocument(item.id, data.documentId);
+          }
           successCount++;
+        } else if (res.status === 422) {
+          // El DTE no se puede emitir con ese payload (formato viejo o datos
+          // inválidos). Reintentarlo cada 30 s no lo arregla y traba la cola.
+          console.error(`[OfflineSync] Descartando ${item.id}: payload no emitible`);
+          removeFromQueue(item.id);
+        } else if (res.status === 409) {
+          // El servidor detectó que la orden es voucher: no reintentar.
+          console.error(`[OfflineSync] Descartando ${item.id}: orden voucher (409)`);
+          removeFromQueue(item.id);
         } else {
           updateAttempts(item.id);
         }
@@ -111,14 +148,12 @@ export function OfflineSyncManager() {
 
   const syncCafs = async () => {
     try {
-      const { setToken, refreshFolios, setFoliosDisponibles } = useSiiStore.getState();
+      const { refreshFolios, setFoliosDisponibles } = useSiiStore.getState();
 
-      // 1. Obtener Token de Sesión SII
+      // 1. Verificar que el certificado SII sea usable. El token nunca se
+      // envía al navegador ni se persiste en IndexedDB.
       const tokenRes = await fetch('/api/sii/auth/token');
-      if (tokenRes.ok) {
-        const { token } = await tokenRes.json();
-        if (token) setToken(token);
-      } else {
+      if (!tokenRes.ok) {
         // Tienda sin SII configurado (404) u otro error — no hay folios que refrescar
         setFoliosDisponibles(false);
         return;

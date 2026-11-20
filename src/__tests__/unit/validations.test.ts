@@ -33,7 +33,7 @@ describe('Zod Schemas Validations', () => {
     it('should validate a correct POS order', () => {
       const validOrder = {
         items: [
-          { product_id: '123e4567-e89b-12d3-a456-426614174000', unit_price: 1000, quantity: 2 }
+          { productId: '123e4567-e89b-12d3-a456-426614174000', unitPrice: 1000, quantity: 2 }
         ],
         total: 2000,
         paymentMethod: 'efectivo',

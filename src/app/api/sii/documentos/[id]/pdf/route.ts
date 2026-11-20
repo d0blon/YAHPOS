@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
-import { generateBoletaPdf, BoletaPdfData } from '@/lib/sii/pdf-generator';
-import { XMLParser } from 'fast-xml-parser';
+import { generateBoletaPdf } from '@/lib/sii/pdf-generator';
+import { extraerDatosPdf } from '@/lib/sii/pdf-datos';
+import { parseParams } from '@/lib/validations/http';
+import { siiDocumentIdSchema } from '@/lib/validations/sii';
+import { roleIn, SII_OPERATION_ROLES } from '@/lib/constants/roles';
+
+const ROLES_PDF = [...SII_OPERATION_ROLES, 'superadmin'] as const;
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const parsedParams = parseParams(await params, siiDocumentIdSchema);
+  if ('error' in parsedParams) return parsedParams.error;
+  const { id } = parsedParams.data;
   const supabase = await createClient();
 
   try {
@@ -15,10 +22,21 @@ export async function GET(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new NextResponse('No autorizado', { status: 401 });
 
-    // 2. Obtener el documento de la base de datos con info del emisor (store)
+    // 2. Validar permisos ANTES de leer xml_content: rol de operación desde DB.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('store_id, role')
+      .eq('id', user.id)
+      .single();
+
+    if (!roleIn(profile?.role, ROLES_PDF)) {
+      return new NextResponse('Acceso denegado', { status: 403 });
+    }
+
+    // 3. Obtener el documento de la base de datos con info del emisor (store)
     const { data: doc, error: docError } = await supabase
       .from('sii_documents')
-      .select('*, stores(*)')
+      .select('id, store_id, xml_content, metadata, tipo_dte, stores(name)')
       .eq('id', id)
       .single();
 
@@ -26,14 +44,9 @@ export async function GET(
       return new NextResponse('Documento no encontrado', { status: 404 });
     }
 
-    // 3. Validar permisos (Mismo store_id o developer)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('store_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profile?.store_id !== doc.store_id && user.user_metadata.role !== 'developer') {
+    // El store del documento manda: solo developer (rol leído de DB) puede leer
+    // documentos de otra tienda.
+    if (profile?.store_id !== doc.store_id && !roleIn(profile?.role, ['developer'])) {
       return new NextResponse('Acceso denegado', { status: 403 });
     }
 
@@ -48,54 +61,12 @@ export async function GET(
       settings[s.key] = s.value;
     });
 
-    // 5. Parsear el XML para extraer datos para el PDF
-    const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
-    const xmlObj = parser.parse(doc.xml_content);
-    
-    // El DTE está envuelto en <DTE><Documento>...
-    const dte = xmlObj.DTE.Documento;
-    const encabezado = dte.Encabezado;
-    
-    // Extraer detalles (pueden ser uno o varios)
-    let detallesRaw = dte.Detalle;
-    if (!Array.isArray(detallesRaw)) detallesRaw = [detallesRaw];
-
-    // Mapear datos al formato esperado por el generador de PDF
-    const pdfData: BoletaPdfData = {
-      folio: encabezado.IdDoc.Folio,
-      fecha: encabezado.IdDoc.FchEmis,
-      total: encabezado.Totales.MntTotal,
-      items: detallesRaw.map((d: any) => ({
-        nombre: d.NmbItem,
-        cantidad: d.QtyItem || 1,
-        precio: d.PrcItem || d.MontoItem,
-        total: d.MontoItem
-      })),
-      emisor: {
-        rut: encabezado.Emisor.RUTEmisor,
-        razonSocial: doc.stores?.name || encabezado.Emisor.RznSoc,
-        giro: encabezado.Emisor.GiroEmis || 'Giro no especificado',
-        direccion: encabezado.Emisor.DirOrigin || 'Dirección no especificada',
-        logoUrl: settings.appearance_logo_url || ''
-      },
-      receptor: encabezado.Receptor?.RUTRecep ? {
-        rut: encabezado.Receptor.RUTRecep,
-        nombre: encabezado.Receptor.RznSocRecep
-      } : undefined,
-      timbre: doc.xml_content.match(/<TED[\s\S]*?<\/TED>/)?.[0] || '',
-      receipt: {
-        message: settings.receipt_message || '¡Gracias por su compra!',
-        showLogo: settings.receipt_show_logo !== 'false',
-        logoUrl: settings.appearance_logo_url || '',
-        colorMode: (settings.receipt_color_mode as 'bw' | 'color') || 'bw',
-        showPoweredBy: settings.receipt_show_powered_by !== 'false',
-        poweredByText: settings.receipt_powered_by_text || 'Powered by YAHPOS!.cl',
-        showLoyalty: settings.loyalty_enabled === 'true',
-        loyaltyName: settings.loyalty_name || 'Puntos',
-        pointsEarned: doc.metadata?.loyalty?.points_earned || 0,
-        pointsRedeemed: doc.metadata?.loyalty?.points_redeemed || 0
-      }
-    };
+    // 5. Traducir el XML del DTE a datos para el PDF
+    const pdfData = extraerDatosPdf(doc.xml_content, {
+      nombreTienda: (doc.stores as unknown as { name?: string } | null)?.name,
+      settings,
+      metadata: doc.metadata,
+    });
 
     // 5. Generar PDF (Retorna Uint8Array)
     const pdfBytes = await generateBoletaPdf(pdfData);
@@ -104,13 +75,14 @@ export async function GET(
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="boleta_${doc.folio}.pdf"`,
+        'Content-Disposition': `inline; filename="dte_${pdfData.tipoDte ?? doc.tipo_dte}_F${pdfData.folio}.pdf"`,
         'Cache-Control': 'no-store, max-age=0'
       },
     });
 
-  } catch (error: any) {
+  } catch (error) {
+    const mensaje = error instanceof Error ? error.message : String(error);
     console.error('[PDF API] Error:', error);
-    return new NextResponse(`Error generando PDF: ${error.message}`, { status: 500 });
+    return new NextResponse(`Error generando PDF: ${mensaje}`, { status: 500 });
   }
 }

@@ -2,8 +2,18 @@
 
 import Link from 'next/link'
 import { Monitor, Star, Crown, ArrowRight, Lock, Zap, Globe, BarChart3, Truck, Building2 } from 'lucide-react'
+import { getRootHostSafe } from '@/lib/config/root-domain'
+
+function getSupportEmail(): string | null {
+  const configured = process.env.NEXT_PUBLIC_SUPPORT_EMAIL
+  if (typeof configured !== 'string') return null
+  const email = configured.trim()
+  return email.length > 0 ? email : null
+}
 
 export default function EcommerceUpgradePage() {
+  const supportEmail = getSupportEmail()
+  const rootHost = getRootHostSafe()
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4 py-16">
       
@@ -86,18 +96,20 @@ export default function EcommerceUpgradePage() {
         </Link>
 
         {/* CTA secundario — contactar para upgrade */}
-        <a
-          href="mailto:hola@yahpos.cl?subject=Quiero%20activar%20el%20Plan%20Archipiélago"
-          className="flex-1 flex items-center justify-center gap-3 py-4 px-6 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest text-sm rounded-2xl transition-all duration-200 group"
-        >
-          Activar Plan Archipiélago
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        </a>
+        {supportEmail !== null && (
+          <a
+            href={`mailto:${supportEmail}?subject=${encodeURIComponent('Quiero activar el Plan Archipiélago')}`}
+            className="flex-1 flex items-center justify-center gap-3 py-4 px-6 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest text-sm rounded-2xl transition-all duration-200 group"
+          >
+            Activar Plan Archipiélago
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </a>
+        )}
       </div>
 
       {/* Footer */}
       <p className="mt-12 text-xs text-gray-600 font-medium">
-        © 2026 YAHPOS! Tech · yahpos.cl · +56 9 1234 5678
+        © 2026 YAHPOS! Tech{rootHost !== null ? ` · ${rootHost}` : ''} · +56 9 1234 5678
       </p>
     </div>
   )

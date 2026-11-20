@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Award, Users, Heart, TrendingUp, MapPin, Phone, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,24 +55,36 @@ export default function About() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&auto=format&fit=crop"
                 alt="Nuestra tienda"
+                width={400}
+                height={192}
+                unoptimized
                 className="rounded-3xl w-full h-48 object-cover shadow-2xl"
               />
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop"
                 alt="Productos frescos"
+                width={400}
+                height={192}
+                unoptimized
                 className="rounded-3xl w-full h-48 object-cover mt-8 shadow-2xl"
               />
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1607623814075-e51df1bd6565?w=400&auto=format&fit=crop"
                 alt="Carnicería"
+                width={400}
+                height={192}
+                unoptimized
                 className="rounded-3xl w-full h-48 object-cover shadow-2xl"
               />
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&auto=format&fit=crop"
                 alt="Atención al cliente"
+                width={400}
+                height={192}
+                unoptimized
                 className="rounded-3xl w-full h-48 object-cover mt-8 shadow-2xl"
               />
             </div>
@@ -168,9 +181,12 @@ export default function About() {
             ].map((member) => (
               <div key={member.name} className="text-center group">
                 <div className="relative w-32 h-32 mx-auto mb-4">
-                    <img
+                    <Image
                       src={member.image}
                       alt={member.name}
+                      width={128}
+                      height={128}
+                      unoptimized
                       className="w-full h-full rounded-2xl object-cover shadow-lg group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 rounded-2xl bg-brand-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />

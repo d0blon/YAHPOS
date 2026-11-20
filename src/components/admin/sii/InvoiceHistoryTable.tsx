@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react'
 import { 
   FileText, Search, Filter, Download, 
-  ExternalLink, CheckCircle2, Clock, AlertCircle,
-  MoreVertical, FileJson, Printer, RotateCcw
+  AlertCircle,
+  MoreVertical, Printer, RotateCcw
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,19 +51,19 @@ export function InvoiceHistoryTable() {
     setIsLoading(false)
   }
 
-  const handleCreditNote = async (docId: string, storeId: string) => {
+  const handleCreditNote = async (docId: string) => {
     if (!confirm('¿Estás seguro de que deseas anular este documento con una Nota de Crédito?')) return
 
     setProcessingId(docId)
     try {
-      const result = await generateCreditNote(docId, storeId)
+      const result = await generateCreditNote('', docId)
       if (result.success) {
         toast.success(`Nota de Crédito generada con éxito (Folio: ${result.folio})`)
         loadHistory()
       } else {
         toast.error(result.error || 'Error al generar Nota de Crédito')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error de conexión al procesar Nota de Crédito')
     } finally {
       setProcessingId(null)
@@ -214,7 +214,7 @@ export function InvoiceHistoryTable() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               disabled={processingId === doc.id || doc.tipo_dte === 61 || doc.estado !== 'ACEPTADO'}
-                              onClick={() => handleCreditNote(doc.id, doc.store_id)}
+                              onClick={() => handleCreditNote(doc.id)}
                               className="p-3 rounded-xl cursor-pointer flex items-center gap-3 group"
                             >
                               <RotateCcw className={cn(

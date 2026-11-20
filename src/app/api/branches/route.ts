@@ -18,16 +18,17 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('branches')
-      .select('*')
+      .select('id, store_id, name, address, phone, is_active, created_at')
       .eq('store_id', profile.store_id)
       .order('name')
+      .limit(100)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

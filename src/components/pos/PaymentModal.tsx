@@ -4,8 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { formatPrice, cn } from '@/lib/utils'
-import { Banknote, CreditCard, X, Delete, CheckCircle2, ArrowRight, RefreshCw, Smartphone, Zap, Globe, Building2, Tablet, QrCode } from 'lucide-react'
+import { Banknote, CreditCard, X, Delete, CheckCircle2, RefreshCw, Smartphone, Zap, Globe, Building2, Tablet, QrCode } from 'lucide-react'
+import Image from 'next/image'
 import { usePosStore } from '@/stores/posStore'
+import { decideSiiEmission } from '@/lib/pos/sii-decision'
+import { toast } from 'sonner'
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -14,8 +17,17 @@ interface PaymentModalProps {
   onConfirm: (method: 'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED' | 'WEBPAY_QR', receivedAmount?: number, terminalType?: string) => void
 }
 
+const allTerminals = [
+  { id: 'SumUp Solo', key: 'sumup', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-500/10', desc: 'Conexión SII integrada. Emite boleta propia.' },
+  { id: 'Mercado Pago', key: 'other_card', icon: Globe, color: 'text-brand-accent-500', bg: 'bg-brand-accent-500/10', desc: 'Abono inmediato + Chip 4G gratis.' },
+  { id: 'TUU', key: 'tuu', icon: Tablet, color: 'text-emerald-500', bg: 'bg-emerald-500/10', desc: 'Integración SII. Boleta en equipo.' },
+  { id: 'Getnet', key: 'getnet', icon: Building2, color: 'text-rose-500', bg: 'bg-rose-500/10', desc: 'Dinero el mismo día. Santander.' },
+  { id: 'Compraquí', key: 'other_card', icon: CreditCard, color: 'text-brand-500', bg: 'bg-brand-500/10', desc: 'Respaldo BancoEstado. Confiable.' }
+];
+
 export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModalProps) {
   const { settings, items } = usePosStore();
+  const activeTerminals = settings.activeTerminals;
   const [method, setMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TERMINAL' | 'JUNAEB' | 'PLUXE' | 'EDENRED' | 'WEBPAY_QR'>('EFECTIVO')
   const [selectedTerminal, setSelectedTerminal] = useState('')
   const [isTerminalConfirmed, setIsTerminalConfirmed] = useState(false)
@@ -26,23 +38,30 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
   const [webpayQrUrl, setWebpayQrUrl] = useState<string | null>(null)
   const [webpayToken, setWebpayToken] = useState<string | null>(null)
   const [webpayStatus, setWebpayStatus] = useState<'idle' | 'loading' | 'pending' | 'AUTHORIZED' | 'REJECTED' | 'ERROR'>('idle')
+  const [tuuStatus, setTuuStatus] = useState<'idle' | 'loading' | 'waiting_payment' | 'approved' | 'failed'>('idle')
+  const [tuuError, setTuuError] = useState<string | null>(null)
+
+  const [mpStatus, setMpStatus] = useState<'idle' | 'loading' | 'waiting_payment' | 'approved' | 'failed'>('idle')
+  const [mpError, setMpError] = useState<string | null>(null)
 
   const bills = [1000, 2000, 5000, 10000, 20000]
 
-  const allTerminals = [
-    { id: 'SumUp', key: 'sumup', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-500/10', desc: 'Sin arriendo, solo comisión. Simple.' },
-    { id: 'Mercado Pago', key: 'other_card', icon: Globe, color: 'text-brand-accent-500', bg: 'bg-brand-accent-500/10', desc: 'Abono inmediato + Chip 4G gratis.' },
-    { id: 'TUU', key: 'tuu', icon: Tablet, color: 'text-emerald-500', bg: 'bg-emerald-500/10', desc: 'Integración SII. Boleta en equipo.' },
-    { id: 'Getnet', key: 'getnet', icon: Building2, color: 'text-rose-500', bg: 'bg-rose-500/10', desc: 'Dinero el mismo día. Santander.' },
-    { id: 'Compraquí', key: 'other_card', icon: CreditCard, color: 'text-brand-500', bg: 'bg-brand-500/10', desc: 'Respaldo BancoEstado. Confiable.' }
-  ];
+  const siiDecision = React.useMemo(() => decideSiiEmission({
+    paymentMethod: method,
+    terminalType: method === 'TERMINAL' ? selectedTerminal : undefined,
+    settings: {
+      siiEmission: settings.siiEmission ?? 'always',
+      terminalsDte: settings.terminalsDte,
+    },
+  }), [method, selectedTerminal, settings.siiEmission, settings.terminalsDte])
+  const isSiiBlocked = siiDecision.kind === 'blocked'
 
   const activeTerminalsList = React.useMemo(() => {
     return allTerminals.filter(t => {
-      if (!settings.activeTerminals) return true;
-      return settings.activeTerminals[t.key as keyof typeof settings.activeTerminals] === true;
+      if (!activeTerminals) return true;
+      return activeTerminals[t.key as keyof typeof activeTerminals] === true;
     });
-  }, [settings.activeTerminals]);
+  }, [activeTerminals]);
 
   // Manejar el reset de estado sin useEffect para evitar cascading renders
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
@@ -50,24 +69,34 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
     setPrevIsOpen(true);
     setMethod('EFECTIVO');
     setReceivedStr('');
+    setSelectedTerminal('');
     setIsTerminalConfirmed(false);
     setWebpayQrUrl(null);
     setWebpayToken(null);
     setWebpayStatus('idle');
-    if (activeTerminalsList.length > 0) {
-      setSelectedTerminal(activeTerminalsList[0].id);
-    }
+    setTuuStatus('idle');
+    setTuuError(null);
+    setMpStatus('idle');
+    setMpError(null);
   } else if (!isOpen && prevIsOpen) {
     setPrevIsOpen(false);
   }
 
   const handleMethodChange = (newMethod: typeof method) => {
     setMethod(newMethod);
+    if (newMethod !== 'TERMINAL') {
+      setSelectedTerminal('');
+      setIsTerminalConfirmed(false);
+    }
     if (newMethod !== 'WEBPAY_QR') {
       setWebpayQrUrl(null);
       setWebpayToken(null);
       setWebpayStatus('idle');
     }
+    setTuuStatus('idle');
+    setTuuError(null);
+    setMpStatus('idle');
+    setMpError(null);
   };
 
   useEffect(() => {
@@ -153,10 +182,102 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
   })
   const isFoodPassValid = invalidJunaebItems.length === 0
 
-  const canConfirm = method === 'EFECTIVO' ? receivedAmount >= total : 
-                     method === 'TERMINAL' ? (selectedTerminal !== '' && isTerminalConfirmed) : 
+  const canConfirm = !isSiiBlocked && (method === 'EFECTIVO' ? receivedAmount >= total :
+                     method === 'TERMINAL' ? (selectedTerminal !== '' && isTerminalConfirmed) :
                      (method === 'JUNAEB' || method === 'PLUXE' || method === 'EDENRED') ? isFoodPassValid :
-                     method === 'WEBPAY_QR' ? webpayStatus === 'AUTHORIZED' : true
+                     method === 'WEBPAY_QR' ? webpayStatus === 'AUTHORIZED' : true)
+
+  const handleConfirmClick = async () => {
+    if (isSiiBlocked) {
+      toast.error(`Bloqueo SII: ${selectedTerminal} emite su propia boleta y el toggle "Emite su boleta" está desactivado. No se envió ningún cobro.`, {
+        description: 'Activá la opción en Ajustes > Hardware antes de cobrar.',
+        duration: 8000,
+      })
+      return
+    }
+
+    if (method === 'TERMINAL' && selectedTerminal === 'TUU') {
+      setTuuError(null)
+      setTuuStatus('loading')
+      try {
+        const res = await fetch('/api/payments/tuu/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: total })
+        })
+        const data = await res.json()
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Error al conectar con terminal TUU')
+        }
+        const requestId = data.requestId
+        setTuuStatus('waiting_payment')
+
+        const poll = setInterval(async () => {
+          try {
+            const statusRes = await fetch(`/api/payments/tuu/status?requestId=${requestId}`)
+            const statusData = await statusRes.json()
+
+            if (statusData.status === 'success') {
+              clearInterval(poll)
+              setTuuStatus('approved')
+              onConfirm(method, receivedAmount, selectedTerminal)
+            } else if (statusData.status === 'failed') {
+              clearInterval(poll)
+              setTuuStatus('failed')
+              setTuuError('Pago rechazado por el terminal o cancelado por el cliente')
+            }
+          } catch (e) {
+            console.error('Polling error', e)
+          }
+        }, 3000)
+      } catch (err: unknown) {
+        setTuuError(err instanceof Error ? err.message : 'Error')
+        setTuuStatus('idle')
+      }
+      return
+    } else if (method === 'TERMINAL' && selectedTerminal === 'Mercado Pago') {
+      setMpError(null)
+      setMpStatus('loading')
+      try {
+        const res = await fetch('/api/payments/mercadopago/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: total })
+        })
+        const data = await res.json()
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Error al conectar con terminal Mercado Pago')
+        }
+        const requestId = data.requestId
+        setMpStatus('waiting_payment')
+
+        const poll = setInterval(async () => {
+          try {
+            const statusRes = await fetch(`/api/payments/mercadopago/status?requestId=${requestId}`)
+            const statusData = await statusRes.json()
+
+            if (statusData.status === 'success') {
+              clearInterval(poll)
+              setMpStatus('approved')
+              onConfirm(method, receivedAmount, selectedTerminal)
+            } else if (statusData.status === 'failed') {
+              clearInterval(poll)
+              setMpStatus('failed')
+              setMpError('Pago rechazado por el terminal o cancelado por el cliente')
+            }
+          } catch (e) {
+            console.error('Polling error', e)
+          }
+        }, 3000)
+      } catch (err: unknown) {
+        setMpError(err instanceof Error ? err.message : 'Error')
+        setMpStatus('idle')
+      }
+      return
+    }
+
+    onConfirm(method, receivedAmount, selectedTerminal)
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -382,7 +503,7 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
               {webpayStatus === 'pending' && webpayQrUrl && (
                 <div className="flex flex-col items-center justify-center space-y-8">
                   <div className="bg-white rounded-3xl p-4 shadow-2xl border-4 border-brand-primary/20">
-                    <img src={webpayQrUrl} alt="Webpay QR" className="w-80 h-80" />
+                    <Image src={webpayQrUrl} alt="Webpay QR" width={320} height={320} className="w-80 h-80" unoptimized />
                   </div>
                   <div>
                     <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">Escanea con tu banco</h3>
@@ -479,9 +600,23 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                   ))}
                 </div>
 
-                {selectedTerminal && !isTerminalConfirmed && (
+                {isSiiBlocked && (
+                  <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl space-y-1">
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Bloqueo SII · No se puede cobrar</p>
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-gray-400 leading-tight">
+                      {selectedTerminal} emite su propia boleta y el toggle Emite su boleta está desactivado. Activá la opción en Ajustes &gt; Hardware antes de continuar.
+                    </p>
+                  </div>
+                )}
+
+                {selectedTerminal && !isTerminalConfirmed && !isSiiBlocked && (
                   <button 
-                    onClick={() => setIsTerminalConfirmed(true)}
+                    onClick={() => {
+                      setIsTerminalConfirmed(true)
+                      if (selectedTerminal === 'TUU' || selectedTerminal === 'Mercado Pago') {
+                        handleConfirmClick()
+                      }
+                    }}
                     className="w-full py-5 bg-amber-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-amber-600 transition-all shadow-lg animate-pulse"
                   >
                     Confirmar Pago en {selectedTerminal}
@@ -577,8 +712,8 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
               Anular Pago
             </Button>
             <Button 
-              disabled={!canConfirm}
-              onClick={() => onConfirm(method, receivedAmount, selectedTerminal)}
+              disabled={!canConfirm || tuuStatus === 'loading' || tuuStatus === 'waiting_payment' || tuuStatus === 'approved' || mpStatus === 'loading' || mpStatus === 'waiting_payment' || mpStatus === 'approved'}
+              onClick={handleConfirmClick}
               className={cn(
                 "flex-1 h-20 rounded-3xl font-black uppercase tracking-[0.3em] text-sm shadow-2xl transition-all active:scale-[0.98] group",
                 method === 'EFECTIVO' 
@@ -598,12 +733,34 @@ export function PaymentModal({ isOpen, onClose, total, onConfirm }: PaymentModal
                   {webpayStatus === 'ERROR' && <>ERROR</>}
                   {webpayStatus === 'idle' && <>WEBPAY QR</>}
                 </>
+              ) : method === 'TERMINAL' && selectedTerminal === 'TUU' ? (
+                <>
+                  {tuuStatus === 'loading' && <>ENVIANDO A TERMINAL...</>}
+                  {tuuStatus === 'waiting_payment' && <>ESPERANDO PAGO...</>}
+                  {tuuStatus === 'approved' && <><CheckCircle2 className="mr-3 w-6 h-6" />PAGO APROBADO</>}
+                  {tuuStatus === 'failed' && <>RECHAZADO - REINTENTAR</>}
+                  {tuuStatus === 'idle' && (canConfirm ? <>FINALIZAR TRANSACCIÓN <CheckCircle2 className="ml-3 w-6 h-6 group-hover:scale-125 transition-transform" /></> : <>MONTO INSUFICIENTE <X className="ml-3 w-6 h-6" /></>)}
+                </>
+              ) : method === 'TERMINAL' && selectedTerminal === 'Mercado Pago' ? (
+                <>
+                  {mpStatus === 'loading' && <>ENVIANDO A TERMINAL...</>}
+                  {mpStatus === 'waiting_payment' && <>ESPERANDO PAGO...</>}
+                  {mpStatus === 'approved' && <><CheckCircle2 className="mr-3 w-6 h-6" />PAGO APROBADO</>}
+                  {mpStatus === 'failed' && <>RECHAZADO - REINTENTAR</>}
+                  {mpStatus === 'idle' && (canConfirm ? <>FINALIZAR TRANSACCIÓN <CheckCircle2 className="ml-3 w-6 h-6 group-hover:scale-125 transition-transform" /></> : <>MONTO INSUFICIENTE <X className="ml-3 w-6 h-6" /></>)}
+                </>
               ) : canConfirm ? (
                 <>FINALIZAR TRANSACCIÓN <CheckCircle2 className="ml-3 w-6 h-6 group-hover:scale-125 transition-transform" /></>
               ) : (
                 <>MONTO INSUFICIENTE <X className="ml-3 w-6 h-6" /></>
               )}
             </Button>
+            {tuuError && (
+              <p className="text-rose-500 text-xs font-bold w-full text-center mt-2 absolute -bottom-6">{tuuError}</p>
+            )}
+            {mpError && (
+              <p className="text-rose-500 text-xs font-bold w-full text-center mt-2 absolute -bottom-6">{mpError}</p>
+            )}
           </div>
         </div>
       </DialogContent>

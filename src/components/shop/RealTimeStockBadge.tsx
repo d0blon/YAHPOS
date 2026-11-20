@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Package, AlertCircle, XCircle, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { useSaaS } from '@/providers/SaaSProvider'
 
 interface RealTimeStockBadgeProps {
   productId: string
@@ -22,26 +23,25 @@ export function RealTimeStockBadge({
 }: RealTimeStockBadgeProps) {
   const [stock, setStock] = useState(initialStock)
   const [isUpdating, setIsUpdating] = useState(false)
+  // storeId resuelto en servidor desde el Host (SaaSProvider/initialStoreId).
+  const { storeId } = useSaaS()
 
   useEffect(() => {
-    // Solo suscribir si el flag está activo
-    if (!isRealtimeTracked) {
-      setStock(initialStock)
-      return
-    }
+    // Solo suscribir si el flag está activo y hay tienda (fail-closed)
+    if (!isRealtimeTracked || !storeId) return
 
     let timeoutId: NodeJS.Timeout
 
     // Suscripción al canal de Supabase Realtime
     const channel = supabase
-      .channel(`product-stock-${productId}`)
+      .channel(`product-stock-${storeId}-${productId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'products',
-          filter: `id=eq.${productId}`,
+          filter: `id=eq.${productId},store_id=eq.${storeId}`,
         },
         (payload) => {
           if (payload.new && typeof payload.new.stock === 'number') {
@@ -59,10 +59,12 @@ export function RealTimeStockBadge({
       supabase.removeChannel(channel)
       if (timeoutId) clearTimeout(timeoutId)
     }
-  }, [productId, isRealtimeTracked, initialStock])
+  }, [productId, storeId, isRealtimeTracked, initialStock])
 
-  const isLowStock = stock > 0 && stock <= lowStockThreshold
-  const isOutOfStock = stock <= 0
+  // Sin seguimiento en tiempo real, el stock mostrado es siempre el que llega del servidor.
+  const currentStock = isRealtimeTracked && storeId ? stock : initialStock
+  const isLowStock = currentStock > 0 && currentStock <= lowStockThreshold
+  const isOutOfStock = currentStock <= 0
 
   return (
     <div className={cn(
@@ -91,12 +93,12 @@ export function RealTimeStockBadge({
       ) : isLowStock ? (
         <>
           <AlertCircle className="w-3 h-3" />
-          <span>Bajo Stock: {stock}</span>
+          <span>Bajo Stock: {currentStock}</span>
         </>
       ) : (
         <>
           <Package className="w-3 h-3" />
-          <span>Stock: {stock}</span>
+          <span>Stock: {currentStock}</span>
         </>
       )}
     </div>

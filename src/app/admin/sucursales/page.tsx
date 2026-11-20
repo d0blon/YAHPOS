@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { 
   Store, 
@@ -59,25 +59,34 @@ export default function SucursalesPage() {
     is_active: true
   })
 
-  useEffect(() => {
-    fetchBranches()
-  }, [])
-
-  async function fetchBranches() {
+  const fetchBranches = useCallback(async () => {
+    if (!storeId) {
+      setLoading(false)
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('branches')
-        .select('*')
+        .select('id, name, address, phone, is_active, created_at')
+        .eq('store_id', storeId)
         .order('name', { ascending: true })
+        .limit(100)
       
       if (error) throw error
       if (data) setBranches(data)
-    } catch (error: any) {
-      toast.error('Error al cargar sucursales: ' + error.message)
+    } catch (error) {
+      toast.error('Error al cargar sucursales: ' + (error instanceof Error ? error.message : 'Error desconocido'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [storeId])
+
+  useEffect(() => {
+    if (storeId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- patrón de hidratación/fetch sin cambio de comportamiento
+      fetchBranches()
+    }
+  }, [storeId, fetchBranches])
 
   const handleOpenModal = (branch?: Branch) => {
     if (branch) {
@@ -114,6 +123,7 @@ export default function SucursalesPage() {
           .from('branches')
           .update(formData)
           .eq('id', editingBranch.id)
+          .eq('store_id', storeId)
         
         if (error) throw error
         toast.success('Sucursal actualizada correctamente')
@@ -128,8 +138,8 @@ export default function SucursalesPage() {
       
       setIsModalOpen(false)
       fetchBranches()
-    } catch (error: any) {
-      toast.error('Error al guardar: ' + error.message)
+    } catch (error) {
+      toast.error('Error al guardar: ' + (error instanceof Error ? error.message : 'Error desconocido'))
     } finally {
       setIsSubmitting(false)
     }
@@ -143,12 +153,13 @@ export default function SucursalesPage() {
         .from('branches')
         .delete()
         .eq('id', id)
+        .eq('store_id', storeId)
       
       if (error) throw error
       toast.success('Sucursal eliminada')
       fetchBranches()
-    } catch (error: any) {
-      toast.error('Error al eliminar: ' + error.message)
+    } catch (error) {
+      toast.error('Error al eliminar: ' + (error instanceof Error ? error.message : 'Error desconocido'))
     }
   }
 

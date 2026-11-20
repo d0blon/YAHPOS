@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, CheckCircle2, Wifi, WifiOff, ScanLine, Award, Package, Monitor, IdCard, Smartphone, DollarSign } from 'lucide-react'
+import { ShoppingCart, CheckCircle2, Wifi, ScanLine, Award, Package, Monitor, IdCard, Smartphone, DollarSign } from 'lucide-react'
 import { useCustomerDisplayReceiver, type CustomerDisplayData } from '@/lib/hooks/useCustomerDisplaySync'
 import { formatPrice, cn } from '@/lib/utils'
 import QRCode from 'qrcode'
@@ -10,10 +11,12 @@ import QRCode from 'qrcode'
 function ConfettiParticle({ index }: { index: number }) {
   const colors = ['#ffd100', '#4b0082', '#22c55e', '#ef4444', '#3b82f6', '#f97316']
   const color = colors[index % colors.length]
-  const left = `${Math.random() * 100}%`
-  const delay = Math.random() * 0.5
-  const duration = 1.5 + Math.random() * 1.5
-  const size = 6 + Math.random() * 10
+  const [{ left, delay, duration, size }] = useState(() => ({
+    left: `${Math.random() * 100}%`,
+    delay: Math.random() * 0.5,
+    duration: 1.5 + Math.random() * 1.5,
+    size: 6 + Math.random() * 10,
+  }))
 
   return (
     <motion.div
@@ -56,7 +59,7 @@ function RegisterQrPanel({ data }: { data: CustomerDisplayData }) {
         </div>
         {qrDataUrl && (
           <div className="shrink-0 bg-white rounded-xl p-1.5 shadow-sm border border-blue-500/20">
-            <img src={qrDataUrl} alt="Registro" className="w-28 h-28" />
+            <Image src={qrDataUrl} alt="Registro" width={112} height={112} unoptimized className="w-28 h-28" />
           </div>
         )}
       </div>
@@ -74,7 +77,7 @@ function IdleState({ data }: { data?: CustomerDisplayData | null }) {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mb-2"
         >
-          <img src={data.storeLogo} alt={data.storeName || ''} className="h-24 w-auto object-contain" />
+          <Image src={data.storeLogo} alt={data.storeName || ''} width={240} height={96} unoptimized className="h-24 w-auto object-contain" />
         </motion.div>
       ) : (
         <motion.div
@@ -124,9 +127,12 @@ function ProductCard({ item }: { item: NonNullable<CustomerDisplayData['items']>
     <div className="flex items-center gap-5 px-6 py-4 bg-surface-100/50 rounded-2xl border border-border min-h-[110px]">
       <div className="w-20 h-20 rounded-xl overflow-hidden bg-surface-200/50 border border-border flex items-center justify-center shrink-0">
         {item.image && !imgError ? (
-          <img
+          <Image
             src={item.image}
             alt={item.name}
+            width={80}
+            height={80}
+            unoptimized
             crossOrigin="anonymous"
             onError={() => setImgError(true)}
             className="w-full h-full object-contain p-1.5"
@@ -304,7 +310,7 @@ function CartState({ data }: { data: CustomerDisplayData }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">POWERED BY</span>
-            <img src="/logos/yahpos_logo_master.svg" alt="YAHPOS!" className="h-5 w-auto object-contain" />
+            <Image src="/logos/yahpos_logo_master.svg" alt="YAHPOS!" width={140} height={48} className="h-5 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end gap-0.5 text-sm">
@@ -398,9 +404,12 @@ function PaymentQrState({ data }: { data: CustomerDisplayData }) {
         >
           <div className="p-4 rounded-3xl bg-white shadow-2xl border border-border">
             {data.qrData?.url ? (
-              <img
+              <Image
                 src={data.qrData.url}
                 alt="Código QR de pago"
+                width={360}
+                height={360}
+                unoptimized
                 className="w-[300px] h-[300px] md:w-[360px] md:h-[360px] object-contain"
               />
             ) : (
@@ -474,6 +483,22 @@ function PaymentConfirmedState({ data }: { data?: CustomerDisplayData }) {
           transition={{ duration: 0.5, delay: 0.55 }}
         >
           Gracias por tu compra
+        </motion.p>
+
+        <motion.p
+          className={cn(
+            'text-xl font-black uppercase tracking-wide',
+            data?.documentKind === 'voucher' ? 'text-amber-600' : 'text-emerald-600',
+          )}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          {data?.documentKind === 'voucher'
+            ? 'Voucher interno — no válido ante SII'
+            : data?.documentKind === 'dte'
+              ? 'Boleta electrónica emitida'
+              : 'Comprobante de pago'}
         </motion.p>
 
         {(data?.pointsToEarn && data.pointsToEarn > 0) || (data?.pointsRedeemed && data.pointsRedeemed > 0) ? (
@@ -611,7 +636,7 @@ export default function CustomerDisplayPage() {
       <header className="flex items-center justify-between px-6 py-3 bg-surface-100 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
           {data?.storeLogo ? (
-            <img src={data.storeLogo} alt={data?.storeName || ''} className="h-8 w-auto object-contain" />
+            <Image src={data.storeLogo} alt={data?.storeName || ''} width={128} height={32} unoptimized className="h-8 w-auto object-contain" />
           ) : (
             <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
               <ShoppingCart className="w-4 h-4 text-white" />

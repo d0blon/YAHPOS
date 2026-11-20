@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import {
-  Save, PaintBucket, Image, Palette, Lock, Crown, ExternalLink,
+  Save, PaintBucket, ImageIcon, Palette, Lock, Crown, ExternalLink,
   Check, Eye, Upload, Sparkles, X
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -14,14 +15,16 @@ import { Switch } from '@/components/ui/switch'
 import { useSaaS } from '@/providers/SaaSProvider'
 import { updateStoreSettingsAction } from '@/app/developer/actions'
 import { cn } from '@/lib/utils'
-import { getContrastRatio, getContrastRating, meetsAA } from '@/lib/contrast'
+import { getContrastRatio, getContrastRating } from '@/lib/contrast'
 
 const LOGO_VARIANTS = [
-  { id: 'master', src: '/logos/yahpos_logo_master.svg', label: 'Principal' },
-  { id: 'master_dark', src: '/logos/yahpos_logo_master_dark.svg', label: 'Dark' },
-  { id: 'square', src: '/logos/yahpos_logo_square_master.svg', label: 'Cuadrado' },
-  { id: 'square_dark', src: '/logos/yahpos_logo_square_master_dark.svg', label: 'Sqr Dark' },
+  { id: 'master', src: '/logos/yahpos_logo_master.svg', label: 'Principal', width: 1523, height: 286 },
+  { id: 'master_dark', src: '/logos/yahpos_logo_master_dark.svg', label: 'Dark', width: 512, height: 96 },
+  { id: 'square', src: '/logos/yahpos_logo_square_master.svg', label: 'Cuadrado', width: 848, height: 558 },
+  { id: 'square_dark', src: '/logos/yahpos_logo_square_master_dark.svg', label: 'Sqr Dark', width: 848, height: 558 },
 ]
+
+const DEFAULT_LOGO_SIZE = { width: 1523, height: 286 }
 
 export default function BrandingPage() {
   const { config, storeId, tier, refreshConfig } = useSaaS()
@@ -43,6 +46,7 @@ export default function BrandingPage() {
   const isPatagonia = tier === 'patagonia'
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- patrón de hidratación/fetch sin cambio de comportamiento
     setStoreName(config.store_name)
     setBrandingEnabled(config.white_label_enabled)
     setPrimaryColor(config.appearance_primary_color || '#4b0082')
@@ -68,6 +72,13 @@ export default function BrandingPage() {
     return LOGO_VARIANTS[0].src
   }, [uploadedPreviewUrl, savedLogoUrl, selectedVariant])
 
+  const displayLogoSize = useMemo(() => {
+    const variant = LOGO_VARIANTS.find(item => item.src === displayLogo)
+    return variant
+      ? { width: variant.width, height: variant.height }
+      : DEFAULT_LOGO_SIZE
+  }, [displayLogo])
+
   const handleVariantSelect = (src: string) => {
     setSelectedVariant(src)
     setUploadedFile(null)
@@ -77,8 +88,8 @@ export default function BrandingPage() {
 
   const validateAndSetFile = (file: File | null) => {
     if (!file) return
-    if (!['image/svg+xml', 'image/png', 'image/webp'].includes(file.type)) {
-      toast.error('Solo se permiten archivos SVG, PNG o WebP')
+    if (!['image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Solo se permiten archivos PNG o WebP (SVG no permitido por seguridad)')
       return
     }
     if (file.size > 2 * 1024 * 1024) {
@@ -154,8 +165,8 @@ export default function BrandingPage() {
       if (uploadedPreviewUrl) URL.revokeObjectURL(uploadedPreviewUrl)
       setUploadedPreviewUrl(null)
       toast.success('Cambios guardados correctamente')
-    } catch (error: any) {
-      toast.error(error.message || 'Error al guardar los cambios')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al guardar los cambios')
     } finally {
       setIsSaving(false)
       setIsUploading(false)
@@ -203,7 +214,7 @@ export default function BrandingPage() {
             <div className="p-6 border-b border-gray-800/50">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center border border-emerald-500/10">
-                  <Image className="w-4 h-4 text-emerald-400" />
+                  <ImageIcon className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-widest text-white">Identidad</h2>
@@ -219,15 +230,18 @@ export default function BrandingPage() {
                 </Label>
                 <div className="p-6 bg-black/40 rounded-xl border border-gray-800/50 flex items-center justify-center min-h-[120px]">
                   {displayLogo ? (
-                    <img
+                    <Image
                       src={displayLogo}
                       alt="Logo preview"
-                      className="max-h-16 max-w-full object-contain"
+                      width={displayLogoSize.width}
+                      height={displayLogoSize.height}
+                      unoptimized
+                      className="max-h-16 max-w-full w-auto object-contain"
                       onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   ) : (
                     <div className="w-16 h-16 rounded-xl bg-gray-800 flex items-center justify-center">
-                      <Image className="w-6 h-6 text-gray-600" />
+                      <ImageIcon className="w-6 h-6 text-gray-600" />
                     </div>
                   )}
                 </div>
@@ -250,10 +264,13 @@ export default function BrandingPage() {
                           : "border-gray-800/50 hover:border-gray-700/50 hover:bg-gray-800/30"
                       )}
                     >
-                      <img
+                      <Image
                         src={variant.src}
                         alt={variant.label}
-                        className="h-8 object-contain"
+                        width={variant.width}
+                        height={variant.height}
+                        unoptimized
+                        className="h-8 w-auto object-contain"
                         onError={(e) => { e.currentTarget.style.display = 'none' }}
                       />
                       <span className={cn(
@@ -294,7 +311,7 @@ export default function BrandingPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".svg,.png,.webp,image/svg+xml,image/png,image/webp"
+                    accept=".png,.webp,image/png,image/webp"
                     className="hidden"
                     onChange={(e) => validateAndSetFile(e.target.files?.[0] || null)}
                   />
@@ -685,10 +702,13 @@ export default function BrandingPage() {
                     borderColor: accentColor,
                   }}
                 >
-                  <img
+                  <Image
                     src={displayLogo}
                     alt="Logo"
-                    className="h-8 mb-4 object-contain brightness-0 invert"
+                    width={displayLogoSize.width}
+                    height={displayLogoSize.height}
+                    unoptimized
+                    className="h-8 mb-4 w-auto object-contain brightness-0 invert"
                     onError={(e) => { e.currentTarget.style.display = 'none' }}
                   />
                   <p className="text-white text-xs font-bold tracking-tight">
@@ -721,10 +741,13 @@ export default function BrandingPage() {
                   className="h-14 rounded-xl flex items-center px-4 gap-3 transition-all duration-300 shadow-lg"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  <img
+                  <Image
                     src={displayLogo}
                     alt="Logo"
-                    className="h-5 object-contain brightness-0 invert"
+                    width={displayLogoSize.width}
+                    height={displayLogoSize.height}
+                    unoptimized
+                    className="h-5 w-auto object-contain brightness-0 invert"
                     onError={(e) => { e.currentTarget.style.display = 'none' }}
                   />
                   <span className="text-white text-[10px] font-black uppercase tracking-widest">

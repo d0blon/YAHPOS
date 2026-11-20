@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef } from 'react'
-import { X, Printer, Download, Share2, CheckCircle2, DollarSign, Calendar, Clock, User, Tag } from 'lucide-react'
+import { Printer, CheckCircle2, DollarSign, Calendar, Clock, User, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatPrice } from '@/lib/utils'
 import { CashMovement } from '@/stores/posStore'
@@ -46,18 +46,20 @@ export function MovementReceiptModal({ isOpen, onClose, movement }: MovementRece
               .amount { font-size: 20px; font-weight: bold; margin: 10px 0; }
             </style>
           </head>
-          <body>
-            ${printContent.innerHTML}
-            <script>
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            </script>
-          </body>
+          <body></body>
         </html>
       `)
+      // Clonar nodos DOM en vez de reinsertar HTML serializado: evita volver a
+      // interpretar markup y mantiene el escape que ya aplicó React.
+      const receiptClone = printContent.cloneNode(true) as HTMLElement
+      printWindow.document.body.insertBefore(receiptClone, printWindow.document.body.firstChild)
       printWindow.document.close()
+      // Llamar desde el padre: un <script> inline en about:blank heredero del CSP
+      // sería bloqueado por script-src con nonce.
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+      }, 500)
     }
   }
 
@@ -130,7 +132,7 @@ export function MovementReceiptModal({ isOpen, onClose, movement }: MovementRece
                 <div className="pt-2">
                     <p className="text-[10px] font-black text-gray-400 uppercase mb-1">MOTIVO / NOTA:</p>
                     <p className="text-sm font-bold text-gray-700 leading-tight italic bg-white p-3 rounded-xl border border-gray-100">
-                        "{movement.reason}"
+                        &quot;{movement.reason}&quot;
                     </p>
                 </div>
 

@@ -5,7 +5,8 @@ import { DtePayload } from '../src/lib/sii/types';
 async function runFullCertificationSuite() {
   console.log('🚀 Iniciando Suite Completa de Certificación SII (Set de 10 Pruebas)...');
 
-  const storeId = 'c828f16e-4572-4700-97e6-66b6180d6a9d'; 
+  const storeId = process.env.STORE_ID;
+  if (!storeId) throw new Error('Falta STORE_ID');
   const engine = new SiiEngine();
 
   try {

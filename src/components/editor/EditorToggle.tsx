@@ -2,9 +2,12 @@
 
 import { useEditor } from '@/providers/EditorProvider'
 import { Pencil, X, Save, RotateCcw, Check, Loader2 } from 'lucide-react'
+import { getRootHostSafe } from '@/lib/config/root-domain'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
+
+const subscribeClientOnly = () => () => {}
 
 /**
  * Floating Editor Toggle button — renderiza via Portal directamente en <body>
@@ -20,16 +23,14 @@ export function EditorToggle() {
   const hasUnsavedChanges = editor?.hasUnsavedChanges ?? false
   const discardChanges = editor?.discardChanges ?? (() => {})
   const [showSaved, setShowSaved] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  // Equivalente a setMounted(true) en un efecto: false en servidor/hidratación, true después.
+  const mounted = useSyncExternalStore(subscribeClientOnly, () => true, () => false)
 
   const handleSave = async () => {
     await saveChanges()
     setShowSaved(true)
     setTimeout(() => setShowSaved(false), 2000)
   }
-
-  // Portal solo se puede crear en el cliente
-  useEffect(() => { setMounted(true) }, [])
 
   // Excluir páginas que no son del ecommerce (admin, developer, auth, pos, etc.)
   const isExcluded = pathname.startsWith('/admin') || 
@@ -41,9 +42,12 @@ export function EditorToggle() {
                      pathname === '/recuperar-contrasena' ||
                      pathname === '/completar-perfil'
 
-  // En producción (yahpos.cl), la landing page en '/' es marketing, no e-commerce
-  const isProdLandingPage = typeof window !== 'undefined' && 
-                            window.location.hostname === 'yahpos.cl' &&
+  // La landing en '/' del origin raíz es marketing, no e-commerce.
+  // Config inválida → no ocultar el toggle (no cambia la UI).
+  const rootHost = getRootHostSafe()
+  const isProdLandingPage = typeof window !== 'undefined' &&
+                            rootHost !== null &&
+                            (window.location.host === rootHost || window.location.host === `www.${rootHost}`) &&
                             pathname === '/'
 
   if (!mounted || !editor || isExcluded || isProdLandingPage) return null

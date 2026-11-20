@@ -1,12 +1,22 @@
 import { z } from 'zod';
 import { validateRut } from '@/lib/utils';
 
+export const documentKindSchema = z.enum(['dte', 'voucher']);
+
+export const siiSkipReasonSchema = z.enum([
+  'voucher_method',
+  'terminal_dte',
+  'business_no_sii',
+  'blocked_terminal',
+  'sii',
+]);
+
 export const orderItemSchema = z.object({
   productId: z.string().min(1, 'ID de producto inválido'),
   quantity: z.number().int().positive('La cantidad debe ser al menos 1'),
   price: z.number().positive('El precio debe ser positivo').optional(),
   unitPrice: z.number().positive('El precio unitario debe ser positivo').optional(),
-});
+}).strict();
 
 export const orderSchema = z.object({
   userId: z.string().uuid('ID de usuario inválido').optional(),
@@ -41,6 +51,9 @@ export const orderSchema = z.object({
   source: z.enum(['pos', 'ecommerce']).default('pos'),
   registerId: z.string().optional(),
   offlineId: z.string().optional(),
-});
+  /** Tipo de documento decidido en el POS. `voucher` ⇒ nunca se emite DTE. */
+  documentKind: documentKindSchema.optional(),
+  siiSkipReason: siiSkipReasonSchema.optional(),
+}).strict();
 
 export type OrderInput = z.infer<typeof orderSchema>;

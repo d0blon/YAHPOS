@@ -4,13 +4,9 @@ import React, { useState, useEffect } from 'react'
 import { 
   Package, 
   Search, 
-  Filter, 
-  Clock, 
   CheckCircle2, 
   Truck, 
   MapPin, 
-  MoreVertical,
-  ChevronRight,
   ClipboardList,
   AlertCircle
 } from 'lucide-react'
@@ -97,7 +93,7 @@ export default function AdminPedidosPage() {
 
       toast.success(`Estado actualizado a ${STATUS_LABELS[newStatus]}`)
       fetchOrders()
-    } catch (error) {
+    } catch {
       toast.error('No se pudo actualizar el estado')
     }
   }

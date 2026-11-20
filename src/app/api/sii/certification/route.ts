@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
-import { SiiSigner } from '@/lib/sii/signer'
-import { generateBoletaXml } from '@/lib/sii/templates/boleta'
+import { parseBody } from '@/lib/validations/http'
+import { siiCertificationSchema } from '@/lib/validations/sii'
+import { roleIn, SII_MANAGEMENT_ROLES } from '@/lib/constants/roles'
+import type { DtePayload } from '@/lib/sii/types'
 
 const CERTIFICATION_CASES = [
   {
@@ -61,17 +63,22 @@ export async function GET() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('store_id')
+      .select('store_id, role')
       .eq('id', user.id)
       .single()
 
     if (!profile?.store_id) return NextResponse.json({ error: 'Sin tienda' }, { status: 403 })
 
+    if (!roleIn(profile?.role, SII_MANAGEMENT_ROLES)) {
+      return NextResponse.json({ error: 'Sin permisos para gestionar el SII' }, { status: 403 })
+    }
+
     const { data: dbCases } = await supabase
       .from('sii_certification_cases')
-      .select('*')
+      .select('id, store_id, case_number, status, sii_track_id, created_at, updated_at')
       .eq('store_id', profile.store_id)
       .order('case_number', { ascending: true })
+      .limit(50)
 
     // Merge static definitions with DB status
     const merged = CERTIFICATION_CASES.map(c => {
@@ -85,8 +92,8 @@ export async function GET() {
     })
 
     return NextResponse.json({ cases: merged })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: (err as { message?: string } | null)?.message }, { status: 500 })
   }
 }
 
@@ -99,13 +106,19 @@ export async function POST(req: Request) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('store_id')
+      .select('store_id, role')
       .eq('id', user.id)
       .single()
 
     if (!profile?.store_id) return NextResponse.json({ error: 'Sin tienda' }, { status: 403 })
 
-    const { caseId } = await req.json()
+    if (!roleIn(profile?.role, SII_MANAGEMENT_ROLES)) {
+      return NextResponse.json({ error: 'Sin permisos para gestionar el SII' }, { status: 403 })
+    }
+
+    const parsed = await parseBody(req, siiCertificationSchema)
+    if ('error' in parsed) return parsed.error
+    const { caseId } = parsed.data
     const caseDef = CERTIFICATION_CASES.find(c => c.id === caseId)
     if (!caseDef) return NextResponse.json({ error: 'Caso no encontrado' }, { status: 404 })
 
@@ -115,19 +128,19 @@ export async function POST(req: Request) {
     
     try {
       await engine.initForStore(profile.store_id);
-    } catch (initErr: any) {
-      return NextResponse.json({ error: `SII no configurado: ${initErr.message}` }, { status: 400 });
+    } catch (initErr) {
+      return NextResponse.json({ error: `SII no configurado: ${(initErr as { message?: string } | null)?.message}` }, { status: 400 });
     }
 
     // 2. Emitir y Firmar Documento Real (obtiene folio de la DB)
-    const emissionResult = await engine.emitirBoleta(caseDef.payload as any, profile.store_id);
+    const emissionResult = await engine.emitirBoleta(caseDef.payload as DtePayload, profile.store_id);
     
     if (!emissionResult.success) {
       return NextResponse.json({ error: `Error en emisión: ${emissionResult.error}` }, { status: 500 });
     }
 
     // 3. Enviar al SII para obtener TrackID REAL
-    const sendResult: any = await engine.enviarBoletaAlSII(emissionResult.documentId, profile.store_id);
+    const sendResult = await engine.enviarBoletaAlSII(emissionResult.documentId, profile.store_id);
 
     if (!sendResult.success) {
       return NextResponse.json({ 
@@ -151,7 +164,7 @@ export async function POST(req: Request) {
       trackId: sendResult.trackId,
       documentId: emissionResult.documentId
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: (err as { message?: string } | null)?.message }, { status: 500 })
   }
 }

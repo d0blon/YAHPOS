@@ -6,12 +6,25 @@ import { User as AppUser } from '@/types'
 import { supabase } from '@/lib/supabase'
 import { DEVELOPER_EMAILS } from '@/lib/constants'
 import { AppRole } from '@/lib/constants/roles'
+import { clearTenantState, createTenantStorage, getActiveStoreId, registerTenantResetHandler, registerTenantStoreSync, setActiveStoreId } from '@/lib/tenant-state'
+
+const localStateStorage = {
+  getItem: (name: string): string | null => window.localStorage.getItem(name),
+  setItem: (name: string, value: string): void => { window.localStorage.setItem(name, value) },
+  removeItem: (name: string): void => { window.localStorage.removeItem(name) },
+}
+
+interface RawStoreInfo {
+  tier: 'austral' | 'archipielago' | 'patagonia';
+  name: string;
+}
 
 interface RawSupabaseMembership {
   store_id: string;
   role: string;
   is_active: boolean;
-  stores: any; // Aceptamos any aquí para manejar la inconsistencia de Supabase (objeto vs array)
+  // Supabase devuelve `stores` como objeto o como array según la query.
+  stores: RawStoreInfo | RawStoreInfo[] | null;
 }
 
 export interface UserStoreMembership {
@@ -21,7 +34,7 @@ export interface UserStoreMembership {
   stores?: {
     tier: 'austral' | 'archipielago' | 'patagonia';
     name: string;
-  };
+  } | null;
 }
 
 interface AuthState {
@@ -160,8 +173,9 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         await supabase.auth.signOut()
+        await clearTenantState()
+        setActiveStoreId(null)
         set({ user: null, isAuthenticated: false, isLoading: false, memberships: [], currentStoreRole: null })
-        // Limpiar el storage persistido
         if (typeof window !== 'undefined') {
           localStorage.removeItem('yahpos-auth')
         }
@@ -200,7 +214,7 @@ export const useAuthStore = create<AuthState>()(
           // 1. Perfil básico (No lanzamos error si no existe, usamos fallback)
           const { data: profile } = await supabase
             .from('profiles')
-            .select('*')
+            .select('store_id, first_name, last_name, role, rut, phone, loyalty_points, identity_verified, updated_at')
             .eq('id', currentUser.id)
             .maybeSingle()
 
@@ -226,6 +240,12 @@ export const useAuthStore = create<AuthState>()(
             : formattedMemberships[0]
 
           const resolvedStoreId = activeMembership?.store_id || profile?.store_id || currentUser.storeId
+
+          const hostStoreId = getActiveStoreId()
+          if (hostStoreId && resolvedStoreId && hostStoreId !== resolvedStoreId) {
+            set({ isLoading: false })
+            return
+          }
 
           // Tier: si hay membership úsalo, si no, resolver desde el store del profile
           let tier: 'austral' | 'archipielago' | 'patagonia' = 'austral'
@@ -272,6 +292,8 @@ export const useAuthStore = create<AuthState>()(
         if (!targetMembership) return
 
         set({ isLoading: true })
+        await clearTenantState()
+        setActiveStoreId(storeId)
         await get().refreshProfile(storeId)
         set({ isLoading: false })
       },
@@ -279,23 +301,40 @@ export const useAuthStore = create<AuthState>()(
       initialize: async () => {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
-          await get().refreshProfile()
+          await get().refreshProfile(getActiveStoreId() ?? undefined)
         }
       },
     }),
     {
       name: 'yahpos-auth',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => createTenantStorage(localStateStorage)),
       // Validar que el estado rehidratado tiene la forma correcta.
       // Si el user guardado es un string (bug de versiones anteriores), lo limpiamos.
       onRehydrateStorage: () => (state) => {
-        if (state && typeof state.user === 'string') {
+        if (!state) return
+        if (typeof state.user === 'string') {
           (state as AuthState).user = null
           state.isAuthenticated = false
           state.isLoading = false
+          return
+        }
+        const activeStoreId = getActiveStoreId()
+        const persistedStoreId = state.user?.storeId
+        if (activeStoreId && persistedStoreId && persistedStoreId !== activeStoreId) {
+          state.user = null
+          state.memberships = []
+          state.currentStoreRole = null
+          state.isAuthenticated = false
+          state.isLoading = false
+          void clearTenantState()
         }
       },
     }
 
   )
 )
+
+registerTenantResetHandler(() => {
+  useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false, memberships: [], currentStoreRole: null })
+})
+registerTenantStoreSync(() => { void useAuthStore.persist.rehydrate() })

@@ -1,5 +1,5 @@
 import { SiiEngine } from '@/lib/sii/engine'
-import { createClient } from '@supabase/supabase-js'
+import type { DtePayload } from '@/lib/sii/types'
 
 // Mock de variables de entorno
 process.env.SII_ENCRYPTION_KEY = 'test-key-32-chars-long-1234567890';
@@ -25,7 +25,10 @@ describe('SiiEngine Unit Tests', () => {
   })
 
   it('should fail to emit if not initialized', async () => {
-    const payload: any = { Encabezado: { TipoDTE: 39, MntTotal: 1000 } }
+    const payload: DtePayload = {
+      Encabezado: { TipoDTE: 39, Folio: 1, FchEmis: '2026-01-01', MntTotal: 1000 },
+      Detalles: [],
+    }
     await expect(engine.emitirBoleta(payload, 'store-123')).rejects.toThrow('Motor no inicializado')
   })
 

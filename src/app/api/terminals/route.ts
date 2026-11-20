@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { parseBody } from '@/lib/validations/http'
+import { terminalCreateSchema } from '@/lib/validations/api'
 
 export async function GET() {
   const supabase = await createClient()
@@ -66,7 +68,9 @@ export async function POST(req: Request) {
       .eq('id', user.id)
       .single()
 
-    const body = await req.json()
+    const parsed = await parseBody(req, terminalCreateSchema)
+    if ('error' in parsed) return parsed.error
+    const body = parsed.data
 
     const { data, error } = await supabase
       .from('terminals')
@@ -75,7 +79,7 @@ export async function POST(req: Request) {
         description: body.description ?? '',
         store_id: profile?.store_id
       }])
-      .select()
+      .select('id, store_id, name, description, is_active, status, current_user_id')
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })

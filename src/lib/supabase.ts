@@ -47,7 +47,7 @@ export async function createClient() {
     let cookieStore;
     try {
       cookieStore = await cookies()
-    } catch (e) {
+    } catch {
       // Si cookies() falla (fuera de request scope, ej: build), usamos cliente básico
       return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
         auth: { persistSession: false }

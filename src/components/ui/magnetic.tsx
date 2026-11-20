@@ -7,26 +7,27 @@ export default function Magnetic({
   children,
   strength = 1,
 }: {
-  children: React.ReactElement;
+  children: React.ReactElement<{ ref?: React.Ref<HTMLDivElement> }>;
   strength?: number;
 }) {
   const magnetic = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const xTo = gsap.quickTo(magnetic.current, "x", {
+    const node = magnetic.current;
+    if (!node) return;
+
+    const xTo = gsap.quickTo(node, "x", {
       duration: 1,
       ease: "elastic.out(1, 0.3)",
     });
-    const yTo = gsap.quickTo(magnetic.current, "y", {
+    const yTo = gsap.quickTo(node, "y", {
       duration: 1,
       ease: "elastic.out(1, 0.3)",
     });
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!magnetic.current) return;
       const { clientX, clientY } = e;
-      const { height, width, left, top } =
-        magnetic.current.getBoundingClientRect();
+      const { height, width, left, top } = node.getBoundingClientRect();
       const x = (clientX - (left + width / 2)) * 0.35 * strength;
       const y = (clientY - (top + height / 2)) * 0.35 * strength;
       xTo(x);
@@ -38,19 +39,14 @@ export default function Magnetic({
       yTo(0);
     };
 
-    if (magnetic.current) {
-      magnetic.current.addEventListener("mousemove", handleMouseMove);
-      magnetic.current.addEventListener("mouseleave", handleMouseLeave);
-    }
+    node.addEventListener("mousemove", handleMouseMove);
+    node.addEventListener("mouseleave", handleMouseLeave);
 
     return () => {
-      if (magnetic.current) {
-        magnetic.current.removeEventListener("mousemove", handleMouseMove);
-        magnetic.current.removeEventListener("mouseleave", handleMouseLeave);
-      }
+      node.removeEventListener("mousemove", handleMouseMove);
+      node.removeEventListener("mouseleave", handleMouseLeave);
     };
   }, [strength]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return React.cloneElement(children as any, { ref: magnetic });
+  return React.cloneElement(children, { ref: magnetic });
 }

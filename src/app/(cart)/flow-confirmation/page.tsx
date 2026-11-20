@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, AlertCircle, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { getFlowPaymentStatus } from '@/lib/flow';
 import { apiFetch } from '@/lib/api';
 
 function FlowConfirmationContent() {
@@ -19,9 +18,8 @@ function FlowConfirmationContent() {
     let isMounted = true;
     const validatePayment = async () => {
       try {
-        // Soporta Flow (token) y Webpay (token_ws)
+        // Soporta Webpay (token_ws)
         const webpayToken = searchParams.get('token_ws');
-        const flowOrder = searchParams.get('token');
 
         // Obtener el order ID del localStorage
         const storedOrderId = localStorage.getItem('pendingOrderId');
@@ -60,33 +58,9 @@ function FlowConfirmationContent() {
           }
         }
 
-        if (flowOrder) {
-          const paymentStatus = await getFlowPaymentStatus(flowOrder || '');
-          if (paymentStatus === 'success') {
-            await apiFetch(`/orders/${storedOrderId}/confirm-payment`, {
-              method: 'POST',
-            });
-            localStorage.removeItem('pendingOrderId');
-            localStorage.removeItem('pendingFlowOrder');
-            if (isMounted) {
-              setStatus('success');
-              setMessage('¡Pago confirmado exitosamente!');
-              setTimeout(() => {
-                if (isMounted) navigate.push('/');
-              }, 3000);
-            }
-            return;
-          }
-          if (isMounted) {
-            setStatus('error');
-            setMessage(`Pago rechazado: ${paymentStatus}`);
-          }
-          return;
-        }
-
         if (isMounted) {
           setStatus('error');
-          setMessage('No se encontró token de pago (Webpay o Flow)');
+          setMessage('No se encontró token de pago (Webpay)');
         }
       } catch (error) {
         console.error('Error validando pago:', error);

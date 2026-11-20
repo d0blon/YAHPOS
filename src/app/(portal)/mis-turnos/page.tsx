@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -8,51 +8,72 @@ import { Badge } from '@/components/ui/badge'
 import { Clock, Briefcase, ChevronRight, History } from 'lucide-react'
 import { useAuthStore } from '@/stores'
 import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+
+interface ShiftRecord {
+  id: string
+  status: string
+  register_id: string | null
+  start_time: string
+}
 
 export default function MisTurnosPage() {
   const { user, isAuthenticated } = useAuthStore()
   const [currentArea, setCurrentArea] = useState<string>('Cargando...')
-  const [shifts, setShifts] = useState<any[]>([])
+  const [storeId, setStoreId] = useState<string | null>(null)
+  const [shifts, setShifts] = useState<ShiftRecord[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
-  const [activeShift, setActiveShift] = useState<any>(null)
+  const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación/fetch sin cambio de comportamiento
     setIsHydrated(true)
   }, [])
 
-  const loadProfileData = async () => {
-    if (!user?.id) return
+  const userId = user?.id
+
+  const loadProfileData = useCallback(async () => {
+    if (!userId) return
 
     // 1. Obtener la ubicación actual
     const { data: profile } = await supabase
       .from('profiles')
-      .select('current_area')
-      .eq('id', user.id)
+      .select('current_area, store_id')
+      .eq('id', userId)
       .single()
     
+    let profileStoreId: string | null = null
     if (profile) {
       setCurrentArea(profile.current_area || 'Ausente')
+      profileStoreId = profile.store_id || null
+      setStoreId(profileStoreId)
     }
 
     // 2. Obtener últimas asignaciones / historial (si tenemos)
-    const { data: shiftHistory } = await supabase
+    const shiftsQuery = supabase
       .from('shifts')
-      .select('*')
-      .eq('user_id', user.id)
+      .select('id, status, register_id, start_time')
+      .eq('user_id', userId)
       .order('start_time', { ascending: false })
       .limit(10)
     
+    if (profileStoreId) {
+      shiftsQuery.eq('store_id', profileStoreId)
+    }
+    const { data: shiftHistory } = await shiftsQuery
+    
     if (shiftHistory) {
       setShifts(shiftHistory)
-      const current = shiftHistory.find((s: any) => s.status === 'active')
+      const current = shiftHistory.find((s: ShiftRecord) => s.status === 'active')
       setActiveShift(current || null)
     }
-  }
+  }, [userId])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación/fetch sin cambio de comportamiento
     loadProfileData()
-  }, [user])
+  }, [loadProfileData])
 
   const toggleShift = async () => {
     if (!user?.id || isSyncing) return
@@ -61,11 +82,21 @@ export default function MisTurnosPage() {
     try {
       if (activeShift) {
         // Cerrar turno
-        await supabase
+        let closeQuery = supabase
           .from('shifts')
           .update({ status: 'completed', end_time: new Date().toISOString() })
           .eq('id', activeShift.id)
-        
+        if (storeId) {
+          closeQuery = closeQuery.eq('store_id', storeId)
+        }
+        const { error: closeError } = await closeQuery
+
+        if (closeError) {
+          toast.error('No se pudo finalizar el turno. Intentá de nuevo.')
+          console.error('Error cerrando turno', closeError)
+          return
+        }
+
         await supabase
           .from('profiles')
           .update({ current_area: 'Inactivo' })
@@ -73,13 +104,21 @@ export default function MisTurnosPage() {
           
       } else {
         // Iniciar turno
-        await supabase
+        const nextArea = currentArea === 'Ausente' || currentArea === 'Inactivo' ? 'Punto de Venta' : currentArea
+        const { error: openError } = await supabase
           .from('shifts')
           .insert([{
             user_id: user.id,
-            area: currentArea === 'Ausente' || currentArea === 'Inactivo' ? 'Punto de Venta' : currentArea,
-            status: 'active'
+            register_id: nextArea,
+            status: 'active',
+            store_id: storeId
           }])
+
+        if (openError) {
+          toast.error('No se pudo iniciar el turno. Intentá de nuevo.')
+          console.error('Error iniciando turno', openError)
+          return
+        }
 
         if (currentArea === 'Ausente' || currentArea === 'Inactivo') {
            await supabase
@@ -90,6 +129,7 @@ export default function MisTurnosPage() {
       }
       await loadProfileData()
     } catch (err) {
+      toast.error('Error de conexión. Intentá de nuevo.')
       console.error('Error toggling shift', err)
     } finally {
       setIsSyncing(false)
@@ -200,7 +240,7 @@ export default function MisTurnosPage() {
                               <Badge className={shift.status === 'active' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500'}>
                                 {shift.status === 'active' ? 'En Curso' : 'Finalizado'}
                               </Badge>
-                              <span className="font-bold text-gray-900 dark:text-white">{shift.area}</span>
+                              <span className="font-bold text-gray-900 dark:text-white">{shift.register_id}</span>
                             </div>
                             <p className="text-sm text-gray-500">
                               Iniciado: {new Date(shift.start_time).toLocaleString('es-CL')}

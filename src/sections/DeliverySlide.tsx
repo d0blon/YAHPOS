@@ -1,12 +1,14 @@
 'use client'
 
+import type { SVGProps } from 'react'
 import { motion, Variants } from 'framer-motion'
+import type { LucideIcon } from 'lucide-react'
 import { Truck, MapPin, Clock, ArrowRight, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEditor } from '@/providers/EditorProvider'
 import { EditableText } from '@/components/editor/EditableText'
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   Truck: Truck,
   MapPin: MapPin,
   Clock: Clock,
@@ -202,7 +204,7 @@ export default function DeliverySlide() {
   )
 }
 
-function StoreIcon(props: any) {
+function StoreIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -211,7 +213,7 @@ function StoreIcon(props: any) {
   )
 }
 
-function HomeIcon(props: any) {
+function HomeIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

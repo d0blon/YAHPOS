@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useEffect, Fragment } from 'react'
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import { 
-  Zap, Crown, Star, LogOut, Save, Layout, Database,
+  LogOut, Layout, Database,
   CheckCircle2, Building2, BarChart3, 
-  Webhook, ShieldCheck, Activity, 
-  Terminal as TerminalIcon, Search, Filter,
-  AlertTriangle, Clock, TrendingUp, Settings2, Plus,
-  DollarSign, ArrowUpRight, ArrowDownRight, Briefcase,
-  Globe, Shield, ExternalLink, RefreshCw, ChevronDown
+  ShieldCheck, Activity, 
+  Terminal as TerminalIcon, Search,
+  Clock, TrendingUp, Settings2, Plus,
+  DollarSign, ArrowUpRight, ArrowDownRight,
+  Globe, Shield, RefreshCw, ChevronDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { 
   getStoresWithStatusAction, 
@@ -38,17 +37,26 @@ import { cn } from '@/lib/utils'
 import SystemLogs from './SystemLogs'
 import SystemHealth from './SystemHealth'
 import { useAuthStore } from '@/stores/authStore'
+import { getRootOrigin } from '@/lib/config/root-origin'
 
 type Tab = 'DASHBOARD' | 'BUSINESS' | 'MONITOR' | 'CATALOG'
 
-import { Store, FinancialStats, SystemLog } from '@/types'
+import { Store, FinancialStats } from '@/types'
 
 interface StoreSettings {
   initialSettings?: Store[]
 }
 
-export default function DeveloperPanel({ initialSettings }: StoreSettings) {
+export default function DeveloperPanel({}: StoreSettings) {
   const { user } = useAuthStore()
+  const rootHost = (() => {
+    try {
+      return new URL(getRootOrigin()).host
+    } catch {
+      return null
+    }
+  })()
+  const dnsTarget = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim() || rootHost
   const userName = user?.firstName ? `${user.firstName} ${user.lastName}`.trim() : user?.email?.split('@')[0] || 'Developer'
   const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD')
   const [stores, setStores] = useState<Store[]>([])
@@ -98,55 +106,80 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
     created_at: string
     stores?: { name: string }
   }
+  interface ApprovedProduct {
+    sku: string
+    name: string
+    brand?: string | null
+    category?: string | null
+    reference_price?: number | null
+  }
+
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(false)
   const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null)
   const [catalogView, setCatalogView] = useState<'PENDING' | 'APPROVED'>('PENDING')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [approvedProducts, setApprovedProducts] = useState<any[]>([])
+  const [approvedProducts, setApprovedProducts] = useState<ApprovedProduct[]>([])
   const [catalogSearch, setCatalogSearch] = useState('')
   const [loadingApproved, setLoadingApproved] = useState(false)
   const [catalogPage, setCatalogPage] = useState(0)
   const [catalogTotal, setCatalogTotal] = useState(0)
   const [catalogHasMore, setCatalogHasMore] = useState(false)
-  const fetchSubmissions = async () => {
-    setLoadingSubmissions(true)
-    const res = await getPendingMasterCatalogSubmissionsAction()
-    if (res.success) {
-      setSubmissions((res.data as unknown as Submission[]) || [])
-    } else {
-      toast.error('Error cargando submissions: ' + res.error)
+  const lastCatalogFetchRef = useRef<string | null>(null)
+
+  const fetchSubmissions = useCallback(async () => {
+    try {
+      const res = await getPendingMasterCatalogSubmissionsAction()
+      if (res.success) {
+        setSubmissions((res.data as unknown as Submission[]) || [])
+      } else {
+        toast.error('Error cargando submissions: ' + res.error)
+      }
+    } finally {
+      setLoadingSubmissions(false)
     }
-    setLoadingSubmissions(false)
+  }, [])
+
+  const fetchApproved = useCallback(async (search: string, page: number, isLoadMore: boolean) => {
+    try {
+      const res = await getApprovedMasterCatalogProductsAction(search, page)
+      if (res.success) {
+        if (isLoadMore) {
+          setApprovedProducts(prev => [...prev, ...(res.data || [])])
+        } else {
+          setApprovedProducts(res.data || [])
+        }
+        setCatalogTotal(res.total || 0)
+        setCatalogHasMore((res.data?.length || 0) === res.pageSize)
+      } else {
+        toast.error('Error cargando catálogo: ' + res.error)
+      }
+    } finally {
+      setLoadingApproved(false)
+    }
+  }, [])
+
+  const reloadSubmissions = () => {
+    setLoadingSubmissions(true)
+    void fetchSubmissions()
+  }
+
+  const reloadApproved = (search: string) => {
+    setCatalogPage(0)
+    setLoadingApproved(true)
+    void fetchApproved(search, 0, false)
   }
 
   useEffect(() => {
-    if (activeTab === 'CATALOG') {
-      if (catalogView === 'PENDING') {
-        fetchSubmissions()
-      } else {
-        setCatalogPage(0)
-        fetchApproved(catalogSearch, 0, false)
-      }
-    }
-  }, [activeTab, catalogView])
-
-  const fetchApproved = async (search = '', page = 0, isLoadMore = false) => {
-    setLoadingApproved(true)
-    const res = await getApprovedMasterCatalogProductsAction(search, page)
-    if (res.success) {
-      if (isLoadMore) {
-        setApprovedProducts(prev => [...prev, ...(res.data || [])])
-      } else {
-        setApprovedProducts(res.data || [])
-      }
-      setCatalogTotal(res.total || 0)
-      setCatalogHasMore((res.data?.length || 0) === res.pageSize)
+    const requestKey = `${activeTab}:${catalogView}:${catalogSearch}`
+    if (lastCatalogFetchRef.current === requestKey) return
+    lastCatalogFetchRef.current = requestKey
+    if (activeTab !== 'CATALOG') return
+    if (catalogView === 'PENDING') {
+      void fetchSubmissions()
     } else {
-      toast.error('Error cargando catálogo: ' + res.error)
+      void fetchApproved(catalogSearch, 0, false)
     }
-    setLoadingApproved(false)
-  }
+  }, [activeTab, catalogView, catalogSearch, fetchSubmissions, fetchApproved])
 
   const handleExportSubmissions = () => {
     if (submissions.length === 0) {
@@ -177,11 +210,11 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
           const res = await importEnrichedMasterCatalogSubmissionsAction(json)
           if (res.success) {
             toast.success(`✅ Importados ${res.updatedCount} registros enriquecidos`)
-            fetchSubmissions()
+            reloadSubmissions()
           } else {
             toast.error('Error al importar: ' + res.error)
           }
-        } catch (err) {
+        } catch {
           toast.error('Archivo JSON inválido')
         }
       }
@@ -195,7 +228,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
     if (res.success) {
       toast.success('✨ Aprobado y añadido al Catálogo Maestro')
       setEditingSubmission(null)
-      fetchSubmissions()
+      reloadSubmissions()
     } else {
       toast.error('Error: ' + res.error)
     }
@@ -205,16 +238,12 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
     const res = await rejectMasterCatalogSubmissionAction(id)
     if (res.success) {
       toast.success('Submission rechazada')
-      fetchSubmissions()
+      reloadSubmissions()
     } else {
       toast.error('Error: ' + res.error)
     }
   }
 
-
-  useEffect(() => {
-    fetchData()
-  }, [])
 
   const fetchData = async () => {
     setIsLoading(true)
@@ -244,6 +273,11 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- patrón de hidratación/fetch sin cambio de comportamiento
+    fetchData()
+  }, [])
 
 
   const UF_VALUE = 38000
@@ -412,7 +446,14 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
         {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as Tab)}
+            onClick={() => {
+              if (tab.id === activeTab) return
+              if (tab.id === 'CATALOG') {
+                setLoadingSubmissions(true)
+                setLoadingApproved(true)
+              }
+              setActiveTab(tab.id as Tab)
+            }}
             className={cn(
               "relative px-6 py-2.5 transition-all duration-300 text-[10px] font-black uppercase tracking-[0.2em] flex-1 md:flex-none",
               activeTab === tab.id 
@@ -944,8 +985,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                       onClick={() => handleUpdateBilling(editingStore.id, { 
                         tier: billingForm.tier as 'austral' | 'archipielago' | 'patagonia', 
                         payment_status: billingForm.payment_status as 'paid' | 'pending' | 'overdue',
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        next_payment_date: billingForm.next_payment_date ? (new Date(billingForm.next_payment_date).toISOString() as any) : null
+                        next_payment_date: billingForm.next_payment_date ? new Date(billingForm.next_payment_date).toISOString() : null
                       })}
                       className="flex-1 bg-amber-600 hover:bg-amber-500 rounded-none text-[11px] font-black uppercase tracking-widest"
                     >
@@ -980,7 +1020,7 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                           value={domainInputs.subdomain}
                           onChange={e => setDomainInputs({...domainInputs, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})}
                         />
-                        <span className="text-[10px] font-black text-gray-500">.australmarket.cl</span>
+                        <span className="text-[10px] font-black text-gray-500">{rootHost ? `.${rootHost}` : '<dominio raíz sin configurar>'}</span>
                       </div>
                     </div>
 
@@ -1008,7 +1048,11 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                       {domainInputs.customDomain && (
                         <div className="bg-white/[0.02] border border-white/5 p-3 space-y-2 mt-2">
                           <p className="text-[9px] font-black text-gray-500 uppercase">Instrucciones DNS:</p>
-                          <p className="text-[10px] font-mono text-amber-500/80">CNAME @ → proxy.australmarket.cl</p>
+                          {dnsTarget ? (
+                            <p className="text-[10px] font-mono text-amber-500/80">CNAME @ → {dnsTarget}</p>
+                          ) : (
+                            <p className="text-[10px] font-mono text-red-400/80">Configura NEXT_PUBLIC_ROOT_ORIGIN o NEXT_PUBLIC_ROOT_DOMAIN para ver la instrucción DNS.</p>
+                          )}
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -1123,12 +1167,10 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                       type="text"
                       placeholder="Buscar en catálogo..."
                       value={catalogSearch}
-                      onChange={(e) => setCatalogSearch(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          setCatalogPage(0)
-                          fetchApproved(catalogSearch, 0, false)
-                        }
+                      onChange={(e) => {
+                        setCatalogSearch(e.target.value)
+                        setCatalogPage(0)
+                        setLoadingApproved(true)
                       }}
                       className="bg-black/60 border border-white/10 pl-9 pr-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white focus:border-amber-500/40 outline-none h-10"
                     />
@@ -1137,10 +1179,9 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                 <Button 
                   onClick={() => {
                     if (catalogView === 'PENDING') {
-                      fetchSubmissions()
+                      reloadSubmissions()
                     } else {
-                      setCatalogPage(0)
-                      fetchApproved(catalogSearch, 0, false)
+                      reloadApproved(catalogSearch)
                     }
                   }}
                   variant="outline"
@@ -1154,7 +1195,11 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
 
             <div className="flex gap-px bg-white/5 border border-white/5">
               <button
-                onClick={() => setCatalogView('PENDING')}
+                onClick={() => {
+                  if (catalogView === 'PENDING') return
+                  setLoadingSubmissions(true)
+                  setCatalogView('PENDING')
+                }}
                 className={cn(
                   "relative px-6 py-2 transition-all duration-300 text-[10px] font-black uppercase tracking-[0.2em] flex-1",
                   catalogView === 'PENDING' ? "text-amber-400 bg-amber-500/5" : "text-gray-600 hover:text-gray-400 bg-black/20"
@@ -1164,7 +1209,12 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                 {catalogView === 'PENDING' && <div className="absolute bottom-0 left-0 w-full h-[1px] bg-amber-500" />}
               </button>
               <button
-                onClick={() => setCatalogView('APPROVED')}
+                onClick={() => {
+                  if (catalogView === 'APPROVED') return
+                  setCatalogPage(0)
+                  setLoadingApproved(true)
+                  setCatalogView('APPROVED')
+                }}
                 className={cn(
                   "relative px-6 py-2 transition-all duration-300 text-[10px] font-black uppercase tracking-[0.2em] flex-1",
                   catalogView === 'APPROVED' ? "text-amber-400 bg-amber-500/5" : "text-gray-600 hover:text-gray-400 bg-black/20"
@@ -1378,7 +1428,8 @@ export default function DeveloperPanel({ initialSettings }: StoreSettings) {
                     onClick={() => {
                       const nextPage = catalogPage + 1
                       setCatalogPage(nextPage)
-                      fetchApproved(catalogSearch, nextPage, true)
+                      setLoadingApproved(true)
+                      void fetchApproved(catalogSearch, nextPage, true)
                     }}
                     disabled={loadingApproved}
                     variant="outline"

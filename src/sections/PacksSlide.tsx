@@ -2,12 +2,13 @@
 
 import { motion, Variants } from 'framer-motion'
 import { PackageOpen, ArrowRight, Plus, Loader2, Upload, Trash2 } from 'lucide-react'
-import Link from 'next/link'
 import Image from 'next/image'
-import { useEditor } from '@/providers/EditorProvider'
+import { useEditor, type SlideItem } from '@/providers/EditorProvider'
 import { EditableText } from '@/components/editor/EditableText'
 import { Button } from '@/components/ui/button'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
+
+type PackItem = SlideItem & { features?: string[] }
 
 export default function PacksSlide() {
   const editor = useEditor()
@@ -178,7 +179,7 @@ export default function PacksSlide() {
                 />
                 
                 <div className="flex flex-col gap-2 mb-6 text-sm text-gray-400">
-                  {(pack as any).features?.map((feat: any, i: number) => (
+                  {(pack as PackItem).features?.map((feat, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <Plus className="w-3 h-3 text-emerald-400" />
                       <EditableText field={`packs.items.${idx}.features.${i}`} value={feat} />
@@ -187,7 +188,7 @@ export default function PacksSlide() {
                   {editor?.isEditorMode && (
                     <button 
                       onClick={() => {
-                        const newFeatures = [...((pack as any).features || []), 'Nueva característica']
+                        const newFeatures = [...((pack as PackItem).features || []), 'Nueva característica']
                         editor.updateField(`packs.items.${idx}.features`, newFeatures)
                       }}
                       className="text-xs text-emerald-400/60 hover:text-emerald-400 flex items-center gap-1 mt-1 transition-colors"

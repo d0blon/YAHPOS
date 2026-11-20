@@ -7,7 +7,8 @@ import * as path from 'path';
 async function generateSimulationReport() {
   console.log('🚀 Generando Reporte de Simulación SII...');
 
-  const storeId = 'c828f16e-4572-4700-97e6-66b6180d6a9d'; 
+  const storeId = process.env.STORE_ID;
+  if (!storeId) throw new Error('Falta STORE_ID');
   const engine = new SiiEngine();
   await engine.initForStore(storeId);
 

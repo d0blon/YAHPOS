@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -10,25 +9,63 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import SqlModal from '@/components/modals/SqlModal'
+
+interface ProductRecord {
+  id?: string
+  name?: string
+  sku?: string
+  price?: number
+  stock?: number
+  lowStockThreshold?: number
+  category?: string
+  description?: string
+  image?: string
+  unit?: string
+  discount?: number
+  isActive?: boolean
+  isFeatured?: boolean
+  nutritional_seals?: number
+  brand?: string
+  volume?: string
+  supplierName?: string
+  supplier_name?: string
+  supplierMetadata?: Record<string, unknown>
+  supplier_metadata?: Record<string, unknown>
+  is_realtime_tracked?: boolean
+  inventory?: { branch_id: string; stock: number }[]
+}
+
+interface CategoryRecord {
+  id: string
+  name: string
+}
+
+interface BranchRecord {
+  id: string
+  name: string
+}
+
+interface DistributorSuggestion {
+  name: string
+  metadata?: { phone?: string; [key: string]: unknown }
+}
 
 interface ProductModalProps {
   isOpen: boolean
   onClose: () => void
-  product?: any
+  product?: ProductRecord
   onSaved: () => void
 }
 
 export default function ProductModal({ isOpen, onClose, product, onSaved }: ProductModalProps) {
   const [isSaving, setIsSaving] = useState(false)
-  const [showSqlModal, setShowSqlModal] = useState(false)
-  const [categories, setCategories] = useState<any[]>([])
-  const [branches, setBranches] = useState<any[]>([])
+  const [categories, setCategories] = useState<CategoryRecord[]>([])
+  const [branches, setBranches] = useState<BranchRecord[]>([])
   const [branchStocks, setBranchStocks] = useState<{[key: string]: number}>({})
   const [isSearchingBarcode, setIsSearchingBarcode] = useState(false)
   const [skuMatchedMaster, setSkuMatchedMaster] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)  // moved here
-  const [suggestedDistributors, setSuggestedDistributors] = useState<any[]>([])
+  const [suggestedDistributors, setSuggestedDistributors] = useState<DistributorSuggestion[]>([])
   const { config, isFeatureEnabled } = useSaaS()
   const isMultiBranch = isFeatureEnabled('multi-branch')
   
@@ -49,7 +86,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
     brand: '',
     volume: '',
     supplierName: '',
-    supplierMetadata: {} as any,
+    supplierMetadata: {} as Record<string, unknown>,
     isRealtimeTracked: false
   })
 
@@ -81,6 +118,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
   // Cargar datos del producto si estamos editando
   useEffect(() => {
     if (product) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- patrón sin cambio de comportamiento
       setFormData({
         name: product.name || '',
         sku: product.sku || '',
@@ -105,7 +143,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
       // Cargar stocks por sucursal si existen en el producto
       if (product.inventory && Array.isArray(product.inventory)) {
         const stocks: {[key: string]: number} = {}
-        product.inventory.forEach((inv: any) => {
+        product.inventory.forEach(inv => {
           stocks[inv.branch_id] = inv.stock
         })
         setBranchStocks(stocks)
@@ -140,6 +178,7 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
   useEffect(() => {
     const code = formData.sku
     if (!code || code.length < 8) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- patrón sin cambio de comportamiento
       setSkuMatchedMaster(false)
       return
     }
@@ -219,8 +258,8 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
 
       toast.success(product ? 'Producto actualizado' : 'Producto creado')
       onSaved()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al guardar producto')
     } finally {
       setIsSaving(false)
     }
@@ -254,8 +293,8 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
       const data = await res.json()
       setFormData(prev => ({ ...prev, description: data.description }))
       toast.success('✨ Descripción generada con éxito')
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al generar descripción')
     } finally {
       setIsGenerating(false)
     }
@@ -263,7 +302,6 @@ export default function ProductModal({ isOpen, onClose, product, onSaved }: Prod
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <SqlModal show={showSqlModal} onClose={() => setShowSqlModal(false)} />
       <div className="bg-white dark:bg-gray-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">

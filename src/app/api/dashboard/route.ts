@@ -1,5 +1,36 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { parseQuery } from '@/lib/validations/http'
+import { dashboardQuerySchema } from '@/lib/validations/api'
+
+interface PersonnelRow {
+  first_name: string | null
+  last_name: string | null
+  role: string | null
+  current_area: string | null
+}
+
+interface OrderRow {
+  id: string
+  payment_status: string
+  total: number | null
+  created_at: string
+  status: string | null
+  payment_method: string | null
+}
+
+interface OrderItemRow {
+  product_id: string | number
+  quantity: number
+  price: number
+}
+
+function errorMessage(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+    ? error.message
+    : undefined
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
 
@@ -10,25 +41,42 @@ export async function GET(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('store_id')
+      .select('store_id, role')
       .eq('id', user.id)
       .single()
 
-    // Prioridad: header de middleware (resuelto por subdominio) > profile.store_id
-    const headerStoreId = req.headers.get('x-store-id')
-    const storeId = headerStoreId || profile?.store_id
+    // El header x-store-id es falsificable: NUNCA se lee acá. store_id del perfil
+    // es la fuente canónica. Solo cuentas plataforma (developer/superadmin) pueden
+    // resolver la tienda desde el Host, y siempre en servidor (RPC de dominio).
+    const isPlatformRole = ['developer', 'superadmin'].includes((profile?.role ?? '').toLowerCase())
+    let storeId = profile?.store_id ?? null
+
+    if (!storeId && isPlatformRole) {
+      const host = (req.headers.get('host') || '').toLowerCase()
+      const { data: storeFromHost } = host
+        ? await supabase.rpc('get_store_by_domain', { p_host: host }).maybeSingle()
+        : { data: null }
+      storeId = (storeFromHost as { id?: string } | null)?.id ?? null
+    }
 
     if (!storeId) {
+      if (!isPlatformRole) {
+        return NextResponse.json({ error: 'Perfil sin tienda' }, { status: 403 })
+      }
       return NextResponse.json({ error: 'No se pudo determinar la tienda para esta request' }, { status: 404 })
     }
 
-    const branchId = req.nextUrl.searchParams.get('branchId')
+    const parsedQuery = parseQuery(req, dashboardQuerySchema)
+    if ('error' in parsedQuery) return parsedQuery.error
+    const branchId = parsedQuery.data.branchId
 
     // 1. Obtener datos de pedidos para ingresos y conteo (Filtrado por store_id y opcionalmente branch_id)
     let ordersQuery = supabase
       .from('orders')
-      .select('*', { count: 'exact' })
+      .select('id, payment_status, total, created_at, status, payment_method', { count: 'exact' })
       .eq('store_id', storeId)
+      .order('created_at', { ascending: false })
+      .limit(500)
 
     if (branchId && branchId !== 'all') {
       ordersQuery = ordersQuery.eq('branch_id', branchId)
@@ -40,7 +88,7 @@ export async function GET(req: NextRequest) {
     // 2. Obtener conteo de productos (Filtrado por store_id)
     const { count: productCount, error: productError } = await supabase
       .from('products')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('store_id', storeId)
 
     if (productError) throw productError
@@ -48,7 +96,7 @@ export async function GET(req: NextRequest) {
     // 3. Obtener conteo de clientes (Filtrado por store_id)
     const { count: customerCount, error: customerError } = await supabase
       .from('profiles')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('store_id', storeId)
       .eq('role', 'customer')
 
@@ -67,15 +115,15 @@ export async function GET(req: NextRequest) {
       console.warn('[Dashboard API] Error al obtener personal activo:', personnelError.message)
     }
 
-    const activePersonnel = (activePersonnelData || []).map((p: any) => ({
+    const activePersonnel = (activePersonnelData || []).map((p: PersonnelRow) => ({
       name: `${p.first_name} ${p.last_name}`.trim(),
       role: p.role,
       area: p.current_area
     }))
 
     // 5. Obtener items vendidos para Top Products
-    const orderIds = (orders || []).map((o: any) => o.id)
-    let orderItems: any[] = []
+    const orderIds = (orders || []).map((o: OrderRow) => o.id)
+    let orderItems: OrderItemRow[] = []
     
     if (orderIds.length > 0) {
       const { data, error: itemsError } = await supabase
@@ -90,7 +138,9 @@ export async function GET(req: NextRequest) {
 
     // --- CÁLCULOS ---
 
-    const totalRevenue = (orders || []).reduce((acc: number, o: any) => acc + (Number(o.total) || 0), 0)
+    const PAID_STATUSES = ['paid', 'completed']
+    const paidOrders = (orders || []).filter((o: OrderRow) => PAID_STATUSES.includes(o.payment_status))
+    const totalRevenue = paidOrders.reduce((acc: number, o: OrderRow) => acc + (Number(o.total) || 0), 0)
 
     // Formatear Pedidos Recientes (últimos 5)
     const recentOrders = [...(orders || [])]
@@ -120,38 +170,9 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.sales - a.sales)
       .slice(0, 5)
 
-    // 6. Generar datos históricos para gráficos (últimos 7 días)
-    const salesByDay: Record<string, {pos: number, ecom: number}> = {};
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
-
-    last7Days.forEach(day => salesByDay[day] = {pos: 0, ecom: 0});
-    
-    (orders || []).forEach(o => {
-      const day = new Date(o.created_at).toISOString().split('T')[0];
-      if (salesByDay[day] !== undefined) {
-        // Asumimos que si tiene register_id o es pickup, es venta presencial
-        if (o.register_id || o.address === 'Venta Presencial POS' || o.shipping_type === 'pickup') {
-          salesByDay[day].pos += Number(o.total) || 0;
-        } else {
-          salesByDay[day].ecom += Number(o.total) || 0;
-        }
-      }
-    });
-
-    const chartData = last7Days.map(day => ({
-      name: day.split('-').slice(1).reverse().join('/'),
-      POS: salesByDay[day].pos,
-      Ecommerce: salesByDay[day].ecom,
-      total: salesByDay[day].pos + salesByDay[day].ecom
-    }));
-
     // 7. Generar datos para Gráfico de Dona (Métodos de Pago)
     const paymentMethodsData: Record<string, number> = {};
-    (orders || []).forEach(o => {
+    paidOrders.forEach(o => {
       const method = (o.payment_method || 'OTRO').toUpperCase();
       if (!paymentMethodsData[method]) {
         paymentMethodsData[method] = 0;
@@ -181,13 +202,13 @@ export async function GET(req: NextRequest) {
       recentOrders,
       topProducts,
       activePersonnel,
-      chartData,
       paymentMethods,
       branches: branches || []
     })
 
-  } catch (error: any) {
-    console.error('[Dashboard API Error]:', error.message)
-    return NextResponse.json({ error: error.message || 'Error interno del servidor' }, { status: 500 })
+  } catch (error: unknown) {
+    const message = errorMessage(error)
+    console.error('[Dashboard API Error]:', message)
+    return NextResponse.json({ error: message || 'Error interno del servidor' }, { status: 500 })
   }
 }

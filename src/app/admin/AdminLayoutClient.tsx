@@ -4,8 +4,6 @@ import React, { useState } from 'react'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { usePathname } from 'next/navigation'
-import { Menu } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export default function AdminLayout({
@@ -23,7 +21,7 @@ export default function AdminLayout({
       {!isDeveloperRoute && (
         <div 
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto",
+            "fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen",
             "bg-black/40 backdrop-blur-xl border-r border-white/5",
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}

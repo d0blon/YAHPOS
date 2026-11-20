@@ -1,18 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import { 
-  Settings, Store, Monitor, CreditCard, FileText, Palette,
-  LayoutDashboard, Package, ShoppingCart, Users, TrendingUp,
+  Settings, Store, Monitor, CreditCard, FileText, Package, TrendingUp,
   Save, CheckCircle, AlertCircle, Loader2, Eye, EyeOff,
-  Banknote, Wifi, Receipt, Terminal, Award, HelpCircle, ShieldCheck, Key, X,
-  Image as ImageIcon, Maximize2, Info, Sparkles, ExternalLink,
-  Check, Zap, ArrowRight, Shield
+  Receipt, Terminal, Award, ShieldCheck, X,
+  Image as ImageIcon, Info, Sparkles, ExternalLink,
+  Check, Shield
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,6 +23,76 @@ import { cn } from '@/lib/utils'
 import { CHILE_REGIONS } from '@/lib/chile-geography'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+interface ReceiptSettings {
+  message: string
+  colorMode: 'bw' | 'color'
+  showPoweredBy: boolean
+  poweredByText: string
+  showLoyalty: boolean
+  loyaltyName: string
+}
+
+interface StoreInfo {
+  name: string
+  rut: string
+  slogan: string
+  address: string
+  city: string
+  commune: string
+  region: string
+  phone: string
+  email: string
+  website: string
+}
+
+interface Appearance {
+  logoUrl: string
+  primaryColor: string
+  secondaryColor: string
+  darkMode: boolean
+}
+
+interface SubscriptionTier {
+  id: string
+  name: string
+  price_clp: number
+  has_loyalty: boolean
+  has_ai_assistant: boolean
+}
+
+interface TerminalRecord {
+  id: string
+  name: string
+  is_active: boolean
+}
+
+interface CertificateInfo {
+  rut?: string
+  razonSocial?: string
+  notAfter?: string
+}
+
+interface CafInfo {
+  totalFolios?: string | number
+}
+
+interface SiiConfig {
+  rut_emisor: string
+  razon_social: string
+  giro: string
+  acteco: string
+  direccion: string
+  comuna: string
+  ciudad: string
+  fch_resol: string
+  nro_resol: string
+  environment: string
+  pfx_base64: string
+  password: string
+  cert_info: CertificateInfo | null
+  caf_xml: CafInfo | null
+}
 
 const TABS = [
   { id: 'store', label: 'Tienda', icon: Store },
@@ -65,7 +133,7 @@ function cafErrorMessage(data: unknown, fallback: string): string {
   return [code ? `[${code}]` : '', error, details].filter(Boolean).join(' — ');
 }
 
-function ReceiptPreview({ settings, store, appearance }: { settings: any, store: any, appearance: any }) {
+function ReceiptPreview({ settings, store, appearance }: { settings: ReceiptSettings, store: StoreInfo, appearance: Appearance }) {
   return (
     <div className="bg-gray-100 dark:bg-black/40 p-8 rounded-3xl flex justify-center">
       <div className="w-[300px] bg-white text-black p-6 shadow-2xl font-mono text-[10px] leading-relaxed relative overflow-hidden">
@@ -77,10 +145,12 @@ function ReceiptPreview({ settings, store, appearance }: { settings: any, store:
           {/* Logo preview if available */}
           {appearance?.logoUrl && (
             <div className="flex justify-center mb-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={appearance.logoUrl} 
-                alt="Logo" 
+              <Image
+                src={appearance.logoUrl}
+                alt="Logo"
+                width={120}
+                height={40}
+                unoptimized
                 className={`h-10 w-auto object-contain ${settings.colorMode === 'bw' ? 'grayscale' : ''}`}
                 onError={(e) => (e.currentTarget.style.display = 'none')}
               />
@@ -131,7 +201,7 @@ function ReceiptPreview({ settings, store, appearance }: { settings: any, store:
         )}
 
         <div className="mt-6 text-center space-y-2">
-          <div className="italic text-gray-600">"{settings.message || '¡Gracias por su compra!'}"</div>
+          <div className="italic text-gray-600">&quot;{settings.message || '¡Gracias por su compra!'}&quot;</div>
           
           <div className="flex justify-center py-2">
             <div className="w-20 h-20 border-2 border-red-600 flex items-center justify-center font-bold text-red-600 text-center p-1 leading-tight">
@@ -152,7 +222,7 @@ function ReceiptPreview({ settings, store, appearance }: { settings: any, store:
 
 function SubscriptionTab() {
   const { config, storeId, refreshConfig } = useSaaS()
-  const [tiers, setTiers] = useState<any[]>([])
+  const [tiers, setTiers] = useState<SubscriptionTier[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
 
@@ -180,7 +250,7 @@ function SubscriptionTab() {
       } else {
         toast.error('Error al actualizar el plan')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error de conexión')
     } finally {
       setUpdating(null)
@@ -322,7 +392,7 @@ function SubscriptionTab() {
   )
 }
 
-function SectionCard({ title, description, children, icon: Icon }: { title: string, description?: string, children: React.ReactNode, icon?: any }) {
+function SectionCard({ title, description, children, icon: Icon }: { title: string, description?: string, children: React.ReactNode, icon?: LucideIcon }) {
   return (
     <div className="glass-card overflow-hidden group hover:border-brand-primary/30 transition-all duration-300">
       <div className="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 flex items-center gap-4">
@@ -432,7 +502,7 @@ export default function AdminConfiguracion() {
   const [isLoading, setIsLoading] = useState(true)
   
   // All settings state
-  const [store, setStore] = useState({ name: '', slogan: '', address: '', city: '', commune: '', region: '', phone: '', email: '', website: '' })
+  const [store, setStore] = useState<StoreInfo>({ name: '', rut: '', slogan: '', address: '', city: '', commune: '', region: '', phone: '', email: '', website: '' })
   const [pos, setPos] = useState({ 
     terminalName: '', taxRate: 19, currency: 'CLP', lowStockThreshold: 5, receiptMessage: '',
     region: 'REGIONES' as string,
@@ -455,7 +525,7 @@ export default function AdminConfiguracion() {
     productCardStyle: 'glass',
     bannerType: 'simple'
   })
-  const [siiConfig, setSiiConfig] = useState({
+  const [siiConfig, setSiiConfig] = useState<SiiConfig>({
     rut_emisor: '',
     razon_social: '',
     giro: '',
@@ -468,8 +538,8 @@ export default function AdminConfiguracion() {
     environment: 'certification',
     pfx_base64: '',
     password: '',
-    cert_info: null as any,
-    caf_xml: null as any,
+    cert_info: null,
+    caf_xml: null,
   })
   const [pfxFile, setPfxFile] = useState<File | null>(null)
   const [validatingCert, setValidatingCert] = useState(false)
@@ -507,7 +577,7 @@ export default function AdminConfiguracion() {
       setValidatingCert(false)
     }
   }
-  const [terminalsList, setTerminalsList] = useState<any[]>([])
+  const [terminalsList, setTerminalsList] = useState<TerminalRecord[]>([])
   const [newTerminalName, setNewTerminalName] = useState('')
   const [receiptSettings, setReceiptSettings] = useState({
     message: '¡Gracias por su compra!',
@@ -519,13 +589,10 @@ export default function AdminConfiguracion() {
   })
 
   const { user: authUser } = useAuthStore()
-  const { config: saasConfig } = useSaaS()
 
   // Control de Acceso: Dueño, Gerente o Desarrollador
   const role = authUser?.role || ''
   const hasFullAccess = ['admin', 'owner', 'manager', 'developer'].includes(role)
-  const isBasicPlan = saasConfig.tier === 'austral'
-  const isDev = role === 'developer' || role === 'admin'
 
   useEffect(() => {
     fetch('/api/settings')
@@ -665,12 +732,12 @@ export default function AdminConfiguracion() {
       setSaveStatus('saved')
       toast.success('Configuración guardada correctamente')
       setTimeout(() => setSaveStatus('idle'), 3000)
-    } catch (err: any) {
+    } catch (err) {
       setSaveStatus('error')
-      toast.error(err.message)
+      toast.error(err instanceof Error ? err.message : 'Error al guardar')
       setTimeout(() => setSaveStatus('idle'), 3000)
     }
-  }, [store, pos, payments, paymentSecrets, appearance, loyalty, receiptSettings, siiConfig, activeTab])
+  }, [store, pos, payments, paymentSecrets, loyalty, receiptSettings, siiConfig, activeTab])
 
   if (isLoading) {
     return (
@@ -884,7 +951,7 @@ export default function AdminConfiguracion() {
                               </form>
                             </Field>
                             <p className="text-[9px] text-gray-400 italic">
-                              El terminal debe estar en "Modo Integración" (se activa desde el Workspace de TUU).
+                              El terminal debe estar en &quot;Modo Integración&quot; (se activa desde el Workspace de TUU).
                             </p>
                           </div>
                         )}
@@ -907,7 +974,7 @@ export default function AdminConfiguracion() {
                               </form>
                             </Field>
                             <p className="text-[9px] text-gray-400 italic">
-                              El terminal debe estar en "Modo PDV" para aceptar pagos remotos.
+                              El terminal debe estar en &quot;Modo PDV&quot; para aceptar pagos remotos.
                             </p>
                           </div>
                         )}
@@ -931,7 +998,7 @@ export default function AdminConfiguracion() {
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-xl border border-blue-200 dark:border-blue-800">
                       <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                        ℹ️ <strong>TUU</strong> se integra en vivo — YAHPOS! le manda el monto directo al terminal configurado arriba. Los demás terminales (Transbank, GetNet, SumUp, Otro) funcionan de forma <strong>independiente</strong> del software POS — el lector procesa el pago por su cuenta y el POS solo registra que el cobro fue "con tarjeta". Los pagos online (Flow, Webpay) están en la pestaña <strong>"Pagos Online"</strong>.
+                        ℹ️ <strong>TUU</strong> se integra en vivo — YAHPOS! le manda el monto directo al terminal configurado arriba. Los demás terminales (Transbank, GetNet, SumUp, Otro) funcionan de forma <strong>independiente</strong> del software POS — el lector procesa el pago por su cuenta y el POS solo registra que el cobro fue &quot;con tarjeta&quot;. Los pagos online (Flow, Webpay) están en la pestaña <strong>&quot;Pagos Online&quot;</strong>.
                       </p>
                     </div>
                   </SectionCard>
@@ -1351,7 +1418,7 @@ export default function AdminConfiguracion() {
                               )}
                             </p>
                             <p className="text-xs text-green-800 dark:text-green-200">Razón Social: {siiConfig.cert_info.razonSocial}</p>
-                            <p className="text-xs text-green-800 dark:text-green-200">Válido hasta: {new Date(siiConfig.cert_info.notAfter).toLocaleDateString('es-CL')}</p>
+                            <p className="text-xs text-green-800 dark:text-green-200">Válido hasta: {siiConfig.cert_info.notAfter ? new Date(siiConfig.cert_info.notAfter).toLocaleDateString('es-CL') : '—'}</p>
                           </div>
                         )}
                       </Field>
@@ -1508,7 +1575,7 @@ export default function AdminConfiguracion() {
                           <p>• Tipo: Boleta Electrónica (39)</p>
                           <p>• Monto: $1.000</p>
                           <p>• Receptor: Consumidor Final (66.666.666-6)</p>
-                          <p>• Producto: "Producto de prueba"</p>
+                          <p>• Producto: &quot;Producto de prueba&quot;</p>
                         </div>
                       </div>
                       
@@ -1525,7 +1592,7 @@ export default function AdminConfiguracion() {
                             } else {
                               toast.error(`❌ Error: ${data.error || data.details}`);
                             }
-                          } catch (error) {
+                          } catch {
                             toast.error('Error al emitir DTE de prueba');
                           }
                         }}
@@ -1565,7 +1632,7 @@ export default function AdminConfiguracion() {
                               } else {
                                 toast.error(`❌ ${data.error?.message || 'Error de conexión'}`);
                               }
-                            } catch (error) {
+                            } catch {
                               toast.error('Error al conectar con Blumi');
                             }
                           }}
@@ -1589,7 +1656,7 @@ export default function AdminConfiguracion() {
                               } else {
                                 toast.error(`❌ ${data.error || 'Error al emitir'}`);
                               }
-                            } catch (error) {
+                            } catch {
                               toast.error('Error al emitir DTE en Blumi');
                             }
                           }}
@@ -1752,7 +1819,14 @@ export default function AdminConfiguracion() {
                       <div className="space-y-4">
                         <div className="relative aspect-video rounded-2xl bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-white/10 overflow-hidden group">
                           {design.heroImage ? (
-                            <img src={design.heroImage} alt="Preview" className="w-full h-full object-cover" />
+                            <Image
+                              src={design.heroImage}
+                              alt="Preview"
+                              width={1920}
+                              height={1080}
+                              unoptimized
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 gap-2">
                               <ImageIcon className="w-8 h-8" />

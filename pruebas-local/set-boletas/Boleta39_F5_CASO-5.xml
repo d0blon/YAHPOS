@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE xmlns="http://www.sii.cl/SiiDte" version="1.0">
+    <Documento ID="F5T39">
+        <Encabezado>
+            <IdDoc>
+                <TipoDTE>39</TipoDTE>
+                <Folio>5</Folio>
+                <FchEmis>2026-11-16</FchEmis>
+                <IndServicio>2</IndServicio>
+                
+        <CodRef>SET</CodRef>
+        <RazonRef>CASO-5</RazonRef>
+            </IdDoc>
+            <Emisor>
+                <RUTEmisor>21012281-8</RUTEmisor>
+                <RznSocEmisor>RODRIGO ALEJANDRO NUNEZ CHAURA</RznSocEmisor>
+                <GiroEmisor>Consultoría informática y gestión de instalaciones informáticas</GiroEmisor>
+                <DirOrigen>Ernesto Novoa</DirOrigen>
+                <CmnaOrigen>Castro</CmnaOrigen>
+                <CiudadOrigen>Castro</CiudadOrigen>
+            </Emisor>
+            <Receptor>
+                <RUTRecep>66666666-6</RUTRecep>
+                <RznSocRecep>Consumidor Final</RznSocRecep>
+            </Receptor>
+            <Totales>
+                
+                <MntExe>3500</MntExe>
+                
+                <MntTotal>3500</MntTotal>
+            </Totales>
+        </Encabezado>
+        
+    <Detalle>
+        <NroLinDet>1</NroLinDet>
+        <IndExe>1</IndExe>
+        <NmbItem>Arroz</NmbItem>
+        <QtyItem>5</QtyItem>
+        <Unmd>Kg</Unmd>
+        <PrcItem>700</PrcItem>
+        <MontoItem>3500</MontoItem>
+    </Detalle>
+        <TED version="1.0">
+<DD><RE>21012281-8</RE><TD>39</TD><F>5</F><FE>2026-11-16</FE><RR>66666666-6</RR><RSR>Consumidor Final</RSR><MNT>3500</MNT><IT1>Arroz</IT1><CAF version="1.0">
+<DA>
+<RE>21012281-8</RE>
+<RS>RODRIGO ALEJANDRO NUNEZ CHAURA</RS>
+<TD>39</TD>
+<RNG><D>1</D><H>10</H></RNG>
+<FA>2026-11-16</FA>
+<RSAPK><M>00CZ/g5eihRGHtPDdzlUfijWnsuPK3hLjTGJalmPKBhu48C+qzhm5lYg/kNzVjrQ5AzoeMX6OR2cspt+B2uDDQ==</M><E>Aw==</E></RSAPK>
+<IDK>100</IDK>
+</DA>
+<FRMA algoritmo="SHA1withRSA">FM0NFgbCNcBd1nCAyhN0Rhs2bFywmsQBCOJUeTxPDZjAtqv9Mj7Y+7Echo4xvamSQQAZq2yEN37CDdU80L7dfQ==</FRMA>
+</CAF><TSTED>2026-11-16T08:28:51</TSTED></DD>
+<FRMT algoritmo="SHA1withRSA">dpEIPCRP/7LbQLnM4B6U4+UVd3L4B6Nk0xY8UPgI00gub7/tuHRJca+iz/kKuS4K2DlLiewMqdM/mcs/kNUy8A==</FRMT>
+</TED>
+        <TmstFirma>2026-11-16T08:28:51</TmstFirma>
+    </Documento><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#F5T39"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>kbnCcD2xCtN67KKFCX5k1YTGMVA=</DigestValue></Reference></SignedInfo><SignatureValue>aLIdyoMv5y/TP3RhH+ouGXxROJ5YEApcEBocljxwf1igvPZBy+bMfUh2nrSEXZb8msuCbloKIoQYO7UD0ORSjdjO1Ylk595GACzUB7vbOf0wBUyvY+sO3APtqhzWioqJlC2BENzSlbZu638VZueDIcim3mcKCyvEL4SSRBH50l1uLEMkB4EZnAF2W6FOkjefhru84dqkmQihrfq1YzT653eSyoKZrKeEATBUCrPcbAyB/JMo/g6nRwmGEBoBMtw5zurJYAvesSqwTDAJodgDIyGzAMtWLyb4cIIDKLxKBpxC71cV3eqpT+As7VbCqK5lIq/P7KyB4y7gVPW0Bpqi6g==</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>pL/LMDiak+KSlinYGTgoRd1AChb9yQcPnWKdHpqNEb66I5JeTPA0XMwPyidUAHzlvxClKfw35WgpSyCIAvoBepOsb/UJJO1c9aNy1m9dmkfVX2NoIv1ERTZ8Kb1ZKghMLh13ZE+y7uCi8SLlkxriE/FoMvRM1DlLybdb6s4HrnAG2CgtsoSY9oVx+v1EaFy7SYs90MXMlPfe6EEqZipDs7TqoXOcLhIovTAVgkGMvJw2s5T0VLj7ANQyXYYuasMTh+WmWWBjnEbgwaIS89zCmIaurrZH2zeRjT9ygSEwarWfU0VabmmsG74GRZjNrD7j1bcDtJ5mfC2ckwGVzJLCoQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIFSzCCBDOgAwIBAgIICZcdrqJtVYswDQYJKoZIhvcNAQELBQAwgboxHjAcBgkqhkiG9w0BCQEWD3NvcG9ydGVAaWRvay5jbDEiMCAGA1UEAwwZSURPSyBGSVJNQSBFTEVDVFJPTklDQSBWNDEXMBUGA1UECwwOUlVULTc2NjEwNzE4LTQxIDAeBgNVBAsMF0F1dG9yaWRhZCBDZXJ0aWZpY2Fkb3JhMRkwFwYDVQQKDBBCUE8gQWR2aXNvcnMgU3BBMREwDwYDVQQHDAhTYW50aWFnbzELMAkGA1UEBhMCQ0wwHhcNMjYxMTE2MDQwNzQ0WhcNMjgwNTI2MTMwMTMxWjCBgjEnMCUGA1UEAwweUk9EUklHTyBBTEVKQU5EUk8gTlVORVogQ0hBVVJBMSgwJgYJKoZIhvcNAQkBFhlyb2RyaWdvYS5udW5lejFAZ21haWwuY29tMRMwEQYDVQQFEwoyMTAxMjI4MS04MQswCQYDVQQGEwJDTDELMAkGA1UEBwwCUk0wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCkv8swOJqT4pKWKdgZOChF3UAKFv3JBw+dYp0emo0Rvrojkl5M8DRczA/KJ1QAfOW/EKUp/DflaClLIIgC+gF6k6xv9Qkk7Vz1o3LWb12aR9VfY2gi/URFNnwpvVkqCEwuHXdkT7Lu4KLxIuWTGuIT8Wgy9EzUOUvJt1vqzgeucAbYKC2yhJj2hXH6/URoXLtJiz3QxcyU997oQSpmKkOztOqhc5wuEii9MBWCQYy8nDazlPRUuPsA1DJdhi5qwxOH5aZZYGOcRuDBohLz3MKYhq6utkfbN5GNP3KBITBqtZ9TRVpuaawbvgZFmM2sPuPVtwO0nmZ8LZyTAZXMksKhAgMBAAGjggGJMIIBhTAJBgNVHRMEAjAAMB8GA1UdIwQYMBaAFLvdStt/EDeIdGdFssq5EoTgxngWMIGYBgNVHSAEgZAwgY0wgYoGCisGAQQBg4weAQQwfDAsBggrBgEFBQcCARYgaHR0cHM6Ly9wc2MuaWRvay5jbC9vcGVuL2Nwcy5wZGYwTAYIKwYBBQUHAgIwQB4+AEMAZQByAHQAaQBmAGkAYwBhAGQAbwAgAHAAYQByAGEAIAB1AHMAbwAgAFQAcgBpAGIAdQB0AGEAcgBpAG8wRgYDVR0fBD8wPTA7oDmgN4Y1aHR0cHM6Ly9wc2MuaWRvay5jbC9vcGVuL0lET0tfRklSTUFfRUxFQ1RST05JQ0FfNC5jcmwwHQYDVR0OBBYEFJ/1JbNL/j+pLQ7/tzbhZLz+DkNXMAsGA1UdDwQEAwIEkDAjBgNVHRIEHDAaoBgGCCsGAQQBwQECoAwWCjc2NjEwNzE4LTQwIwYDVR0RBBwwGqAYBggrBgEEAcEBAaAMFgoyMTAxMjI4MS04MA0GCSqGSIb3DQEBCwUAA4IBAQB9ZjxswWvIlyWbc0ey1r1yLuxVk0qH9H0xzV08HEbpvECSQPr2Uh1wU1Ck/sn3Q7uqB4zTP3LZoGCsBtrinp/isr3BXG0r9Mm8DY6wWMJKLELpGeARrs+Krz47C1u32NKGKbKC50ht5KbtV3yKjLFIKaKM1r5NCYaIGm7KiF2qJUOOJ/FAJxJzx5rd/VcYKg/tQ/674OJhpEqtdBw+TnoLqzsB3WMiXYq6csXV60bOJJAWJyALzDPBLED3JqPT0i1bjtHfn0fsUkvIu6KIMuIsLIi1UwZP8CQgjtwWPTyDj9c13LJOZ8FfvHbvpzf32DKOaJ1dq2WKU+M78/irmDmB</X509Certificate></X509Data></KeyInfo></Signature>
+</DTE>
