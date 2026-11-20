@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useSyncExternalStore } from 'react'
 import { 
-  Users, Search, UserPlus, X, Loader2, CheckCircle2, 
+  Users, Search, UserPlus, Loader2, CheckCircle2, 
   Award, Mail, User, Fingerprint 
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,22 +14,29 @@ import { usePosStore } from '@/stores/posStore'
 import { toast } from 'sonner'
 import { formatRut, validateRut, cleanRut, cn } from '@/lib/utils'
 
+interface PosCustomer {
+  id: string
+  rut: string
+  name: string
+  loyalty_points?: number
+  is_full_account?: boolean
+  identity_verified?: boolean
+}
+
+const subscribeClientOnly = () => () => {}
+
 export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { setCustomer } = usePosStore()
   const [rut, setRut] = useState('')
   const [loading, setLoading] = useState(false)
-  const [foundCustomer, setFoundCustomer] = useState<any>(null)
+  const [foundCustomer, setFoundCustomer] = useState<PosCustomer | null>(null)
   const [isRegistering, setIsRegistering] = useState(false)
   
   // Registration fields
   const [regName, setRegName] = useState('')
   const [regEmail, setRegEmail] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(subscribeClientOnly, () => true, () => false)
 
   const resetState = () => {
     setRut('')
@@ -54,9 +61,16 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
     setLoading(true)
     try {
       const res = await fetch(`/api/customers?rut=${encodeURIComponent(rut)}`)
+      if (!res.ok) {
+        setFoundCustomer(null)
+        setIsRegistering(false)
+        toast.error('Error al buscar cliente')
+        return
+      }
+
       const data = await res.json()
       
-      if (data) {
+      if (data !== null && typeof data === 'object' && !Array.isArray(data) && typeof data.id === 'string') {
         setFoundCustomer(data)
         setIsRegistering(false)
       } else {
@@ -64,7 +78,9 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
         setIsRegistering(true)
         toast.info('Cliente no encontrado. Puedes registrarlo ahora.')
       }
-    } catch (err) {
+    } catch {
+      setFoundCustomer(null)
+      setIsRegistering(false)
       toast.error('Error al buscar cliente')
     } finally {
       setLoading(false)
@@ -84,7 +100,7 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
       
       setFoundCustomer({ ...foundCustomer, identity_verified: true })
       toast.success('Identidad verificada correctamente')
-    } catch (err) {
+    } catch {
       toast.error('Hubo un error al verificar la identidad')
     } finally {
       setIsVerifying(false)
@@ -110,8 +126,8 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
       setFoundCustomer(data)
       setIsRegistering(false)
       toast.success('Cliente registrado exitosamente')
-    } catch (err: any) {
-      toast.error(err.message || 'Error al registrar cliente')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al registrar cliente')
     } finally {
       setLoading(false)
     }
@@ -300,7 +316,11 @@ export default function CustomerModal({ isOpen, onClose }: { isOpen: boolean, on
         <DialogFooter className="p-10 pt-0 flex flex-col sm:flex-row gap-4 shrink-0">
           <Button 
             variant="ghost" 
-            onClick={() => { resetState(); isRegistering ? setIsRegistering(false) : onClose(); }}
+            onClick={() => {
+              resetState()
+              if (isRegistering) setIsRegistering(false)
+              else onClose()
+            }}
             className="flex-1 h-20 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] text-slate-400 hover:bg-slate-100 dark:hover:bg-gray-800 transition-all"
           >
             {isRegistering ? '← Volver' : 'Cancelar'}

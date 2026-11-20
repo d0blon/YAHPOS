@@ -21,8 +21,19 @@ import { Input } from '@/components/ui/input'
 import { formatPrice, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
+interface Order {
+  id: string
+  user_id?: string
+  status: string
+  total: number
+  payment_method?: string
+  shipping_type?: string
+  service_fee?: number
+  shipping_address_json?: { fullName?: string, street?: string, number?: string }
+}
+
 // Mock de estados de pedido
-const STATUS_COLORS: any = {
+const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   preparing: 'bg-brand-accent-100 text-brand-accent-800 border-brand-accent-200',
   ready: 'bg-green-100 text-green-800 border-green-200',
@@ -31,7 +42,7 @@ const STATUS_COLORS: any = {
   cancelled: 'bg-red-100 text-red-800 border-red-200',
 }
 
-const STATUS_LABELS: any = {
+const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
   preparing: 'En Preparación',
   ready: 'Listo para Entrega',
@@ -41,27 +52,38 @@ const STATUS_LABELS: any = {
 }
 
 export default function AdminPedidosPage() {
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
 
-  useEffect(() => {
-    fetchOrders()
-  }, [])
-
-  const fetchOrders = async () => {
+  async function fetchOrders() {
     try {
       const response = await fetch('/api/orders')
+      if (!response.ok) {
+        setOrders([])
+        toast.error('No se pudieron cargar los pedidos')
+        return
+      }
       const data = await response.json()
+      if (!Array.isArray(data)) {
+        setOrders([])
+        toast.error('No se pudieron cargar los pedidos')
+        return
+      }
       setOrders(data)
-    } catch (error) {
-      console.error('Error fetching orders:', error)
+    } catch {
+      console.error('Error fetching orders')
       toast.error('Error al cargar pedidos')
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- patrón de hidratación/fetch sin cambio de comportamiento
+    fetchOrders()
+  }, [])
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -225,13 +247,13 @@ export default function AdminPedidosPage() {
                     </div>
                   </div>
 
-                  {order.service_fee > 0 && (
+                  {(order.service_fee ?? 0) > 0 && (
                     <div className="flex items-center justify-between p-3 bg-brand-accent-500/5 rounded-2xl text-xs border border-brand-accent-500/10">
                       <span className="text-brand-accent-400 font-black uppercase tracking-widest text-[9px] flex items-center gap-2">
                         <AlertCircle className="w-3.5 h-3.5" />
                         Picking Fee Incluido
                       </span>
-                      <span className="font-black text-brand-accent-400">{formatPrice(order.service_fee)}</span>
+                      <span className="font-black text-brand-accent-400">{formatPrice(order.service_fee ?? 0)}</span>
                     </div>
                   )}
                 </div>

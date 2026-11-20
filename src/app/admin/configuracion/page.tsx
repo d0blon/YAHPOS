@@ -14,7 +14,6 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import SqlModal from '@/components/modals/SqlModal'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -38,6 +37,33 @@ const TABS = [
   { id: 'loyalty', label: 'Fidelización', icon: Award },
   { id: 'design', label: 'Editor Visual', icon: Monitor },
 ]
+
+function safeCafDetail(value: unknown): string {
+  if (typeof value === 'string') {
+    const text = value.trim();
+    return text.length <= 400 && !/-----BEGIN|<[A-Za-z!/]|[A-Za-z0-9+/]{80,}/.test(text) ? text : '';
+  }
+  if (Array.isArray(value)) {
+    return value.map(safeCafDetail).filter(Boolean).join('; ');
+  }
+  if (value && typeof value === 'object') {
+    const item = value as Record<string, unknown>;
+    const message = safeCafDetail(item.message);
+    const path = typeof item.path === 'string' && /^[A-Za-z0-9_.-]{1,60}$/.test(item.path) ? item.path : '';
+    return message && path ? `${path}: ${message}` : message;
+  }
+  return '';
+}
+
+function cafErrorMessage(data: unknown, fallback: string): string {
+  const payload = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+  const rawCode = typeof payload.code === 'string' ? payload.code.trim() : '';
+  const code = /^[A-Za-z0-9_-]{2,40}$/.test(rawCode) ? rawCode : '';
+  const rawError = typeof payload.error === 'string' ? payload.error.trim() : '';
+  const error = rawError && rawError.length <= 400 && !/-----BEGIN|<[A-Za-z!/]|[A-Za-z0-9+/]{80,}/.test(rawError) ? rawError : fallback;
+  const details = safeCafDetail(payload.details);
+  return [code ? `[${code}]` : '', error, details].filter(Boolean).join(' — ');
+}
 
 function ReceiptPreview({ settings, store, appearance }: { settings: any, store: any, appearance: any }) {
   return (
@@ -336,7 +362,7 @@ function Field({ label, hint, children }: { label: string, hint?: string, childr
 function SecretInput({ value, onChange, placeholder }: { value: string, onChange: (v: string) => void, placeholder?: string }) {
   const [show, setShow] = useState(false)
   return (
-    <div className="relative group">
+    <form onSubmit={(e) => e.preventDefault()} className="relative group">
       <Input
         type={show ? 'text' : 'password'}
         value={value}
@@ -351,7 +377,22 @@ function SecretInput({ value, onChange, placeholder }: { value: string, onChange
       >
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
-    </div>
+    </form>
+  )
+}
+
+function SecretSettingField({ label, configured, value, onChange, placeholder }: { label: string, configured: boolean, value: string, onChange: (v: string) => void, placeholder?: string }) {
+  return (
+    <Field label={label} hint={configured ? 'Configurado' : undefined}>
+      <div className="space-y-2">
+        {configured && (
+          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-none px-3 py-1 rounded-lg flex items-center gap-1.5 w-fit">
+            <CheckCircle className="w-3 h-3" /> Configurado — dejar vacío para reemplazar
+          </Badge>
+        )}
+        <SecretInput value={value} onChange={onChange} placeholder={placeholder} />
+      </div>
+    </Field>
   )
 }
 
@@ -389,8 +430,6 @@ export default function AdminConfiguracion() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [usingDefaults, setUsingDefaults] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [showSqlModal, setShowSqlModal] = useState(false)
-  const [sqlScript, setSqlScript] = useState('')
   
   // All settings state
   const [store, setStore] = useState({ name: '', slogan: '', address: '', city: '', commune: '', region: '', phone: '', email: '', website: '' })
@@ -405,7 +444,8 @@ export default function AdminConfiguracion() {
     paymentOtherCard: false,
     paymentTransfer: true 
   })
-  const [payments, setPayments] = useState({ flowEnabled: false, flowApiKey: '', flowApiSecret: '', webpayEnabled: false, webpayCommerceCode: '', freeShippingMin: 30000 })
+  const [payments, setPayments] = useState({ flowEnabled: false, flowApiKeyConfigured: false, flowApiSecretConfigured: false, webpayEnabled: false, webpayCommerceCodeConfigured: false, freeShippingMin: 30000, tuuApiKey: '', tuuApiKeyConfigured: false, tuuTerminalSerial: '', mercadopagoAccessToken: '', mercadopagoAccessTokenConfigured: false, mercadopagoTerminalId: '' })
+  const [paymentSecrets, setPaymentSecrets] = useState({ flowApiKey: '', flowApiSecret: '', webpayCommerceCode: '' })
   const [loyalty, setLoyalty] = useState({ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' })
   const [appearance, setAppearance] = useState({ logoUrl: '', primaryColor: '#4b0082', secondaryColor: '#FFD100', darkMode: false })
   const [design, setDesign] = useState({
@@ -419,13 +459,54 @@ export default function AdminConfiguracion() {
     rut_emisor: '',
     razon_social: '',
     giro: '',
+    acteco: '',
     direccion: '',
     comuna: '',
     ciudad: '',
+    fch_resol: '',
+    nro_resol: '',
     environment: 'certification',
     pfx_base64: '',
-    password: ''
+    password: '',
+    cert_info: null as any,
+    caf_xml: null as any,
   })
+  const [pfxFile, setPfxFile] = useState<File | null>(null)
+  const [validatingCert, setValidatingCert] = useState(false)
+  const validarCertificado = async () => {
+    if (!pfxFile) {
+      toast.error('Selecciona primero el archivo .pfx / .p12')
+      return
+    }
+    if (!siiConfig.password) {
+      toast.error('Ingresa la contraseña del certificado antes de validar')
+      return
+    }
+    setValidatingCert(true)
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '')
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(pfxFile)
+      })
+      const formData = new FormData()
+      formData.append('pfx', pfxFile)
+      formData.append('password', siiConfig.password)
+      const response = await fetch('/api/wizard/certificado', { method: 'POST', body: formData })
+      const data = await response.json()
+      if (response.ok) {
+        setSiiConfig({ ...siiConfig, pfx_base64: base64, cert_info: data.data })
+        toast.success(`✅ Certificado válido: ${data.data.rut} (${data.data.razonSocial})`)
+      } else {
+        toast.error(`❌ ${data.details ? `${data.error}: ${data.details}` : (data.error || 'Error al validar certificado')}`)
+      }
+    } catch {
+      toast.error('Error al validar certificado')
+    } finally {
+      setValidatingCert(false)
+    }
+  }
   const [terminalsList, setTerminalsList] = useState<any[]>([])
   const [newTerminalName, setNewTerminalName] = useState('')
   const [receiptSettings, setReceiptSettings] = useState({
@@ -453,7 +534,23 @@ export default function AdminConfiguracion() {
         if (settings) {
           setStore(settings.store)
           setPos(settings.pos)
-          setPayments(settings.payments)
+          const p = settings.payments || {}
+          // El API solo expone booleanos para secretos: nunca precargamos valores.
+          setPayments({
+            flowEnabled: !!p.flowEnabled,
+            flowApiKeyConfigured: !!p.flowApiKeyConfigured,
+            flowApiSecretConfigured: !!p.flowApiSecretConfigured,
+            webpayEnabled: !!p.webpayEnabled,
+            webpayCommerceCodeConfigured: !!p.webpayCommerceCodeConfigured,
+            freeShippingMin: p.freeShippingMin ?? 30000,
+            tuuApiKey: '',
+            tuuApiKeyConfigured: !!p.tuuApiKeyConfigured,
+            tuuTerminalSerial: p.tuuTerminalSerial || '',
+            mercadopagoAccessToken: '',
+            mercadopagoAccessTokenConfigured: !!p.mercadopagoAccessTokenConfigured,
+            mercadopagoTerminalId: p.mercadopagoTerminalId || ''
+          })
+          setPaymentSecrets({ flowApiKey: '', flowApiSecret: '', webpayCommerceCode: '' })
           setLoyalty(settings.loyalty ? { ...{ enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' }, ...settings.loyalty } : { enabled: true, minRedemption: 0, accumulationRate: 100, redemptionRate: 1, requireIdVerification: true, name: 'Puntos' })
           if (settings.appearance) {
             setAppearance(prev => ({...prev, ...settings.appearance}))
@@ -480,6 +577,10 @@ export default function AdminConfiguracion() {
           setSiiConfig(prev => ({
             ...prev,
             ...data.config,
+            // `null` en la DB desmontaría el input controlado (React avisa y lo vuelve no controlado).
+            acteco: data.config.acteco ?? '',
+            nro_resol: data.config.nro_resol ?? '',
+            fch_resol: data.config.fch_resol ?? '',
             pfx_base64: '', // No cargamos el certificado por seguridad
             password: ''    // No cargamos el password por seguridad
           }))
@@ -489,9 +590,21 @@ export default function AdminConfiguracion() {
 
     // Fetch terminals
     fetch('/api/terminals')
-      .then(r => r.json())
-      .then(data => setTerminalsList(data))
-      .catch(() => console.error('Error fetching terminals'))
+      .then(r => {
+        if (!r.ok) throw new Error('Error fetching terminals')
+        return r.json()
+      })
+      .then(data => {
+        if (!Array.isArray(data)) {
+          setTerminalsList([])
+          return
+        }
+        setTerminalsList(data)
+      })
+      .catch(() => {
+        setTerminalsList([])
+        console.error('Error fetching terminals')
+      })
   }, [])
 
   const handleSave = useCallback(async () => {
@@ -511,9 +624,11 @@ export default function AdminConfiguracion() {
         pos_payment_sumup: String(pos.paymentSumup),
         pos_payment_other_card: String(pos.paymentOtherCard),
         pos_payment_transfer: String(pos.paymentTransfer),
-        payment_flow_enabled: String(payments.flowEnabled), payment_flow_api_key: payments.flowApiKey,
-        payment_flow_api_secret: payments.flowApiSecret, payment_webpay_enabled: String(payments.webpayEnabled),
-        payment_webpay_commerce_code: payments.webpayCommerceCode, payment_free_shipping_min: String(payments.freeShippingMin),
+        payment_flow_enabled: String(payments.flowEnabled), payment_flow_api_key: paymentSecrets.flowApiKey,
+        payment_flow_api_secret: paymentSecrets.flowApiSecret, payment_webpay_enabled: String(payments.webpayEnabled),
+        payment_webpay_commerce_code: paymentSecrets.webpayCommerceCode, payment_free_shipping_min: String(payments.freeShippingMin),
+        payment_tuu_api_key: payments.tuuApiKey, payment_tuu_terminal_serial: payments.tuuTerminalSerial,
+        payment_mercadopago_access_token: payments.mercadopagoAccessToken, payment_mercadopago_terminal_id: payments.mercadopagoTerminalId,
         loyalty_enabled: String(loyalty.enabled),
         loyalty_min_redemption: String(loyalty.minRedemption),
         loyalty_accumulation_rate: String(loyalty.accumulationRate),
@@ -555,7 +670,7 @@ export default function AdminConfiguracion() {
       toast.error(err.message)
       setTimeout(() => setSaveStatus('idle'), 3000)
     }
-  }, [store, pos, payments, appearance, loyalty, receiptSettings, siiConfig, activeTab])
+  }, [store, pos, payments, paymentSecrets, appearance, loyalty, receiptSettings, siiConfig, activeTab])
 
   if (isLoading) {
     return (
@@ -569,7 +684,6 @@ export default function AdminConfiguracion() {
 
   return (
     <>
-      <SqlModal show={showSqlModal} onClose={() => setShowSqlModal(false)} />
       <div className="space-y-8">
         {/* Header section with Stats */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -594,12 +708,11 @@ export default function AdminConfiguracion() {
                           try {
                             const res = await fetch('/api/settings/init', { method: 'POST' })
                             const data = await res.json()
-                            if (data.requiresManualSetup) {
-                              setSqlScript(data.sql)
-                              setShowSqlModal(true)
-                            } else if (data.created || data.alreadyExists) {
+                            if (data.success) {
                               toast.success('¡Tabla inicializada! Guarda la configuración.')
                               setUsingDefaults(false)
+                            } else {
+                              toast.error(data.error || 'Error al inicializar')
                             }
                           } catch { toast.error('Error al inicializar') }
                         }}
@@ -757,8 +870,47 @@ export default function AdminConfiguracion() {
                         <Toggle checked={pos.paymentTransbank} onCheckedChange={v => setPos({...pos, paymentTransbank: v})} label="💳  Transbank (POS físico)" />
                         <Toggle checked={pos.paymentGetnet} onCheckedChange={v => setPos({...pos, paymentGetnet: v})} label="💳  GetNet (Santander)" />
                         <Toggle checked={pos.paymentTuu} onCheckedChange={v => setPos({...pos, paymentTuu: v})} label="💳  Tuu (ex-ComprAquí)" />
+                        {pos.paymentTuu && (
+                          <div className="ml-6 pl-4 border-l-2 border-emerald-200 dark:border-emerald-800 space-y-3 py-2">
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest">
+                              ✅ Integración real — el monto se envía directo al terminal, sin digitar
+                            </p>
+                            <Field label="Número de serie del terminal">
+                              <Input className="rounded-xl h-11" value={payments.tuuTerminalSerial} onChange={e => setPayments({...payments, tuuTerminalSerial: e.target.value})} placeholder="Ej: 1234567890" />
+                            </Field>
+                            <Field label={payments.tuuApiKeyConfigured ? 'API Key (ya configurada — dejar vacío para no cambiarla)' : 'API Key de TUU (Workspace > Pagos > Configuración > API)'}>
+                              <form onSubmit={(e) => e.preventDefault()}>
+                                <Input className="rounded-xl h-11" type="password" value={payments.tuuApiKey} onChange={e => setPayments({...payments, tuuApiKey: e.target.value})} placeholder={payments.tuuApiKeyConfigured ? '••••••••••••' : 'Pegar la API Key acá'} />
+                              </form>
+                            </Field>
+                            <p className="text-[9px] text-gray-400 italic">
+                              El terminal debe estar en "Modo Integración" (se activa desde el Workspace de TUU).
+                            </p>
+                          </div>
+                        )}
                         <Toggle checked={pos.paymentSumup} onCheckedChange={v => setPos({...pos, paymentSumup: v})} label="💳  SumUp" />
-                        <Toggle checked={pos.paymentOtherCard} onCheckedChange={v => setPos({...pos, paymentOtherCard: v})} label="💳  Otro lector de tarjeta" />
+                        <Toggle checked={pos.paymentOtherCard} onCheckedChange={v => setPos({...pos, paymentOtherCard: v})} label="💳  Mercado Pago (Point) / Compraquí / Otro lector" />
+                        {pos.paymentOtherCard && (
+                          <div className="ml-6 pl-4 border-l-2 border-emerald-200 dark:border-emerald-800 space-y-3 py-2">
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest">
+                              ✅ Integración real para Mercado Pago (Point / Redelcom) — requiere Terminal ID y Access Token
+                            </p>
+                            <p className="text-[9px] text-gray-400 italic">
+                              Nota: Compraquí y otros terminales siguen funcionando de forma aislada, sin configuración adicional requerida.
+                            </p>
+                            <Field label="Terminal ID (Mercado Pago)">
+                              <Input className="rounded-xl h-11" value={payments.mercadopagoTerminalId} onChange={e => setPayments({...payments, mercadopagoTerminalId: e.target.value})} placeholder="Ej: PDV_XXXXXX" />
+                            </Field>
+                            <Field label={payments.mercadopagoAccessTokenConfigured ? 'Access Token (ya configurado — dejar vacío para no cambiar)' : 'Access Token (Mercado Pago)'}>
+                              <form onSubmit={(e) => e.preventDefault()}>
+                                <Input className="rounded-xl h-11" type="password" value={payments.mercadopagoAccessToken} onChange={e => setPayments({...payments, mercadopagoAccessToken: e.target.value})} placeholder={payments.mercadopagoAccessTokenConfigured ? '••••••••••••' : 'APP_USR-...'} />
+                              </form>
+                            </Field>
+                            <p className="text-[9px] text-gray-400 italic">
+                              El terminal debe estar en "Modo PDV" para aceptar pagos remotos.
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <Toggle checked={pos.paymentTransfer} onCheckedChange={v => setPos({...pos, paymentTransfer: v})} label="📱  Transferencia bancaria (CuentaRUT, banco, etc.)" />
                       
@@ -779,7 +931,7 @@ export default function AdminConfiguracion() {
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-xl border border-blue-200 dark:border-blue-800">
                       <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                        ℹ️ Estos terminales funcionan de forma <strong>independiente</strong> del software POS — el lector de tarjeta procesa el pago por su cuenta. El POS solo registra que el cobro fue "con tarjeta". Los pagos online (Flow, Webpay) están en la pestaña <strong>"Pagos Online"</strong>.
+                        ℹ️ <strong>TUU</strong> se integra en vivo — YAHPOS! le manda el monto directo al terminal configurado arriba. Los demás terminales (Transbank, GetNet, SumUp, Otro) funcionan de forma <strong>independiente</strong> del software POS — el lector procesa el pago por su cuenta y el POS solo registra que el cobro fue "con tarjeta". Los pagos online (Flow, Webpay) están en la pestaña <strong>"Pagos Online"</strong>.
                       </p>
                     </div>
                   </SectionCard>
@@ -998,12 +1150,18 @@ export default function AdminConfiguracion() {
                     <Toggle checked={payments.flowEnabled} onCheckedChange={v => setPayments({...payments, flowEnabled: v})} label="Habilitar Flow en la tienda online" />
                     {payments.flowEnabled && (
                       <div className="grid md:grid-cols-2 gap-4 mt-4">
-                        <Field label="API Key de Flow">
-                          <SecretInput value={payments.flowApiKey} onChange={v => setPayments({...payments, flowApiKey: v})} />
-                        </Field>
-                        <Field label="API Secret de Flow">
-                          <SecretInput value={payments.flowApiSecret} onChange={v => setPayments({...payments, flowApiSecret: v})} />
-                        </Field>
+                        <SecretSettingField
+                          label="API Key de Flow"
+                          configured={payments.flowApiKeyConfigured}
+                          value={paymentSecrets.flowApiKey}
+                          onChange={v => setPaymentSecrets({...paymentSecrets, flowApiKey: v})}
+                        />
+                        <SecretSettingField
+                          label="API Secret de Flow"
+                          configured={payments.flowApiSecretConfigured}
+                          value={paymentSecrets.flowApiSecret}
+                          onChange={v => setPaymentSecrets({...paymentSecrets, flowApiSecret: v})}
+                        />
                       </div>
                     )}
                   </SectionCard>
@@ -1012,9 +1170,13 @@ export default function AdminConfiguracion() {
                     <Toggle checked={payments.webpayEnabled} onCheckedChange={v => setPayments({...payments, webpayEnabled: v})} label="Habilitar Transbank Webpay en la tienda online" />
                     {payments.webpayEnabled && (
                       <div className="mt-4">
-                        <Field label="Commerce Code">
-                          <Input className="rounded-xl h-11" value={payments.webpayCommerceCode} onChange={e => setPayments({...payments, webpayCommerceCode: e.target.value})} placeholder="597055555532" />
-                        </Field>
+                        <SecretSettingField
+                          label="Commerce Code"
+                          configured={payments.webpayCommerceCodeConfigured}
+                          value={paymentSecrets.webpayCommerceCode}
+                          onChange={v => setPaymentSecrets({...paymentSecrets, webpayCommerceCode: v})}
+                          placeholder="597055555532"
+                        />
                       </div>
                     )}
                   </SectionCard>
@@ -1037,6 +1199,34 @@ export default function AdminConfiguracion() {
                     <div>
                       <p className="text-sm font-black uppercase tracking-tighter text-brand-primary">Integración SII Oficial</p>
                       <p className="text-xs text-gray-500 font-medium">Configura los datos tributarios y el certificado digital para la emisión de boletas electrónicas.</p>
+                    </div>
+                  </div>
+
+                  {/* Barra de progreso de configuración */}
+                  <div className="p-4 bg-gradient-to-r from-brand-primary/10 to-brand-primary/5 rounded-xl border border-brand-primary/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-brand-primary uppercase tracking-wider">Progreso de Configuración</span>
+                      <span className="text-xs font-bold text-brand-primary">
+                        {[
+                          siiConfig.rut_emisor && siiConfig.razon_social,
+                          siiConfig.acteco,
+                          siiConfig.pfx_base64 && siiConfig.password,
+                          siiConfig.nro_resol && siiConfig.fch_resol,
+                          siiConfig.caf_xml
+                        ].filter(Boolean).length} / 5 pasos
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-brand-primary rounded-full transition-all duration-500"
+                        style={{ width: `${([
+                          siiConfig.rut_emisor && siiConfig.razon_social,
+                          siiConfig.acteco,
+                          siiConfig.pfx_base64 && siiConfig.password,
+                          siiConfig.nro_resol && siiConfig.fch_resol,
+                          siiConfig.caf_xml
+                        ].filter(Boolean).length / 5) * 100}%` }}
+                      />
                     </div>
                   </div>
 
@@ -1090,6 +1280,37 @@ export default function AdminConfiguracion() {
                           placeholder="Castro" 
                         />
                       </Field>
+                      <Field label="Código de Actividad (Acteco)" hint="4 a 6 dígitos del giro declarado ante el SII. Obligatorio para facturas y notas.">
+                        <Input 
+                          type="number"
+                          inputMode="numeric"
+                          min={1000}
+                          max={999999}
+                          className="rounded-xl h-11" 
+                          value={siiConfig.acteco} 
+                          onChange={e => setSiiConfig({...siiConfig, acteco: e.target.value})} 
+                          placeholder="471100" 
+                        />
+                      </Field>
+                      <Field label="N° Resolución" hint="Número de la resolución que autoriza la emisión electrónica.">
+                        <Input 
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          className="rounded-xl h-11" 
+                          value={siiConfig.nro_resol} 
+                          onChange={e => setSiiConfig({...siiConfig, nro_resol: e.target.value})} 
+                          placeholder="0" 
+                        />
+                      </Field>
+                      <Field label="Fecha Resolución" hint="Fecha de esa resolución.">
+                        <Input 
+                          type="date"
+                          className="rounded-xl h-11" 
+                          value={siiConfig.fch_resol} 
+                          onChange={e => setSiiConfig({...siiConfig, fch_resol: e.target.value})} 
+                        />
+                      </Field>
                     </div>
                   </SectionCard>
 
@@ -1101,20 +1322,7 @@ export default function AdminConfiguracion() {
                             type="file" 
                             accept=".pfx,.p12"
                             className="rounded-xl h-11 flex-1 cursor-pointer pt-2" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  const base64 = event.target?.result as string;
-                                  // Quitar el prefijo "data:application/x-pkcs12;base64,"
-                                  const pureBase64 = base64.split(',')[1];
-                                  setSiiConfig({...siiConfig, pfx_base64: pureBase64});
-                                  toast.success('Certificado cargado correctamente');
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
+                            onChange={(e) => setPfxFile(e.target.files?.[0] || null)}
                           />
                           {siiConfig.pfx_base64 && (
                             <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none px-4 py-2 rounded-xl flex items-center gap-2">
@@ -1122,6 +1330,30 @@ export default function AdminConfiguracion() {
                             </Badge>
                           )}
                         </div>
+                        {pfxFile && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Archivo seleccionado: <span className="font-mono">{pfxFile.name}</span>. Ingresa la contraseña y presiona validar.
+                          </p>
+                        )}
+                        {siiConfig.cert_info && (
+                          <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className="text-xs font-bold text-green-900 dark:text-green-100 mb-1">Información del Certificado:</p>
+                            <p className="text-xs text-green-800 dark:text-green-200">
+                              RUT certificado: {siiConfig.cert_info.rut}
+                              {siiConfig.cert_info.rut && siiConfig.rut_emisor && (
+                                (() => {
+                                  const rutCert = String(siiConfig.cert_info.rut).replace(/\./g, '').trim();
+                                  const rutEmisor = String(siiConfig.rut_emisor).replace(/\./g, '').trim();
+                                  return rutCert === rutEmisor
+                                    ? ' ✅ Coincide con emisor'
+                                    : ' ⚠️ RUT no coincide con emisor';
+                                })()
+                              )}
+                            </p>
+                            <p className="text-xs text-green-800 dark:text-green-200">Razón Social: {siiConfig.cert_info.razonSocial}</p>
+                            <p className="text-xs text-green-800 dark:text-green-200">Válido hasta: {new Date(siiConfig.cert_info.notAfter).toLocaleDateString('es-CL')}</p>
+                          </div>
+                        )}
                       </Field>
                       
                       <Field label="Contraseña del Certificado">
@@ -1131,6 +1363,107 @@ export default function AdminConfiguracion() {
                           placeholder="Clave del certificado digital" 
                         />
                       </Field>
+                      <Button
+                        type="button"
+                        className="bg-brand-primary text-white rounded-xl w-full"
+                        disabled={!pfxFile || !siiConfig.password || validatingCert}
+                        onClick={validarCertificado}
+                      >
+                        {validatingCert ? 'Validando…' : 'Validar y guardar certificado'}
+                      </Button>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="CAF (Código de Autorización de Folios)" description="Folios autorizados por el SII para emisión de documentos.">
+                    <div className="space-y-4">
+                      <Field label="Archivo CAF (.xml o .dat)" hint="Obtén este archivo del portal SII después de solicitar folios. El tipo de documento se toma del CAF">
+                        <div className="flex gap-3">
+                          <Input 
+                            type="file" 
+                            accept=".xml,.dat"
+                            className="rounded-xl h-11 flex-1 cursor-pointer pt-2" 
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  const formData = new FormData();
+                                  formData.append('caf', file);
+                                  
+                                  const response = await fetch('/api/wizard/caf', {
+                                    method: 'POST',
+                                    body: formData,
+                                  });
+                                  
+                                  const data = await response.json();
+                                  
+                                  if (response.ok) {
+                                    setSiiConfig({
+                                      ...siiConfig, 
+                                      caf_xml: data.data,
+                                    });
+                                    const cafInfo = (data?.data && typeof data.data === 'object' ? data.data : {}) as Record<string, unknown>;
+                                    const textField = (value: unknown) =>
+                                      typeof value === 'number' || typeof value === 'string' ? String(value) : '';
+                                    const tipo = textField(cafInfo.tipoDte);
+                                    const desde = textField(cafInfo.folioDesde);
+                                    const hasta = textField(cafInfo.folioHasta);
+                                    const total = textField(cafInfo.totalFolios);
+                                    const rutCaf = textField(cafInfo.rutEmisor);
+                                    const fechaRaw = cafInfo.fechaAutorizacion ?? cafInfo.fecha_autorizacion ?? cafInfo.fchAutorizacion ?? cafInfo.fecha;
+                                    let fecha = textField(fechaRaw);
+                                    if (fecha) {
+                                      const parsed = new Date(fecha);
+                                      if (!Number.isNaN(parsed.getTime())) fecha = parsed.toLocaleDateString('es-CL');
+                                    }
+                                    const rutEmisor = String(siiConfig.rut_emisor || '').replace(/\./g, '').trim();
+                                    const rutCafNorm = rutCaf.replace(/\./g, '').trim();
+                                    const rutNota = !rutEmisor && rutCaf
+                                      ? 'RUT tomado del CAF'
+                                      : rutCaf && rutCafNorm === rutEmisor
+                                        ? 'RUT coincide con emisor ✅'
+                                        : rutCaf && rutEmisor
+                                          ? '⚠️ RUT no coincide con emisor'
+                                          : '';
+                                    const msg = [
+                                      '✅ CAF cargado',
+                                      tipo ? `Tipo ${tipo}` : '',
+                                      desde && hasta ? `Folios ${desde}-${hasta}` : '',
+                                      total ? `${total} folios` : '',
+                                      rutCaf ? `RUT CAF: ${rutCaf}` : '',
+                                      fecha ? `Autorización: ${fecha}` : '',
+                                      rutNota,
+                                    ].filter(Boolean).join(' · ');
+                                    toast.success(msg);
+                                  } else {
+                                    toast.error(`❌ ${cafErrorMessage(data, 'Error al cargar CAF')}`);
+                                  }
+                                } catch (err) {
+                                  toast.error(`❌ Error al cargar CAF${err instanceof Error && err.message ? `: ${err.message.slice(0, 200)}` : ''}`);
+                                }
+                              }
+                            }}
+                          />
+                          {siiConfig.caf_xml && (
+                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none px-4 py-2 rounded-xl flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3" /> {siiConfig.caf_xml.totalFolios || '✓'}
+                            </Badge>
+                          )}
+                        </div>
+                      </Field>
+                      
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-2">¿No tienes CAF?</p>
+                        <p className="text-xs text-blue-800 dark:text-blue-200 mb-2">
+                          Sigue estos pasos para obtener folios del SII:
+                        </p>
+                        <ol className="text-xs text-blue-800 dark:text-blue-200 list-decimal list-inside space-y-1">
+                          <li>Ingresa al portal SII (www.sii.cl)</li>
+                          <li>Ve a: Factura Electrónica → Solicitar Folios</li>
+                          <li>Selecciona tipo de documento (ej: Boleta 39)</li>
+                          <li>Descarga el CAF firmado</li>
+                          <li>Sube el archivo aquí</li>
+                        </ol>
+                      </div>
                     </div>
                   </SectionCard>
 
@@ -1159,9 +1492,117 @@ export default function AdminConfiguracion() {
                         <div className={cn("w-3 h-3 rounded-full", siiConfig.environment === 'production' ? "bg-red-500 animate-pulse" : "bg-gray-300")} />
                         <div>
                           <p className="text-xs font-black uppercase tracking-widest">Producción</p>
-                          <p className="text-[10px] text-gray-500">Documentos con validez legal (w1)</p>
+                          <p className="text-[10px] text-gray-500">Documentos con validez legal (palena)</p>
                         </div>
                       </button>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="Prueba de Emisión" description="Emite un DTE de prueba para validar tu configuración.">
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-700 dark:text-gray-300 mb-3">
+                          Este es un DTE de prueba que <strong>NO se envía al SII</strong>. Sirve para validar que tu configuración esté correcta.
+                        </p>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                          <p>• Tipo: Boleta Electrónica (39)</p>
+                          <p>• Monto: $1.000</p>
+                          <p>• Receptor: Consumidor Final (66.666.666-6)</p>
+                          <p>• Producto: "Producto de prueba"</p>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/wizard/prueba', {
+                              method: 'POST',
+                            });
+                            const data = await response.json();
+                            
+                            if (response.ok) {
+                              toast.success(`✅ DTE de prueba emitido: Folio ${data.data.folio}`);
+                            } else {
+                              toast.error(`❌ Error: ${data.error || data.details}`);
+                            }
+                          } catch (error) {
+                            toast.error('Error al emitir DTE de prueba');
+                          }
+                        }}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl h-11 font-bold"
+                      >
+                        🚀 Emitir DTE de Prueba
+                      </Button>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="Blumi Sandbox" description="Valida tu motor contra el sandbox gratuito de Blumi DTE (sin costo, pruebas ilimitadas)">
+                    <div className="space-y-4">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p className="text-xs text-blue-800 dark:text-blue-200 mb-2">
+                          <strong>¿Qué es Blumi Sandbox?</strong>
+                        </p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          Entorno de pruebas aislado que simula el SII. Valida que nuestros DTEs sean correctos antes de certificación real.
+                        </p>
+                        <ul className="text-xs text-blue-700 dark:text-blue-300 mt-2 list-disc list-inside space-y-1">
+                          <li>Pruebas ilimitadas sin costo</li>
+                          <li>Servidor SII real (maullin.sii.cl)</li>
+                          <li>Sin obligaciones tributarias</li>
+                        </ul>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/api/blumi/test');
+                              const data = await response.json();
+                              
+                              if (data.success) {
+                                toast.success('✅ Conectado con Blumi Sandbox');
+                              } else {
+                                toast.error(`❌ ${data.error?.message || 'Error de conexión'}`);
+                              }
+                            } catch (error) {
+                              toast.error('Error al conectar con Blumi');
+                            }
+                          }}
+                          className="rounded-xl h-11"
+                        >
+                          🔌 Verificar Conexión
+                        </Button>
+
+                        <Button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/api/blumi/test', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tipo_dte: 39, monto: 1000 }),
+                              });
+                              const data = await response.json();
+                              
+                              if (data.success) {
+                                toast.success(`✅ ${data.data?.veredicto || 'DTE emitido'}`);
+                              } else {
+                                toast.error(`❌ ${data.error || 'Error al emitir'}`);
+                              }
+                            } catch (error) {
+                              toast.error('Error al emitir DTE en Blumi');
+                            }
+                          }}
+                          className="rounded-xl h-11 bg-brand-primary hover:bg-brand-primary/90"
+                        >
+                          🧪 Probar Motor
+                        </Button>
+                      </div>
+
+                      <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                        <p className="font-semibold mb-1">⚠️ Nota importante:</p>
+                        <p>Blumi requiere certificado .pfx configurado en su portal web. Si recibes error de certificado, sube tu .pfx en <a href="https://dte.blumi.cl" target="_blank" className="text-brand-primary hover:underline">dte.blumi.cl</a> → Certificado & Folios CAF.</p>
+                      </div>
                     </div>
                   </SectionCard>
                 </div>
