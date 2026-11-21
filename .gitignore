@@ -80,3 +80,10 @@ src/graphify-out/
 # temp reports
 simulation-report.md
 Untitled Kanban.md
+
+# AI agent instructions (per-user, not project)
+AGENTS.md
+CLAUDE.md
+opencode.json
+docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md
+docs/operacion/CONTEXT_FOR_CLAUDE.md
