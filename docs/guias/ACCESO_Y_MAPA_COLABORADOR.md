@@ -27,17 +27,16 @@
 
 > **NUNCA:** las llaves de PRODUCCIÓN, la LLAVE MAESTRA de la bodega real ni el certificado real del SII. Solo cosas de prueba. Tampoco pegues tokens, contraseñas ni correos reales en capturas ni en reportes.
 
-### URLs de revisión en vivo (conectado a Tailscale)
+### URLs de prueba (local)
 
 | URL | Qué ves |
 |---|---|
-| `http://master.100.111.116.27.nip.io:3000` | **Tienda master**: homepage con productos reales de prueba. Es la que más importa para revisar. |
-| `http://100.111.116.27:3000/` | Landing de la plataforma (marketing, no una tienda). |
-| `http://100.111.116.27:3000/developer/catalog` | Catálogo maestro de productos. |
+| `http://master.localhost:3000` | **Tienda master**: homepage con productos reales de prueba. Es la que más importa para revisar. |
+| `http://localhost:3000/` | Landing de la plataforma (marketing, no una tienda). |
+| `http://localhost:3000/developer/catalog` | Catálogo maestro de productos. |
 
 - `/admin` y `/pos` dentro de la URL de la tienda piden login con el usuario de prueba que te entrega el dueño; sin sesión redirigen a `/login`.
-- Si `master.100.111.116.27.nip.io` no resuelve en tu red, pedile al dueño la alternativa; no modifiques tu archivo `hosts` sin su instrucción.
-- No necesitás `.env.local`, llaves ni tokens para revisar estas URLs.
+- No necesitás `.env.local`, llaves ni tokens para revisar estas URLs (pero sí para correr la app local).
 
 ---
 
@@ -125,7 +124,7 @@ Rutas reales verificadas en `src/app`:
 
 Pedile que lea en este orden:
 
-1. [`AGENTS.md` §12](../../AGENTS.md) — reglas del proyecto y trabajo conjunto.
+1. [`README.md`](../README.md) — índice de la documentación compartida.
 2. [`EMPIEZA_AQUI.md`](EMPIEZA_AQUI.md) — mapa mental.
 3. [`CURRICULUM_COLABORADOR.md`](CURRICULUM_COLABORADOR.md) — tu plan y tus reglas.
 4. [`PROTOCOLO_CAZABUGS.md`](../operacion/PROTOCOLO_CAZABUGS.md) — flujo conjunto, Modo IA y plantillas.
@@ -140,7 +139,7 @@ Pedile que lea en este orden:
 Copiá y pegá este bloque:
 
 ```text
-Modo solo lectura. Lee `AGENTS.md` §12, `docs/guias/EMPIEZA_AQUI.md`, `docs/guias/CURRICULUM_COLABORADOR.md`, `docs/operacion/PROTOCOLO_CAZABUGS.md`, `docs/operacion/TAREAS_COLABORADOR.md`, `docs/operacion/REGISTRO_BUGS.md` y `docs/arquitectura/ARCHITECTURE.md`. Yo no sé programar: explícame con palabras simples qué parte toca y qué archivos intervienen. Copiá mi hallazgo literal, sin corregir mi redacción, y agregá solo el bloque `ANÁLISIS IA` con: cómo funciona esa parte (flujo real + `archivo:línea`), causa probable, idea de arreglo (máx. 2 opciones, sin código), nivel de riesgo (S1–S4 + cambio BAJO/MEDIO/ALTO), archivos/rutas/tablas exactos, blast radius, pruebas sugeridas y DO NOT. No edites código, no ejecutes fixes ni SQL, no crees `BUG-###`, no hagas commit ni push, no cierres nada. Si no podés verificar algo, escribí «no verificado». Toda salida termina con `Estado: ANALIZADO — SIN IMPLEMENTAR`.
+Modo solo lectura. Lee, en este orden, `docs/README.md`, `docs/guias/EMPIEZA_AQUI.md`, `docs/guias/CURRICULUM_COLABORADOR.md`, `docs/guias/ACCESO_Y_MAPA_COLABORADOR.md`, `docs/operacion/PROTOCOLO_CAZABUGS.md` (secciones «Flujo de trabajo conjunto» y «Modo IA — SOLO ANOTAR, NUNCA IMPLEMENTAR»), `docs/operacion/TAREAS_COLABORADOR.md`, `docs/operacion/REGISTRO_BUGS.md` y `docs/arquitectura/ARCHITECTURE.md`. NO leas `AGENTS.md`, `CLAUDE.md`, `opencode.json`, `docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md` ni `docs/operacion/CONTEXT_FOR_CLAUDE.md`: son instrucciones privadas del dueño y no están en el clone; si algún doc las menciona, tratá esa mención como «fuente no disponible» y usá `PROTOCOLO_CAZABUGS.md` en su lugar. Yo no sé programar: explícame con palabras simples qué parte toca y qué archivos intervienen. Copiá mi hallazgo literal, sin corregir mi redacción, y agregá solo el bloque `ANÁLISIS IA` con: cómo funciona esa parte (flujo real + `archivo:línea`), causa probable, idea de arreglo (máx. 2 opciones, sin código), nivel de riesgo (S1–S4 + cambio BAJO/MEDIO/ALTO), archivos/rutas/tablas exactos, blast radius, pruebas sugeridas (positiva y negativa si toca auth, roles, `store_id` o RLS) y DO NOT. No edites código, no ejecutes fixes ni SQL de escritura, no crees `BUG-###`, no hagas commit ni push, no toques `main`, no cierres nada. No escribas secretos, tokens, contraseñas ni correos reales en la respuesta. Si no podés verificar algo, escribí «no verificado». Toda salida termina con `Estado: ANALIZADO — SIN IMPLEMENTAR`.
 ```
 
 ---
