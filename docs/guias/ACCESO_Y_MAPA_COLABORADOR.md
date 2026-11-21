@@ -2,7 +2,7 @@
 
 > **Para quién es:** para vos, el amigo del dueño que se suma a YAHPOS! y arrancás **de cero**, como se define en [`CURRICULUM_COLABORADOR.md`](CURRICULUM_COLABORADOR.md). No hace falta que sepas programar.
 >
-> **Cómo se usa:** el dueño te entrega este doc. Vos se lo entregás a tu IA. Vos explorás de forma visual y lógica; la IA solo anota. Nadie arregla ni hace commit/push sin una decisión del dueño.
+> **Cómo se usa:** el dueño te entrega este doc. Vos se lo entregás a tu IA. Vos explorás de forma visual y lógica; la IA solo anota y arma el reporte. Nadie arregla ni toca `main`. El único commit que podés hacer es tu reporte diario, en tu propia rama, al terminar el día.
 
 ---
 
@@ -11,8 +11,9 @@
 - Trabajar **una tarea `T-###` a la vez**. Las tareas se siguen en `TAREAS_COLABORADOR.md`.
 - Buscar con **datos de prueba**, nunca con datos reales de clientes.
 - Reportar cada hallazgo como `HAL-###` **en tus palabras**. Tu texto se copia literal: nadie te lo reescribe.
-- No editar código, no tocar `main`, no hacer commit ni push.
+- No editar código ni tocar `main`. Al terminar el día subí **solo** tu reporte a la rama `reportes/<tu-slug>` (nunca a `main`).
 - No crear `BUG-###` por tu cuenta. Recién existe cuando el dueño autoriza.
+- Al empezar cada día (o con la palabra clave «revisa arreglos en github»), pedile a tu IA que revise qué arreglos subió el dueño a `main`.
 
 ---
 
@@ -139,7 +140,13 @@ Pedile que lea en este orden:
 Copiá y pegá este bloque:
 
 ```text
-Modo solo lectura. Lee, en este orden, `docs/README.md`, `docs/guias/EMPIEZA_AQUI.md`, `docs/guias/CURRICULUM_COLABORADOR.md`, `docs/guias/ACCESO_Y_MAPA_COLABORADOR.md`, `docs/operacion/PROTOCOLO_CAZABUGS.md` (secciones «Flujo de trabajo conjunto» y «Modo IA — SOLO ANOTAR, NUNCA IMPLEMENTAR»), `docs/operacion/TAREAS_COLABORADOR.md`, `docs/operacion/REGISTRO_BUGS.md` y `docs/arquitectura/ARCHITECTURE.md`. NO leas `AGENTS.md`, `CLAUDE.md`, `opencode.json`, `docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md` ni `docs/operacion/CONTEXT_FOR_CLAUDE.md`: son instrucciones privadas del dueño y no están en el clone; si algún doc las menciona, tratá esa mención como «fuente no disponible» y usá `PROTOCOLO_CAZABUGS.md` en su lugar. Yo no sé programar: explícame con palabras simples qué parte toca y qué archivos intervienen. Copiá mi hallazgo literal, sin corregir mi redacción, y agregá solo el bloque `ANÁLISIS IA` con: cómo funciona esa parte (flujo real + `archivo:línea`), causa probable, idea de arreglo (máx. 2 opciones, sin código), nivel de riesgo (S1–S4 + cambio BAJO/MEDIO/ALTO), archivos/rutas/tablas exactos, blast radius, pruebas sugeridas (positiva y negativa si toca auth, roles, `store_id` o RLS) y DO NOT. No edites código, no ejecutes fixes ni SQL de escritura, no crees `BUG-###`, no hagas commit ni push, no toques `main`, no cierres nada. No escribas secretos, tokens, contraseñas ni correos reales en la respuesta. Si no podés verificar algo, escribí «no verificado». Toda salida termina con `Estado: ANALIZADO — SIN IMPLEMENTAR`.
+Modo solo lectura + análisis + reporte. Lee, en este orden, `docs/README.md`, `docs/guias/EMPIEZA_AQUI.md`, `docs/guias/CURRICULUM_COLABORADOR.md`, `docs/guias/ACCESO_Y_MAPA_COLABORADOR.md`, `docs/operacion/PROTOCOLO_CAZABUGS.md` (secciones «Flujo de trabajo conjunto» y «Modo IA — SOLO ANOTAR, NUNCA IMPLEMENTAR»), `docs/operacion/TAREAS_COLABORADOR.md`, `docs/operacion/REGISTRO_BUGS.md` y `docs/arquitectura/ARCHITECTURE.md`. NO leas `AGENTS.md`, `CLAUDE.md`, `opencode.json`, `docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md` ni `docs/operacion/CONTEXT_FOR_CLAUDE.md`: son instrucciones privadas del dueño y no están en el clone; si algún doc las menciona, tratá esa mención como «fuente no disponible» y usá `PROTOCOLO_CAZABUGS.md` en su lugar.
+
+Al empezar cada conversación, y cuando yo diga «revisa arreglos en github», «sync github», «¿qué arreglaron?», «actualiza», «ver fixes» o «sincroniza»: hacé `git fetch origin` (solo lectura; NUNCA `pull`, `merge`, `rebase`, `checkout` ni `reset`), compará el SHA de `origin/main` contra el guardado en `C:\Users\<usuario>\Documents\YAHPOS_ultimo_sync.txt`, mirá `git log <sha_anterior>..origin/main --oneline` y leé `git show origin/main:docs/operacion/REGISTRO_BUGS.md` sin hacer checkout. Mostrá una tabla con: HAL-### → decisión del dueño → BUG-### → commit → estado (ABIERTO/CERRADO/DIFERIDO/NO_BUG) → qué significa para mí. Después actualizá ese archivo externo con el SHA nuevo. Si no podés ejecutar comandos, pedime que te pegue la salida. Si algo no se puede verificar, escribí «no verificado». Terminá con `Sincronización completada — sin cambios en el repo`.
+
+Yo no sé programar: por cada hallazgo explicá con palabras simples, sin corregir mi redacción, y entregá: título corto; «En mis palabras» con mi texto literal; «Cómo abordarlo / cómo reproducirlo» (pantalla o ruta, pasos numerados, datos de prueba, qué esperaba y qué pasó); cómo funciona esa parte (flujo real + `archivo:línea`); causa probable; alcance exacto (archivos, rutas y tablas); idea de arreglo (máx. 2 opciones, sin código); riesgo (`S1`–`S4` + cambio `BAJO`/`MEDIO`/`ALTO`); blast radius; pruebas sugeridas (positiva y, si toca auth/roles/`store_id`/RLS, negativa); DO NOT. Todo análisis termina con `Estado: ANALIZADO — SIN IMPLEMENTAR`.
+
+Al terminar mi día, juntá todos los hallazgos en `docs/operacion/REPORTES_COLABORADOR/YYYY-MM-DD_<slug>.md` con resumen final, mostrame el diff, preguntame «¿subo el reporte ahora?» y solo con mi confirmación hacé commit en la rama `reportes/<slug>` (nunca `main`) con mensaje `reporte: YYYY-MM-DD <slug>` y `git push origin reportes/<slug>`. No edites `REGISTRO_BUGS.md`, código, Kanban, `AGENTS.md`, `BITACORA.md` ni `TASK_HANDOFF.md`. No escribas secretos, tokens, contraseñas ni correos reales.
 ```
 
 ---
@@ -148,6 +155,8 @@ Modo solo lectura. Lee, en este orden, `docs/README.md`, `docs/guias/EMPIEZA_AQU
 
 Checklist. Si falta alguno, pedilo:
 
+- [ ] Título corto y «En mis palabras» con tu texto literal, sin corregirlo.
+- [ ] Cómo abordarlo / reproducirlo: ruta, pasos, datos de prueba, esperado vs. real.
 - [ ] Cómo funciona esa parte, con flujo real y `archivo:línea`.
 - [ ] Causa probable.
 - [ ] Idea de arreglo: máximo 2 opciones, sin código.
@@ -173,9 +182,40 @@ Recordatorio: tu hallazgo sigue **en tus palabras**. La IA lo copia textual en �
 ## Cómo entregar el resultado
 
 1. Buscá primero en la bandeja de [`REGISTRO_BUGS.md`](../operacion/REGISTRO_BUGS.md) si ya existe el hallazgo, por ID, título o palabras clave.
-2. Pegá el `HAL-###` en esa bandeja, o entregalo directamente al dueño. Incluí el bloque `ANÁLISIS IA` de tu IA.
+2. **No edites esa bandeja**: la mueve el dueño. Entregale tu reporte diario (con el bloque `ANÁLISIS IA` de tu IA) subiéndolo a tu rama `reportes/<slug>`.
 3. El dueño decide: `NO_BUG`, `DIFERIDO` o `AUTORIZAR_BUG`. La decisión se escribe en el registro con fecha y quién decidió.
-4. Recién con `AUTORIZAR_BUG` se crea un `BUG-###` y entra al flujo normal de reparación. Autorizar la reparación no autoriza subir cambios: commit/push solo si el dueño lo pide.
+4. Recién con `AUTORIZAR_BUG` se crea un `BUG-###` y entra al flujo normal de reparación. El dueño sube los arreglos a `main`.
+
+---
+
+## Ritmo diario y sincronización con GitHub
+
+El circuito acordado es este:
+
+1. **Vos revisás** pantallas con datos de prueba y le contás los hallazgos a tu IA.
+2. **Tu IA analiza** cada `HAL-###` con el formato de arriba y lo deja listo en el reporte del día.
+3. **Al terminar tu día**, tu IA te muestra el diff y te pregunta «¿subo el reporte ahora?». Con tu OK, hace commit **solo** de `docs/operacion/REPORTES_COLABORADOR/YYYY-MM-DD_<slug>.md` en la rama `reportes/<slug>` y hace push. Nunca toca `main`.
+4. **Al empezar el día del dueño**, él revisa ese reporte junto a su IA, decide y sube los arreglos a `main`.
+5. **Al volver a hablar con tu IA** (o al decir «revisa arreglos en github»), ella hace `git fetch origin` y lee `origin/main` sin modificar tus archivos. Te dice qué `HAL-###` se arreglaron, en qué commit y si quedan pendientes. Ahí volvés a probar esas pantallas.
+
+Comandos que tu IA puede usar (solo lectura):
+
+```bash
+git fetch origin
+git rev-parse origin/main
+git log <sha_anterior>..origin/main --oneline
+git show origin/main:docs/operacion/REGISTRO_BUGS.md
+```
+
+El último SHA se guarda en `C:\Users\<usuario>\Documents\YAHPOS_ultimo_sync.txt`, **fuera** del repo. Tu IA no hace `pull`, `merge`, `rebase`, `checkout` ni `reset` en tu copia sin instrucción explícita del dueño.
+
+Tabla que te tiene que devolver la sincronización:
+
+| Hallazgo | Decisión del dueño | BUG | Commit | Estado | Qué significa para vos |
+|---|---|---|---|---|---|
+| `HAL-001` | `AUTORIZAR_BUG` | `BUG-001` | `abc1234` | `CERRADO` | Ya está arreglado: volvé a probar esa pantalla |
+
+Si no puede verificar algo, debe escribir «no verificado»: nunca dar por arreglado un hallazgo sin evidencia.
 
 ---
 
@@ -183,9 +223,10 @@ Recordatorio: tu hallazgo sigue **en tus palabras**. La IA lo copia textual en �
 
 - No secretos reales, tokens, contraseñas ni correos reales. Solo datos y proyectos de prueba.
 - No datos reales de clientes en pantallas, capturas ni reportes.
-- No tocar `main`. Trabajar solo en tu copia.
-- No commit ni push sin pedido explícito del dueño.
+- No tocar `main`. Trabajar solo en tu copia y en tu rama `reportes/<slug>`.
+- No commit ni push sin tu confirmación; el único commit permitido es el reporte diario en tu rama. Nunca `push --force`.
 - No corregir las palabras del colaborador: el hallazgo va literal.
+- No dar por arreglado un hallazgo sin corroborarlo en `origin/main` y en `REGISTRO_BUGS.md`.
 - Una tarea `T-###` a la vez.
 - No promover a `BUG-###` sin autorización del dueño.
 - No editar código, no ejecutar fixes ni SQL de escritura, no cerrar nada.

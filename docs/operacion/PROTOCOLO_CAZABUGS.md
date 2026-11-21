@@ -8,7 +8,7 @@ Sistema simple y persistente para que el colaborador detecte, reproduzca y repor
 
 [`COLLABORATION_PROTOCOL.md`](COLLABORATION_PROTOCOL.md) define los roles históricos (Antigravity / OpenCode) y la regla **«SOLO UNO ESCRIBE CÓDIGO»**, que sigue vigente. Para bugs manda este protocolo: el colaborador reporta y audita; el dueño decide quién arregla.
 
-Este protocolo **no** autoriza escribir código, ejecutar SQL de escritura, hacer commit/push ni tocar `main`.
+Este protocolo **no** autoriza escribir código ni ejecutar SQL de escritura. El único commit permitido es el **reporte diario del colaborador** en su propia rama `reportes/<slug>`; nunca se toca `main` ni código. Los arreglos los sube el dueño, y solo con pedido explícito.
 
 ---
 
@@ -22,8 +22,8 @@ Este protocolo **no** autoriza escribir código, ejecutar SQL de escritura, hace
 - **No** arregla código: no toca `.ts`, `.tsx`, `.sql` ni `.css`.
 - **No** toca `AGENTS.md`, `BITACORA.md`, `TASK_HANDOFF.md` ni `YAHPOS Kanban.md`.
 - **No** ejecuta SQL de escritura (`INSERT`/`UPDATE`/`DELETE`/DDL). Solo lectura si hace falta, sin datos sensibles.
-- **No** hace commit ni push, y **no** toca la rama principal (`main`). Usa su propia identidad de git solo en copias/fork autorizados por el dueño.
-- Avisa al dueño con el ID del bug y la severidad sugerida.
+- Al terminar el día, **sí** hace commit/push de su reporte (`docs/operacion/REPORTES_COLABORADOR/YYYY-MM-DD_<slug>.md`) **solo** en `reportes/<slug>`, nunca en `main`, nunca con código. Usa su propia identidad de git.
+- Avisa al dueño con el ID del hallazgo y la severidad sugerida.
 
 ### OpenCode / agente
 
@@ -48,11 +48,13 @@ Este sistema reparte trabajo entre tres partes sin mezclar responsabilidades. El
 
 1. **Dueño asigna tarea `T-###`.** Una tarea a la vez, con objetivo simple y scope visual/lógico. Usar la plantilla de abajo.
 2. **Colaborador la explora de forma visual/lógica con datos de prueba.** Mira pantallas, botones y flujos. No edita código, no usa datos reales ni secretos.
-3. **Colaborador sube hallazgo `HAL-###` en SUS PALABRAS.** Lo pega en la bandeja del registro. Su texto se copia textual; nadie lo reescribe.
+3. **Colaborador entrega hallazgo `HAL-###` en SUS PALABRAS.** Se lo dice a su IA; su texto se copia textual al reporte diario; nadie lo reescribe. El reporte se sube a `reportes/<slug>` al final del día.
 4. **IA agrega bloque `ANÁLISIS IA` con cómo funciona la parte, idea de arreglo, riesgo y archivos exactos.** Es SOLO ANOTACIÓN: no repara, no crea `BUG-###`, no cierra nada.
 5. **Dueño decide: `NO_BUG` / `DIFERIDO` / `AUTORIZAR`.** La decisión se escribe en el registro con fecha y quién decidió. Sin decisión, el hallazgo queda pendiente.
 6. **Solo con autorización se crea `BUG-###` y se repara con scopes, tests y gates.** Se usa la plantilla de bug de este protocolo. Si toca auth, roles, `store_id` o RLS, se agrega prueba real y caso negativo.
-7. **Commit/push SOLO cuando el dueño lo pida.** Autorizar la reparación no autoriza subir cambios. El push queda fuera salvo pedido explícito.
+7. **Commit/push de arreglos SOLO cuando el dueño lo pida.** Autorizar la reparación no autoriza subir cambios. El push queda fuera salvo pedido explícito.
+8. **Sincronización del colaborador:** al empezar cada conversación, o con la palabra clave «revisa arreglos en github», su IA hace `git fetch origin` (nunca `pull`/`checkout`), compara el SHA guardado fuera del repo y lee `git show origin/main:docs/operacion/REGISTRO_BUGS.md`. Devuelve una tabla `HAL` → decisión → `BUG` → commit → estado, para que el colaborador sepa qué puede volver a probar.
+9. **Revisión del dueño:** al empezar su día, o con «revisa reportes del socio», su IA hace `fetch`, baja la rama `reportes/<slug>` y revisa los `HAL-###` junto al dueño antes de decidir.
 
 Aclaración: el Kanban no se mueve ni se edita. Tareas se siguen en `TAREAS_COLABORADOR.md`, hallazgos en la bandeja de `REGISTRO_BUGS.md` y bugs autorizados en «Bugs abiertos».
 
@@ -66,7 +68,7 @@ Aplica cuando la IA trabaja sobre un `HAL-###`. Aunque el fallo parezca obvio o 
 - **No ejecutar fixes ni SQL de escritura:** ni `INSERT`, `UPDATE`, `DELETE` ni DDL. Solo lectura si ayuda, sin datos sensibles.
 - **No crear `BUG-###` sin autorización del dueño.**
 - **No mover a `CERRADO`.** Ese estado exige evidencia y aprobación del dueño.
-- **No hacer commit ni push.**
+- **No hacer commit ni push de código ni de `REGISTRO_BUGS.md`.** La excepción es el reporte diario del colaborador: se sube solo a `reportes/<slug>` y con confirmación del colaborador; nunca a `main`.
 - **Basar el análisis en código real con `archivo:línea`.** Si no puede verificar algo, escribir «no verificado» en vez de inventar.
 - **NUNCA corregir la redacción del colaborador.** Copiar textual su hallazgo en «En mis palabras».
 - Toda salida termina con `Estado: ANALIZADO — SIN IMPLEMENTAR`.
@@ -164,7 +166,7 @@ Nunca se promueve solo a `BUG-###`. La IA no ejecuta ninguna de estas transicion
 (a) Del COLABORADOR a la IA, para analizar sin implementar:
 
 ```text
-Lee AGENTS.md, docs/operacion/PROTOCOLO_CAZABUGS.md y REGISTRO_BUGS.md. Toma HAL-###. Copiá mi hallazgo con mis palabras y agregá el bloque ANÁLISIS IA. NO implementes, NO toques código, NO hagas commit/push. Decime riesgo y archivos exactos.
+Modo solo lectura + análisis + reporte. Lee docs/README.md, docs/guias/ACCESO_Y_MAPA_COLABORADOR.md, docs/operacion/PROTOCOLO_CAZABUGS.md y REGISTRO_BUGS.md. NO leas AGENTS.md ni otros archivos privados del dueño: no están en el clone. Al empezar, y cuando diga «revisa arreglos en github», hacé git fetch origin (nunca pull/checkout) y leé origin/main:docs/operacion/REGISTRO_BUGS.md para decirme qué HAL-### ya se arreglaron. Toma HAL-###. Copiá mi hallazgo literal y agregá ANÁLISIS IA con: cómo abordarlo/reproducirlo, flujo real + archivo:línea, causa, alcance, idea de arreglo (máx. 2, sin código), riesgo S1–S4 + cambio BAJO/MEDIO/ALTO, blast radius, pruebas positiva y negativa si aplica, y DO NOT. NO implementes ni toques código. Al final del día juntá todo en docs/operacion/REPORTES_COLABORADOR/YYYY-MM-DD_<slug>.md; mostrá el diff, esperá mi confirmación y recién entonces hacé commit/push SOLO de ese archivo en reportes/<slug>, nunca en main. Toda salida de análisis termina con Estado: ANALIZADO — SIN IMPLEMENTAR.
 ```
 
 (b) Del DUEÑO autorizando la reparación:
@@ -173,7 +175,7 @@ Lee AGENTS.md, docs/operacion/PROTOCOLO_CAZABUGS.md y REGISTRO_BUGS.md. Toma HAL
 Autorizo convertir HAL-### en BUG-### e implementar con scopes, tests y gates. Sin push.
 ```
 
-El prompt (a) no habilita cambios. El prompt (b) habilita la reparación con scopes, tests y gates; el commit o push sigue requiriendo pedido explícito del dueño.
+El prompt (a) no habilita cambios de código: solo permite subir el reporte diario a `reportes/<slug>` con confirmación del colaborador. El prompt (b) habilita la reparación con scopes, tests y gates; el commit o push de arreglos sigue requiriendo pedido explícito del dueño.
 
 ---
 
@@ -283,10 +285,10 @@ Si el bug ya existe, no copiar la plantilla: agregar solo una línea nueva en `N
 1. Leer [`EMPIEZA_AQUI.md`](../guias/EMPIEZA_AQUI.md) y correr la app (`npm run dev`) con datos de prueba.
 2. Reproducir el fallo al menos dos veces y anotar los pasos exactos.
 3. Buscar en [`REGISTRO_BUGS.md`](REGISTRO_BUGS.md) si ya existe (por título, módulo o palabras clave).
-4. Copiar la plantilla de arriba y pegarla en "Bugs abiertos" con el ID `BUG-###` nuevo; si ya existe, solo agregar evidencia a `Notas/Historial`.
-5. Avisar al dueño con el ID y la severidad sugerida. No tocar ningún otro archivo; no hacer commit ni push; no tocar `main`.
+4. Entregar el hallazgo a tu IA con el ID `HAL-###` y el formato de «Cómo abordarlo». No pegués nada en `REGISTRO_BUGS.md`: lo escribe el dueño.
+5. Al terminar el día, subir el reporte a `reportes/<slug>` (solo ese archivo) y avisar al dueño con el ID y la severidad sugerida. Nunca tocar `main` ni código.
 
-> **Nota de convivencia con el flujo conjunto:** estos 5 pasos describen el reporte directo histórico. Con el sistema de trabajo conjunto, el colaborador entrega primero `HAL-###` y la IA solo anota; el pase a `BUG-###` ocurre solo con la decisión `AUTORIZAR_BUG` del dueño (ver «Flujo de trabajo conjunto» y «Estados HAL»). La plantilla `BUG-###` sigue siendo la misma y se usa recién después de esa autorización.
+> **Nota de convivencia con el flujo conjunto:** estos 5 pasos describen el flujo vigente. El colaborador entrega `HAL-###` y su IA solo anota; el pase a `BUG-###` ocurre solo con la decisión `AUTORIZAR_BUG` del dueño (ver «Flujo de trabajo conjunto» y «Estados HAL»). La plantilla `BUG-###` sigue siendo la misma y se usa recién después de esa autorización.
 
 ---
 
