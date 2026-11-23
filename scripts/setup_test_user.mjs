@@ -11,7 +11,10 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function setup() {
   const email = 'antigravity@patagoniapos.cl';
-  const password = 'TestingPassword123!';
+  const password = process.env.TEST_USER_PASSWORD;
+  if (!password) {
+    throw new Error('Falta TEST_USER_PASSWORD. No se acepta un password hardcodeado: definilo en el entorno (ver .env.example).');
+  }
   
   console.log('--- Configurando Usuario de Pruebas ---');
   

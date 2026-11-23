@@ -1,5 +1,15 @@
 import type { NextConfig } from "next";
 import withPWA, { runtimeCaching as defaultRuntimeCaching } from "@ducanh2912/next-pwa";
+import { loadEnvConfig } from "@next/env";
+import { assertEnv } from "./src/lib/env";
+
+// Next evalúa next.config.ts ANTES de cargar .env* en algunos flujos; forzamos
+// la carga para que la validación de build vea los mismos valores que la app.
+loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
+
+// Falla el build si faltan variables públicas obligatorias (las secretas se
+// exigen recién al arrancar el servidor: src/instrumentation.ts).
+assertEnv({ phase: "build" });
 
 const isProd = process.env.NODE_ENV === 'production';
 

@@ -141,30 +141,41 @@ cp .env.example .env.local
 npm run dev
 ```
 
-### Variables de Entorno Requeridas
+### Variables de Entorno
 
-```
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+La plantilla única es [`.env.example`](./.env.example) y el inventario completo
+(propósito, entornos, cómo obtener cada valor y rotación) está en
+[`docs/env.md`](./docs/env.md).
 
-# IA (lectura de facturas)
-GEMINI_API_KEY=
-
-# Seguridad
-SECURITY_SALT=
-
-# Pagos
-FLOW_API_KEY=
-FLOW_SECRET=
-
-# SII
-SII_API_URL=
-SII_ENVIRONMENT=
+```bash
+cp .env.example .env.local
+# completar Supabase + service role + SII_ENCRYPTION_KEY y arrancar:
+npm run dev
 ```
 
-Ver [CLAUDE.md](./CLAUDE.md) para la lista completa y actualizada.
+Obligatorias en todos los entornos:
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+NEXT_PUBLIC_ROOT_ORIGIN
+```
+
+Obligatorias en producción/staging (las valida el arranque):
+
+```
+SECURITY_SALT                SII_ENCRYPTION_KEY (32 chars)
+DEV_TOKEN_SECRET             UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN     BLUMI_SANDBOX_URL
+```
+
+La app **falla al arrancar o al construir** con un mensaje que lista todas las
+variables faltantes (`src/lib/env.ts` + `src/instrumentation.ts`). Antes de
+desplegar: `npm run env:check -- --target staging`.
+
+Los secretos de pago (Flow, Webpay/Transbank, Blumi) **no** son variables de
+entorno: viven cifrados por tienda en la tabla `settings`.
 
 ---
 
