@@ -94,10 +94,11 @@ saber qué se rompió antes  → auditorias/AUDIT_REPORT_2026-07-28.md
 | Documento | Contenido |
 |---|---|
 | `manual_instalacion.md` | Onboarding de un cliente nuevo, 5 pasos |
+| `DEPLOY.md` | **Vigente.** Deploy y entornos (staging/producción): orden de operaciones, variables por entorno, smoke y rollback |
 | `WALKTHROUGH.md` | Recorrido por las features implementadas (roles, facturación, SaaS) |
 | `task.md` | Lista de tareas de mayo 2026, mayormente completada |
 | `CONTEXT_FOR_CLAUDE.md` | Traspaso puntual sobre el catálogo maestro |
-| `COLLABORATION_PROTOCOL.md` | Reparto de roles entre agentes (histórico) |
+| `COLLABORATION_PROTOCOL.md` | **Vigente.** Roles (perfiles Hermes + dueño + colaborador), criterios de asignación, handoff y DoD |
 | `PROTOCOLO_CAZABUGS.md` | **Vigente.** Flujo conjunto, modo IA «solo anotar», plantillas y riesgo |
 | `TAREAS_COLABORADOR.md` | Tablero de tareas que el dueño asigna (búsqueda visual/lógica) |
 | `REGISTRO_BUGS.md` | **Fuente única de verdad.** Hallazgos `HAL-###`, bugs abiertos, diferidos y cerrados |

@@ -1,0 +1,61 @@
+# Archivos que NO se suben en el deploy (vercel build / deploy --prebuilt).
+# Objetivo: upload pequeño y sin material sensible ni artefactos locales.
+
+# Entorno y credenciales (los valores reales viven en el secret store de Vercel)
+.env
+.env.*
+!.env.example
+certs/
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Artefactos de build/test locales
+.next/
+out/
+build/
+.swc/
+graphify-out/
+src/graphify-out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+
+# Documentación, reportes y material de trabajo
+docs/
+*.md
+!README.md
+*.pdf
+*.docx
+*.eps
+*.txt
+lint_results*.txt
+eslint_output*.json
+file_list.txt
+build_output.txt
+products_debug.json
+screenshots/
+pruebas-local/
+scratch/
+.obsidian/
+.claude/
+supabase/.temp/
+supabase/*.sql
+
+# Scripts que no participan del runtime
+scripts/crear-*.js
+scripts/generar-*.ts
+scripts/render-set-*.ts
+scripts/take_screenshots.js
+scripts/generate-simulation-report.ts
+tests/
+test_order.mjs
+test-supabase.mjs
+
+# Config de agentes / tooling local
+AGENTS.md
+CLAUDE.md
+opencode.json

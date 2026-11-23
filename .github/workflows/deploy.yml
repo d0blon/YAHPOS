@@ -1,0 +1,101 @@
+name: Deploy
+
+# Un solo pipeline con orden explícito: preflight → build → migraciones → deploy → smoke.
+#   push a `staging`     → deploy a staging (Vercel Preview + Supabase staging)
+#   push a `main`        → deploy a producción (environment `production`, con aprobación)
+#   workflow_dispatch    → elegir target a mano (rollback: usar scripts/rollback.mjs)
+#
+# Secrets requeridos (por environment de GitHub: `staging` y `production`):
+#   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID,
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF, SUPABASE_DB_URL
+# Las variables NEXT_PUBLIC_*/runtime NO se duplican acá: `vercel pull` las trae
+# del scope correcto del proyecto Vercel (Preview para staging, Production para prod).
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Entorno a desplegar'
+        type: choice
+        options: [staging, production]
+        required: true
+        default: staging
+      skip_migrations:
+        description: 'Omitir migraciones (solo si el release no toca esquema)'
+        type: boolean
+        default: false
+      backup_confirmed:
+        description: 'Confirmo que existe respaldo/PITR antes de migrar producción'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-${{ github.event.inputs.target || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy / ${{ github.event.inputs.target || (github.ref_name == 'main' && 'production' || 'staging') }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.target || (github.ref_name == 'main' && 'production' || 'staging') }}
+    timeout-minutes: 45
+
+    env:
+      TARGET: ${{ github.event.inputs.target || (github.ref_name == 'main' && 'production' || 'staging') }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (lockfile)
+        run: npm ci
+
+      - name: Install deploy tooling (Vercel + Supabase CLI)
+        run: |
+          npm i -g vercel@latest supabase@latest
+          vercel --version
+          supabase --version
+
+      - name: Link Vercel project (no interactivo)
+        run: vercel link --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_ORG_ID"
+
+      - name: Deploy (preflight → build → migraciones → deploy → smoke)
+        run: |
+          ARGS="--target $TARGET --yes"
+          if [ "${{ github.event.inputs.skip_migrations }}" = "true" ]; then ARGS="$ARGS --skip-migrations"; fi
+          if [ "$TARGET" = "production" ] && [ "${{ github.event.inputs.backup_confirmed }}" = "true" ]; then ARGS="$ARGS --i-have-a-backup --allow-prod"; fi
+          echo "node scripts/deploy.mjs $ARGS"
+          node scripts/deploy.mjs $ARGS
+
+      - name: Smoke manual (si falló el smoke del deploy)
+        if: failure()
+        run: |
+          echo "Revisar .vercel/last-deploy.$TARGET.json y ejecutar:"
+          echo "  node scripts/smoke-deploy.mjs <url> --expect-env $([ "$TARGET" = production ] && echo production || echo preview)"
+          echo "Rollback: node scripts/rollback.mjs --target $TARGET --list"
+
+      - name: Upload deploy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-report-${{ env.TARGET }}
+          path: .vercel/last-deploy.*.json
+          if-no-files-found: ignore
+          retention-days: 14
