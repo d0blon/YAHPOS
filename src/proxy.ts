@@ -35,24 +35,31 @@ function buildCsp(nonce: string, protocol: string): string {
 }
 
 export async function proxy(request: NextRequest) {
+  // La config raíz se valida ANTES de cualquier trabajo que dependa de ella:
+  // getRequestProtocol()/isRootRequestHost() llaman a getRootOrigin(), que lanza
+  // si el origin es inválido. Validar primero garantiza un 500 explícito con CSP
+  // (fail-fast) en vez de una excepción sin headers en medio del handler.
+  const rootConfig = getRootOriginSafe()
+  if (rootConfig === null) {
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+    const response = new NextResponse('Configuración de origen raíz inválida.', { status: 500 })
+    response.headers.set('Content-Security-Policy', buildCsp(nonce, 'https'))
+    console.error(`[Proxy] Configuración de origen raíz inválida: ${ROOT_ORIGIN_ENV_VAR}.`)
+    return response
+  }
+
+  // El protocolo de la plataforma es config, no un header que pueda inyectar el cliente.
+  const protocol = new URL(rootConfig).protocol.slice(0, -1)
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
-  const csp = buildCsp(nonce, getRequestProtocol(request.headers))
+  const csp = buildCsp(nonce, protocol)
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('Content-Security-Policy', csp)
+  requestHeaders.set('x-forwarded-proto', protocol)
   const withCsp = <T extends Response>(response: T): T => {
     response.headers.set('Content-Security-Policy', csp)
     return response
   }
-
-  const rootConfig = getRootOriginSafe()
-  if (rootConfig === null) {
-    console.error(`[Proxy] Configuración de origen raíz inválida: ${ROOT_ORIGIN_ENV_VAR}.`)
-    return withCsp(new NextResponse('Configuración de origen raíz inválida.', { status: 500 }))
-  }
-
-  // El protocolo de la plataforma es config, no un header que pueda inyectar el cliente.
-  requestHeaders.set('x-forwarded-proto', new URL(rootConfig).protocol.slice(0, -1))
 
   const path = request.nextUrl.pathname
   const host = (request.headers.get('host') || '').toLowerCase()

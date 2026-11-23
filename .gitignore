@@ -63,9 +63,7 @@ scratch/
 # playwright
 playwright.config.ts
 
-# jest
-jest.config.ts
-jest.setup.ts
+# jest (config y setup deben versionarse para que CI pueda correr `npm test`)
 
 # supabase temp
 /supabase/.temp/
@@ -87,3 +85,15 @@ CLAUDE.md
 opencode.json
 docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md
 docs/operacion/CONTEXT_FOR_CLAUDE.md
+
+# SII secrets — certificados, llaves y CAF nunca se commitean
+/certs/
+*.pfx
+*.p12
+*.jks
+*.key
+*.crt
+*.cer
+*.p7b
+*.caf
+pruebas-local/certificado/

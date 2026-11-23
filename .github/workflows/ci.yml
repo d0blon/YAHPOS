@@ -1,0 +1,144 @@
+name: CI
+
+# Se ejecuta en cada push a las ramas estables y en cada pull request.
+# Cualquier paso roto deja el check en rojo: PRs no se mergean sin CI verde
+# (ver docs/operacion/CI.md → branch protection).
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Cancela runs obsoletos del mismo ref: si empujas 3 commits seguidos, solo
+# corre el último.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  # Build del proyecto Next: sin esto el heap por defecto (2 GB) puede no
+  # alcanzar en `next build`.
+  NODE_OPTIONS: "--max-old-space-size=4096"
+
+jobs:
+  quality:
+    name: Lint / Typecheck / Test / Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    # Contrato de variables: la fuente de verdad es .env.example + src/lib/env.ts
+    # (auditoría t_20d528b3). Los valores de abajo son dummies públicos, válidos
+    # por formato, y no apuntan a ningún servicio real: NO son secretos.
+    # Nunca se hardcodea un secreto en el YAML; si el build necesitara uno real se
+    # lee con `${{ secrets.NOMBRE }}` (documentado en docs/operacion/CI.md).
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-stub.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci_stub_anon_key_0000000000000000000000000000
+      SUPABASE_SERVICE_ROLE_KEY: ci_stub_service_role_key_000000000000000000000000
+      NEXT_PUBLIC_ROOT_ORIGIN: https://ci-stub.yahpos.internal
+      SECURITY_SALT: ci-stub-salt-0123456789
+      DEV_TOKEN_SECRET: ci-stub-dev-token-secret-0123456789
+      SII_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
+      SII_ENV: certification
+      FLOW_SANDBOX: "true"
+      BLUMI_SANDBOX_URL: https://dte.blumi.cl/api/v1/sandbox
+      NEXT_PUBLIC_SUPPORT_WHATSAPP: "56912345678"
+      UPSTASH_REDIS_REST_URL: https://ci-stub.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci_stub_upstash_token_0000000000000000
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (versión fijada en .nvmrc)
+        id: node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # Falla cerrado ANTES de instalar si falta una variable que el build exige.
+      # Usa el validador del propio repo (mismo contrato que .env.example); si
+      # todavía no existe, valida la lista mínima para no quedar sin gate.
+      - name: Preflight — variables requeridas por el build
+        id: preflight
+        run: |
+          set -euo pipefail
+          if [ -f scripts/check-env.mjs ]; then
+            node scripts/check-env.mjs --target local
+          else
+            echo "::warning::scripts/check-env.mjs no existe; se valida la lista mínima."
+            missing=()
+            for name in \
+              NEXT_PUBLIC_SUPABASE_URL \
+              NEXT_PUBLIC_SUPABASE_ANON_KEY \
+              SUPABASE_SERVICE_ROLE_KEY \
+              NEXT_PUBLIC_ROOT_ORIGIN
+            do
+              [ -n "${!name:-}" ] || missing+=("$name")
+            done
+            if [ ${#missing[@]} -gt 0 ]; then
+              echo "::error::Faltan variables requeridas por el build: ${missing[*]}"
+              exit 1
+            fi
+          fi
+
+      - name: Install (npm ci con lockfile + cache de ~/.npm)
+        id: install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck (tsc --noEmit)
+        id: typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (jest --ci)
+        id: test
+        run: npm run test:ci
+
+      - name: Build (next build)
+        id: build
+        run: npm run build
+
+      # Deuda conocida (ver docs/operacion/CI.md): el repo arrastra problemas
+      # de ESLint preexistentes. Mientras no exista baseline limpio, lint es
+      # NO bloqueante: se ejecuta y reporta, pero no tumba el pipeline.
+      - name: Lint (informativo, no bloqueante)
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Resumen de gates
+        id: summary
+        if: always()
+        env:
+          OUTCOMES: >-
+            install=${{ steps.install.outcome }}
+            typecheck=${{ steps.typecheck.outcome }}
+            test=${{ steps.test.outcome }}
+            build=${{ steps.build.outcome }}
+            lint=${{ steps.lint.outcome }}
+        run: |
+          {
+            echo "## Resultado del CI"
+            echo ""
+            echo "| Paso | Resultado |"
+            echo "|---|---|"
+            echo "| Install | ${{ steps.install.outcome }} |"
+            echo "| Typecheck | ${{ steps.typecheck.outcome }} |"
+            echo "| Unit tests | ${{ steps.test.outcome }} |"
+            echo "| Build | ${{ steps.build.outcome }} |"
+            echo "| Lint (no bloqueante) | ${{ steps.lint.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # El paso rojo ya lo marca GitHub; esto lo hace explícito en el log.
+          for entry in $OUTCOMES; do
+            case "$entry" in
+              *=failure) echo "::error::Paso fallido → ${entry%%=*}" ;;
+            esac
+          done
