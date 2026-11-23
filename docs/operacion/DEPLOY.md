@@ -127,9 +127,12 @@ explícita del diff de `supabase/migrations/`.
 
 ## 4. Variables de entorno por entorno
 
-El esquema ejecutable (niveles, formatos y mensajes) está en `scripts/lib/env-schema.mjs`.
-El inventario funcional completo vive en `.env.example` y en el informe de la tarea de
-auditoría de env vars. Acá va la matriz operativa: **qué se configura, dónde y quién**.
+El esquema ejecutable (niveles, formatos y mensajes) está en `scripts/lib/env-schema.mjs`,
+que replica `src/lib/env.ts` (`ENV_SPEC`, la fuente de verdad del runtime usada por
+`next.config.ts` y `src/instrumentation.ts`). Si los dos divergen, **manda `src/lib/env.ts`**:
+el gate de deploy se actualiza en el mismo commit que el runtime. El inventario funcional
+completo vive en `.env.example` y en el informe de la tarea de auditoría de env vars. Acá va
+la matriz operativa: **qué se configura, dónde y quién**.
 
 ### 4.1 Obligatorias por entorno
 
@@ -157,13 +160,20 @@ secretos de pago por tienda en `settings`). No son "un secret más": son llaves.
 | `OPENAI_API_KEY` | opcional | descripciones con IA deshabilitadas |
 | `GEMINI_API_KEY` | opcional | OCR de facturas de proveedor deshabilitado |
 | `MASTER_KEY_ENCRYPTED` | opcional (legacy) | fallback del secreto de firma developer |
-| `NEXT_PUBLIC_ROOT_DOMAIN` | opcional | sin resolución de tiendas por CNAME propio |
+| `NEXT_PUBLIC_ROOT_DOMAIN` | opcional (recomendada en prod) | sin resolución de tiendas por CNAME propio |
 | `NEXT_PUBLIC_SUPPORT_WHATSAPP` / `NEXT_PUBLIC_SUPPORT_EMAIL` | opcional | placeholder de contacto |
 | `PAYMENT_PROVIDER` | opcional | default `transbank` |
 | `DB_MODE` | opcional | informativo, default `supabase` |
-| `SII_API_URL`, `SII_ENVIRONMENT`, `FLOW_SANDBOX` | **sin uso** | ningún archivo del repo las lee: el ambiente SII vive en `sii_config.environment` y las credenciales de pago en `settings` (cifradas). No configurarlas en el platform store. |
+| `SII_ENV` | opcional | default del ambiente SII para scripts (`certification`/`production`); el motor usa `sii_config.environment` por tienda |
+| `SII_BASE_URL` | opcional | sin override del host SII (solo para proxy/mock) |
+| `SII_CERT_PATH`, `SII_CERT_PASSWORD`, `SII_CERT_PFX_BASE64` | opcional (secretos) | los scripts de verificación SII no pueden abrir el PFX; **el runtime no los necesita** (los certificados viven cifrados en `sii_config`) |
+| `SII_CAF_DIR`, `SII_RUT_EMISOR`, `SII_TIMEOUT_MS` | opcional | solo tooling de verificación SII |
+| `SII_API_URL`, `SII_ENVIRONMENT` | **obsoletas** | fueron reemplazadas por `SII_ENV`/`SII_BASE_URL`; si aparecen en un `.env` viejo, borrarlas |
+| `FLOW_SANDBOX` | **sin uso** | las credenciales de pago se guardan cifradas en `settings`, no en el entorno |
 
-Verificación de "sin uso": `grep -rn "SII_API_URL\|SII_ENVIRONMENT\|FLOW_SANDBOX" src scripts tests`.
+Ninguna variable SII de esta tabla se configura en el platform store de Vercel: son de
+tooling local/CI. Lo que sí debe estar en Vercel es `SII_ENCRYPTION_KEY` (§4.1), que descifra
+los certificados y CAF almacenados en la base.
 
 ### 4.3 Secretos de plataforma (GitHub Actions)
 
