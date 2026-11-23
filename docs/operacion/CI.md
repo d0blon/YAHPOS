@@ -113,7 +113,7 @@ node scripts/check-env.mjs --target local
 
 | Tema | Estado | Qué falta |
 |---|---|---|
-| **Lint no bloqueante** | `npm run lint` arrastra problemas de ESLint preexistentes (baseline sucio, no introducidos por este pipeline) | Limpiar el baseline y luego quitar `continue-on-error: true` del paso Lint |
+| **Lint no bloqueante** | Hoy `npm run lint` sale 0 en `main`, pero el sprint reportó ~500 problemas preexistentes según la config previa: el baseline todavía no se considera estable | Confirmar el baseline durante 1–2 sprints y después quitar `continue-on-error: true` del paso Lint para volverlo bloqueante |
 | **E2E (Playwright) fuera del CI** | `playwright.config.ts` está en `.gitignore` y no hay app levantada en CI | Versionar la config + job con `web server` y navegadores cacheados |
 | **Contrato de env** | `scripts/check-env.mjs`, `src/lib/env.ts` y `docs/env.md` vienen de `t_20d528b3`; si esa tarjeta cambia nombres, el preflight es el primero en avisar | — |
 | **`D-001`** | `.env.local` no define `NEXT_PUBLIC_ROOT_DOMAIN` ni `NEXT_PUBLIC_SUPPORT_EMAIL` | Completarlas en el entorno real (no afecta CI: son de runtime) |
