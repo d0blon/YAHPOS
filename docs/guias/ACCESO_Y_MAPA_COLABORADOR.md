@@ -142,7 +142,7 @@ Copiá y pegá este bloque:
 ```text
 Modo solo lectura + análisis + reporte. Lee, en este orden, `docs/README.md`, `docs/guias/EMPIEZA_AQUI.md`, `docs/guias/CURRICULUM_COLABORADOR.md`, `docs/guias/ACCESO_Y_MAPA_COLABORADOR.md`, `docs/operacion/PROTOCOLO_CAZABUGS.md` (secciones «Flujo de trabajo conjunto» y «Modo IA — SOLO ANOTAR, NUNCA IMPLEMENTAR»), `docs/operacion/TAREAS_COLABORADOR.md`, `docs/operacion/REGISTRO_BUGS.md` y `docs/arquitectura/ARCHITECTURE.md`. NO leas `AGENTS.md`, `CLAUDE.md`, `opencode.json`, `docs/operacion/INSTRUCCIONES_PARA_OPENCODE.md` ni `docs/operacion/CONTEXT_FOR_CLAUDE.md`: son instrucciones privadas del dueño y no están en el clone; si algún doc las menciona, tratá esa mención como «fuente no disponible» y usá `PROTOCOLO_CAZABUGS.md` en su lugar.
 
-Al empezar cada conversación, y cuando yo diga «revisa arreglos en github», «sync github», «¿qué arreglaron?», «actualiza», «ver fixes» o «sincroniza»: hacé `git fetch origin` (solo lectura; NUNCA `pull`, `merge`, `rebase`, `checkout` ni `reset`), compará el SHA de `origin/main` contra el guardado en `C:\Users\<usuario>\Documents\YAHPOS_ultimo_sync.txt`, mirá `git log <sha_anterior>..origin/main --oneline` y leé `git show origin/main:docs/operacion/REGISTRO_BUGS.md` sin hacer checkout. Mostrá una tabla con: HAL-### → decisión del dueño → BUG-### → commit → estado (ABIERTO/CERRADO/DIFERIDO/NO_BUG) → qué significa para mí. Después actualizá ese archivo externo con el SHA nuevo. Si no podés ejecutar comandos, pedime que te pegue la salida. Si algo no se puede verificar, escribí «no verificado». Terminá con `Sincronización completada — sin cambios en el repo`.
+Al empezar cada conversación, y cuando yo diga «revisa arreglos en github», «sync github», «¿qué arreglaron?», «actualiza», «ver fixes» o «sincroniza»: hacé `git fetch origin` y `git status --short --branch`. Si estás en `reportes/<slug>` con cambios sin commitear, no cambies de rama: terminá el reporte y esperá mi confirmación. Si no hay cambios propios, `git switch main` y `git pull --ff-only origin main` para traer los arreglos a la copia. Nunca hagas `merge`, `rebase`, `reset` ni `--force`; si el pull falla, mostrás el error y esperás al dueño. Compará el SHA de `origin/main` contra el guardado en `C:\Users\<usuario>\Documents\YAHPOS_ultimo_sync.txt`, mirá `git log <sha_anterior>..origin/main --oneline` y leé `docs/operacion/REGISTRO_BUGS.md` del working tree (o `git show origin/main:docs/operacion/REGISTRO_BUGS.md`). Mostrá una tabla con: HAL-### → decisión del dueño → BUG-### → commit → estado (ABIERTO/CERRADO/DIFERIDO/NO_BUG) → qué significa para mí. Después actualizá ese archivo externo con el SHA nuevo. Si no podés ejecutar comandos, pedime que te pegue la salida. Si algo no se puede verificar, escribí «no verificado». Terminá con `Sincronización completada — copia alineada con origin/main (<SHA>); sin cambios propios en el repo`.
 
 Yo no sé programar: por cada hallazgo explicá con palabras simples, sin corregir mi redacción, y entregá: título corto; «En mis palabras» con mi texto literal; «Cómo abordarlo / cómo reproducirlo» (pantalla o ruta, pasos numerados, datos de prueba, qué esperaba y qué pasó); cómo funciona esa parte (flujo real + `archivo:línea`); causa probable; alcance exacto (archivos, rutas y tablas); idea de arreglo (máx. 2 opciones, sin código); riesgo (`S1`–`S4` + cambio `BAJO`/`MEDIO`/`ALTO`); blast radius; pruebas sugeridas (positiva y, si toca auth/roles/`store_id`/RLS, negativa); DO NOT. Todo análisis termina con `Estado: ANALIZADO — SIN IMPLEMENTAR`.
 
@@ -196,18 +196,22 @@ El circuito acordado es este:
 2. **Tu IA analiza** cada `HAL-###` con el formato de arriba y lo deja listo en el reporte del día.
 3. **Al terminar tu día**, tu IA te muestra el diff y te pregunta «¿subo el reporte ahora?». Con tu OK, hace commit **solo** de `docs/operacion/REPORTES_COLABORADOR/YYYY-MM-DD_<slug>.md` en la rama `reportes/<slug>` y hace push. Nunca toca `main`.
 4. **Al empezar el día del dueño**, él revisa ese reporte junto a su IA, decide y sube los arreglos a `main`.
-5. **Al volver a hablar con tu IA** (o al decir «revisa arreglos en github»), ella hace `git fetch origin` y lee `origin/main` sin modificar tus archivos. Te dice qué `HAL-###` se arreglaron, en qué commit y si quedan pendientes. Ahí volvés a probar esas pantallas.
+5. **Al volver a hablar con tu IA** (o al decir «revisa arreglos en github»), ella hace `git fetch origin`, vuelve a `main` y hace `git pull --ff-only origin main` para bajar los arreglos a tu copia. Te dice qué `HAL-###` se arreglaron, en qué commit y si quedan pendientes. Ahí volvés a probar esas pantallas.
 
-Comandos que tu IA puede usar (solo lectura):
+Comandos que tu IA puede usar para sincronizar:
 
 ```bash
 git fetch origin
+git status --short --branch
+git switch main
+git pull --ff-only origin main
 git rev-parse origin/main
+git rev-parse HEAD
 git log <sha_anterior>..origin/main --oneline
 git show origin/main:docs/operacion/REGISTRO_BUGS.md
 ```
 
-El último SHA se guarda en `C:\Users\<usuario>\Documents\YAHPOS_ultimo_sync.txt`, **fuera** del repo. Tu IA no hace `pull`, `merge`, `rebase`, `checkout` ni `reset` en tu copia sin instrucción explícita del dueño.
+El último SHA se guarda en `C:\Users\<usuario>\Documents\YAHPOS_ultimo_sync.txt`, **fuera** del repo. Tu IA no hace `merge`, `rebase`, `reset`, `commit`, `push` ni `--force` en `main`. El `pull` se usa solo en `main` y con `--ff-only`: si hay cambios propios o no es fast-forward, reporta el error y espera al dueño.
 
 Tabla que te tiene que devolver la sincronización:
 
