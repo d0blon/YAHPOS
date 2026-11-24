@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 
 const ROLE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  owner:     { label: 'Propietario',      color: 'text-indigo-700', bg: 'bg-indigo-100' },
   admin:    { label: 'Administrador',     color: 'text-rose-700',   bg: 'bg-rose-100'   },
   developer: { label: 'Desarrollador',    color: 'text-brand-700', bg: 'bg-brand-100' },
   manager:  { label: 'Encargado Turno',  color: 'text-brand-accent-700', bg: 'bg-brand-accent-100'   },
@@ -37,7 +38,7 @@ export function UserDropdown() {
 
   const role = user.role || 'customer'
   const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.customer
-  const isAdmin = role === 'admin'
+  const isAdmin = role === 'admin' || role === 'owner'
   const isDeveloper = role === 'developer'
   const isManager = role === 'manager'
   const isStaff = role === 'cashier'
